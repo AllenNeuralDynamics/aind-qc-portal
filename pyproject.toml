@@ -17,6 +17,15 @@ readme = "README.md"
 dynamic = ["version"]
 
 dependencies = [
+    'pydantic',
+    'aind-data-schema',
+    'aind-data-access-api[docdb]',
+    'panel',
+    'altair',
+    'zarr',
+    'matplotlib',
+    'boto3',
+    's3fs',
 ]
 
 [project.optional-dependencies]
