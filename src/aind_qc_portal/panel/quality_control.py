@@ -2,9 +2,9 @@
 import panel as pn
 import param
 import json
-from aind_qc_portal.metric import QCMetricPanel
-from aind_qc_portal.evaluation import QCEvalPanel
-from aind_qc_portal.database import qc_from_id, qc_update_to_id
+from aind_qc_portal.panel.metric import QCMetricPanel
+from aind_qc_portal.panel.evaluation import QCEvalPanel
+from aind_qc_portal.docdb.database import qc_from_id, qc_update_to_id
 from aind_qc_portal.utils import md_style, status_html
 from aind_data_schema.core.quality_control import QualityControl, QCEvaluation
 

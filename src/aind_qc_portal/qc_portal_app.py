@@ -6,7 +6,7 @@ import pandas as pd
 import param
 from datetime import datetime
 
-from aind_qc_portal.database import get_meta
+from aind_qc_portal.docdb.database import get_meta
 from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color
 
 

@@ -6,7 +6,7 @@ import param
 
 alt.data_transformers.disable_max_rows()
 # from aind_qc_portal.search import search_bar
-from aind_qc_portal.quality_control import QCPanel
+from aind_qc_portal.panel.quality_control import QCPanel
 
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")

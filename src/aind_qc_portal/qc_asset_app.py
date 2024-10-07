@@ -5,7 +5,7 @@ import pandas as pd
 import altair as alt
 import json
 
-from aind_qc_portal.database import get_subj_from_id, get_assets_by_subj, _raw_name_from_derived
+from aind_qc_portal.docdb.database import get_subj_from_id, get_assets_by_subj, _raw_name_from_derived
 from aind_qc_portal.utils import QC_LINK_PREFIX, qc_color, df_timestamp_range
 
 from aind_data_schema.core.quality_control import QualityControl

@@ -7,16 +7,16 @@ QC_LINK_PREFIX = "http://localhost:5007/qc_app?id="
 
 
 def status_html(status: Status):
-    if status.status.value == "Pass":
+    if status.value == "Pass":
         color = "green"
-    elif status.status.value == "Pending":
+    elif status.value == "Pending":
         color = "blue"
-    elif status.status.value == "Fail":
+    elif status.value == "Fail":
         color = "red"
     else:
         color = "#F5BB00"
 
-    return f'<span style="color:{color};">{status.status.value}</span>'
+    return f'<span style="color:{color};">{status.value}</span>'
 
 
 def df_timestamp_range(df, column="timestamp"):

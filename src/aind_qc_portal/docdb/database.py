@@ -2,14 +2,11 @@ from aind_data_schema.core.quality_control import QualityControl
 from aind_data_access_api.document_db import MetadataDbClient
 import numpy as np
 import panel as pn
+import os
 
-# API_GATEWAY_HOST = "api.allenneuraldynamics.org"
-# DATABASE = "metadata_index"
-# COLLECTION = "data_assets"
-
-API_GATEWAY_HOST = "api.allenneuraldynamics-test.org"
-DATABASE = "test"
-COLLECTION = "data_assets"
+API_GATEWAY_HOST = os.getenv("API_GATEWAY_HOST", "api.allenneuraldynamics-test.org")
+DATABASE = os.getenv("DATABASE", "test")
+COLLECTION = os.getenv("COLLECTION", "data_assets")
 
 TIMEOUT_1M = 60
 TIMEOUT_1H = 60 * 60
