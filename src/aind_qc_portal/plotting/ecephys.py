@@ -4,7 +4,7 @@ import numpy as np
 import altair as alt
 import pandas as pd
 
-from zombie.utils import bincount2D
+from aind_qc_portal.utils import bincount2D
 
 
 @pn.cache()

@@ -25,6 +25,8 @@ class QCPanel:
         self.hidden_html = pn.pane.HTML("")
         self.hidden_html.visible = False
 
+        self._has_data = False
+
         self.update()
 
     def update(self):
@@ -33,6 +35,16 @@ class QCPanel:
 
     def get_data(self):
         json_data = qc_from_id(self.id)
+
+        if "quality_control" in json_data:
+            self._has_data = True
+        else:
+            return
+
+        if "schema_version" in json_data["quality_control"]:
+            json_data["quality_control"]["schema_version"] = QualityControl.model_construct().schema_version
+
+        print(json_data)
 
         self.name = json_data["name"]
         try:
@@ -60,6 +72,9 @@ class QCPanel:
 
     def panel(self):
         """Build a Panel object representing this QC action"""
+        if not self._has_data:
+            return pn.pane("No QC object available")
+
         objects = []
         for evaluation in self.evaluations:
             objects.append(evaluation.panel())
@@ -76,7 +91,7 @@ class QCPanel:
 
         state_md = f"""
 <span style="font-size:14pt">Current state:</span>
-<span style="font-size:12pt">Status: {status_html(self.data.overall_status)} on **{self.data.overall_status.timestamp}**</span>
+<span style="font-size:12pt">Status: **{status_html(self.data.status)}**</span>
 <span style="font-size:12pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
 """
 

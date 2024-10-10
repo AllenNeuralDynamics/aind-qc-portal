@@ -21,7 +21,7 @@ class QCEvalPanel:
         self.data = evaluation_data
 
         self.metrics = []
-        for qc_metric in self.data.qc_metrics:
+        for qc_metric in self.data.metrics:
             self.metrics.append(QCMetricPanel(self.parent, qc_metric))
 
     def set_notes(self, event):
@@ -37,9 +37,9 @@ class QCEvalPanel:
         allow_failing_str = "Metrics are allowed to fail in this evaluation." if self.data.allow_failed_metrics else ""
 
         md = f"""
-{md_style(12, self.data.evaluation_description if self.data.evaluation_description else "*no description provided*")}
-{md_style(8, f"Current state: **{status_html(self.data.evaluation_status)}** set by **{self.data.evaluation_status.evaluator}** on **{self.data.evaluation_status.timestamp}**")}
-{md_style(8, f"Contains **{len(self.data.qc_metrics)}** metrics. {allow_failing_str}")}
+{md_style(12, self.data.description if self.data.description else "*no description provided*")}
+{md_style(8, f"Current state: **{status_html(self.data.status)}**")}
+{md_style(8, f"Contains **{len(self.data.metrics)}** metrics. {allow_failing_str}")}
 """
         
         header = pn.pane.Markdown(md)
@@ -56,6 +56,6 @@ class QCEvalPanel:
         accordion = pn.Accordion(*objects, sizing_mode='stretch_width')
         accordion.active = [0]
 
-        col = pn.Column(header_row, accordion, name=self.data.evaluation_name)
+        col = pn.Column(header_row, accordion, name=self.data.name)
 
         return col
