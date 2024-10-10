@@ -6,6 +6,7 @@ from aind_qcportal_schema.metric_value import (
     DropdownMetric,
     RulebasedMetric,
 )
+from aind_data_schema.core.quality_control import Status
 
 
 class CustomMetricValue:
@@ -78,6 +79,7 @@ class CustomMetricValue:
                     self._status_callback(updated_data.status[idx])
                 except Exception as e:
                     print(e)
+                    self._status_callback(Status.Fail)
 
     def _dropdown_helper(self, data: dict):
         self._panel = pn.widgets.Select(
