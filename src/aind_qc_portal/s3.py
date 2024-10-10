@@ -1,10 +1,11 @@
 # Placeholder code to be replaced with boto3 calls
 # import panel as pn
 
-import zarr
-import s3fs
 # import boto3
 from pathlib import Path
+
+import s3fs
+import zarr
 
 URI = "s3://aind-scratch-data/ecephys_718481_2024-06-04_10-33-39_sorted_2024-08-27_11-28-34/"
 

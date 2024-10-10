@@ -4,10 +4,12 @@
 import panel as pn
 import pandas as pd
 import param
+import json
 from datetime import datetime
 
-from aind_qc_portal.docdb.database import get_meta
-from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color
+from aind_qc_portal.docdb.database import get_meta, API_GATEWAY_HOST, DATABASE, COLLECTION
+from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color, update_schema_version
+from aind_data_schema.core.quality_control import QualityControl
 
 
 class SearchOptions(param.Parameterized):
@@ -21,11 +23,21 @@ class SearchOptions(param.Parameterized):
         self.shame = []
 
         for record in meta_list:
+            print(record)
+
             record_split = record["name"].split("_")
             if len(record_split) >= 4:  # drop names that are junk
 
-                if "qc_exists" in record and record["qc_exists"]:
-                    status = record["qc_exists"]
+                if "quality_control" in record and record["quality_control"]:
+                    # try to validate the QC object
+                    record = update_schema_version(record)
+
+                    try:
+                        qc = QualityControl.model_validate_json(json.dumps(record["quality_control"]))
+                        status = qc.status.value
+                    except Exception as e:
+                        print(f"QC object failed to validate: {e}")
+                        status = "Invalid QC"
                 else:
                     status = "No QC"
 
@@ -209,9 +221,10 @@ def textinput_update(event):
 text_input.param.watch(textinput_update, 'value')
 
 
-md = """
+md = f"""
 # Allen Institute for Neural Dynamics - QC Portal
 This portal allows you to search all existing metadata and explore the **quality control** file. Open the subject view to see the raw and derived assets related to a single record. Open the QC view to explore the quality control object for that record.
+Connected to: {API_GATEWAY_HOST}/{DATABASE}/{COLLECTION}
 """
 header = pn.pane.Markdown(md)
 

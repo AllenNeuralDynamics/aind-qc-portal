@@ -1,7 +1,8 @@
+import panel as pn
 from aind_data_schema.core.quality_control import QCEvaluation
+
 from aind_qc_portal.panel.metric import QCMetricPanel
 from aind_qc_portal.utils import md_style, status_html
-import panel as pn
 
 
 class QCEvalPanel:

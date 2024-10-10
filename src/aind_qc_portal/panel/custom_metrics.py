@@ -1,5 +1,9 @@
 import panel as pn
-from aind_qcportal_schema.metric_value import DropdownMetric, CheckboxMetric, RulebasedMetric
+from aind_qcportal_schema.metric_value import (
+    CheckboxMetric,
+    DropdownMetric,
+    RulebasedMetric,
+)
 
 
 class CustomMetricValue:

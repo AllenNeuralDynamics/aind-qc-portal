@@ -15,7 +15,7 @@ pn.extension("vega", "ace", "jsoneditor")
 
 # State sync
 class Settings(param.Parameterized):
-    id = param.String(default="33e427dd-1dd8-4062-abb4-0a82d5fc5def")
+    id = param.String(default="a61f285e-c79b-46cd-b554-991d711b6e53")
 
 
 settings = Settings()

@@ -1,8 +1,8 @@
-from aind_qc_portal.utils import md_style
-from aind_qc_portal.panel.custom_metrics import CustomMetricValue
+import panel as pn
 from aind_data_schema.core.quality_control import Status
 
-import panel as pn
+from aind_qc_portal.panel.custom_metrics import CustomMetricValue
+from aind_qc_portal.utils import md_style
 
 
 class QCMetricPanel:

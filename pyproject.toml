@@ -37,7 +37,8 @@ dev = [
     'interrogate',
     'isort',
     'Sphinx',
-    'furo'
+    'furo',
+    'watchfiles'
 ]
 
 [tool.setuptools.packages.find]

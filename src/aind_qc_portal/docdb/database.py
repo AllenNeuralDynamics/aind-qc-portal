@@ -1,12 +1,15 @@
-from aind_data_schema.core.quality_control import QualityControl
-from aind_data_access_api.document_db import MetadataDbClient
-import numpy as np
-import panel as pn
 import os
 
+import numpy as np
+import panel as pn
+from aind_data_access_api.document_db import MetadataDbClient
+from aind_data_schema.core.quality_control import QualityControl
+
 API_GATEWAY_HOST = os.getenv("API_GATEWAY_HOST", "api.allenneuraldynamics-test.org")
-DATABASE = os.getenv("DATABASE", "test")
+DATABASE = os.getenv("DATABASE", "metadata_index")
 COLLECTION = os.getenv("COLLECTION", "data_assets")
+
+print(API_GATEWAY_HOST, DATABASE, COLLECTION)
 
 TIMEOUT_1M = 60
 TIMEOUT_1H = 60 * 60
@@ -25,9 +28,8 @@ def qc_from_id(id: str):
 
 
 def qc_update_to_id(id: str, qc: QualityControl):
-    qc.evaluate_status()
     response = client.upsert_one_docdb_record(
-        record={"_id": id, "quality_control": qc.dict()}
+        record={"_id": id, "quality_control": qc.model_dump()}
     )
     if response.status_code != 200:
         print(response.json())
@@ -85,7 +87,6 @@ def get_assets_by_subj(subj: str):
     return response
 
 
-@pn.cache(ttl=TIMEOUT_1H)
 def get_meta():
     response = client.aggregate_docdb_records(
         pipeline=[
@@ -93,36 +94,12 @@ def get_meta():
                 "$project": {
                     "_id": 1,
                     "name": 1,
-                    "qc_exists": {
-                        "$cond": {
-                            "if": {
-                                "$gt": [
-                                    {"$type": "$quality_control"},
-                                    "missing",
-                                ]
-                            },
-                            "then": "$quality_control.overall_status",
-                            "else": None,
-                        }
-                    },
+                    "quality_control": 1
                 }
             },
-            {
-                "$group": {
-                    "_id": None,
-                    "data": {
-                        "$push": {
-                            "_id": "$_id",
-                            "name": "$name",
-                            "qc_exists": "$qc_exists",
-                        }
-                    },
-                }
-            },
-            {"$project": {"_id": 0, "data": 1}},
         ]
     )
-    return response[0]["data"]
+    return response
 
 
 @pn.cache(ttl=TIMEOUT_24H)  # twenty-four hour cache

@@ -1,28 +1,28 @@
-import numpy as np
 from datetime import timedelta
-from aind_data_schema.core.quality_control import Status, QualityControl
+
+import numpy as np
+from aind_data_schema.core.quality_control import QualityControl, Status
 
 ASSET_LINK_PREFIX = "http://localhost:5007/qc_asset_app?id="
 QC_LINK_PREFIX = "http://localhost:5007/qc_app?id="
 
 
 def update_schema_version(record: dict):
-    if "quality_control" in record:
-        if "schema_version" in record["quality_control"]:
-            record["quality_control"]["schema_version"] = QualityControl.model_construct().schema_version
- 
+    if record.get("quality_control") and record.get("schema_version"):
+        record["quality_control"]["schema_version"] = QualityControl.model_construct().schema_version
+
     return record
 
 
 def status_html(status: Status):
     if status.value == "Pass":
-        color = "green"
+        color = "#6CF573"
     elif status.value == "Pending":
-        color = "blue"
+        color = "#657566"
     elif status.value == "Fail":
-        color = "red"
+        color = "#F5736C"
     else:
-        color = "#F5BB00"
+        color = "##756575"
 
     return f'<span style="color:{color};">{status.value}</span>'
 

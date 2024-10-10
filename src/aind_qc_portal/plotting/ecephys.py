@@ -1,8 +1,7 @@
-import panel as pn
-
-import numpy as np
 import altair as alt
+import numpy as np
 import pandas as pd
+import panel as pn
 
 from aind_qc_portal.utils import bincount2D
 

@@ -2,7 +2,7 @@
 
 import unittest
 
-from aind_qc_portal.database import get_subjects, get_sessions
+from aind_qc_portal.docdb.database import get_sessions, get_subjects
 
 
 class DocDBTest(unittest.TestCase):

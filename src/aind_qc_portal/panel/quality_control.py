@@ -1,12 +1,14 @@
 # Build a single QCEvaluation panel
+import json
+
 import panel as pn
 import param
-import json
-from aind_qc_portal.panel.metric import QCMetricPanel
-from aind_qc_portal.panel.evaluation import QCEvalPanel
+from aind_data_schema.core.quality_control import QCEvaluation, QualityControl
+
 from aind_qc_portal.docdb.database import qc_from_id, qc_update_to_id
+from aind_qc_portal.panel.evaluation import QCEvalPanel
+from aind_qc_portal.panel.metric import QCMetricPanel
 from aind_qc_portal.utils import md_style, status_html, update_schema_version
-from aind_data_schema.core.quality_control import QualityControl, QCEvaluation
 
 
 class QCPanel:
@@ -70,7 +72,7 @@ class QCPanel:
     def panel(self):
         """Build a Panel object representing this QC action"""
         if not self._has_data:
-            return pn.pane("No QC object available")
+            return pn.widgets.StaticText("No QC object available")
 
         objects = []
         for evaluation in self.evaluations:

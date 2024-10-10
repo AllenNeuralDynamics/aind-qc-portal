@@ -1,14 +1,23 @@
-import param
-import panel as pn
-from datetime import datetime
-import pandas as pd
-import altair as alt
 import json
+from datetime import datetime
 
-from aind_qc_portal.docdb.database import get_subj_from_id, get_assets_by_subj, _raw_name_from_derived
-from aind_qc_portal.utils import QC_LINK_PREFIX, qc_color, df_timestamp_range, update_schema_version
-
+import altair as alt
+import pandas as pd
+import panel as pn
+import param
 from aind_data_schema.core.quality_control import QualityControl
+
+from aind_qc_portal.docdb.database import (
+    _raw_name_from_derived,
+    get_assets_by_subj,
+    get_subj_from_id,
+)
+from aind_qc_portal.utils import (
+    QC_LINK_PREFIX,
+    df_timestamp_range,
+    qc_color,
+    update_schema_version,
+)
 
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
@@ -17,7 +26,7 @@ type_colors = {"raw": "yellow", "sorted-ks25": "blue", "nwb": "green"}
 
 
 class AssetHistory(param.Parameterized):
-    id = param.String(default="33e427dd-1dd8-4062-abb4-0a82d5fc5def")
+    id = param.String(default="a61f285e-c79b-46cd-b554-991d711b6e53")
 
     def __init__(self, **params):
         super().__init__(**params)
