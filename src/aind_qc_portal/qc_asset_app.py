@@ -141,8 +141,6 @@ class AssetHistory(param.Parameterized):
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(self.df)
 
-        print(self.df[['timestamp', 'group']])
-
         chart = (
             alt.Chart(self.df)
             .mark_bar()
