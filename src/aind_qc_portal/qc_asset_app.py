@@ -6,7 +6,7 @@ import altair as alt
 import json
 
 from aind_qc_portal.docdb.database import get_subj_from_id, get_assets_by_subj, _raw_name_from_derived
-from aind_qc_portal.utils import QC_LINK_PREFIX, qc_color, df_timestamp_range
+from aind_qc_portal.utils import QC_LINK_PREFIX, qc_color, df_timestamp_range, update_schema_version
 
 from aind_data_schema.core.quality_control import QualityControl
 
@@ -53,6 +53,8 @@ class AssetHistory(param.Parameterized):
 
         # [TODO] this is designed as-is because the current metadata records are all missing the input_data_name field, unfortunately
         for record in self._records:
+            record = update_schema_version(record)
+
             name_split = record["name"].split("_")
 
             raw_name = _raw_name_from_derived(record["name"])
@@ -78,7 +80,7 @@ class AssetHistory(param.Parameterized):
 
             if "quality_control" in record and record["quality_control"]:
                 qc = QualityControl.model_validate_json(json.dumps(record["quality_control"]))
-                status = qc.overall_status.status.value
+                status = qc.status.value
             else:
                 status = "No QC"
 

@@ -1,9 +1,17 @@
 import numpy as np
 from datetime import timedelta
-from aind_data_schema.core.quality_control import Status
+from aind_data_schema.core.quality_control import Status, QualityControl
 
 ASSET_LINK_PREFIX = "http://localhost:5007/qc_asset_app?id="
 QC_LINK_PREFIX = "http://localhost:5007/qc_app?id="
+
+
+def update_schema_version(record: dict):
+    if "quality_control" in record:
+        if "schema_version" in record["quality_control"]:
+            record["quality_control"]["schema_version"] = QualityControl.model_construct().schema_version
+ 
+    return record
 
 
 def status_html(status: Status):

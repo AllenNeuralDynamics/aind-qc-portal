@@ -5,7 +5,7 @@ import json
 from aind_qc_portal.panel.metric import QCMetricPanel
 from aind_qc_portal.panel.evaluation import QCEvalPanel
 from aind_qc_portal.docdb.database import qc_from_id, qc_update_to_id
-from aind_qc_portal.utils import md_style, status_html
+from aind_qc_portal.utils import md_style, status_html, update_schema_version
 from aind_data_schema.core.quality_control import QualityControl, QCEvaluation
 
 
@@ -41,10 +41,7 @@ class QCPanel:
         else:
             return
 
-        if "schema_version" in json_data["quality_control"]:
-            json_data["quality_control"]["schema_version"] = QualityControl.model_construct().schema_version
-
-        print(json_data)
+        update_schema_version(json_data)
 
         self.name = json_data["name"]
         try:
