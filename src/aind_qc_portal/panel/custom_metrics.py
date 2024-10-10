@@ -10,6 +10,8 @@ from aind_data_schema.core.quality_control import Status
 
 
 class CustomMetricValue:
+    """This class is really ugly because of how it handles multiple types... please refactor me
+    """
 
     def __init__(self, data: dict, value_callback, status_callback):
         """Build a new CustomMetricValue object from a metric's value
@@ -75,11 +77,14 @@ class CustomMetricValue:
                 print(event.new)
             else:
                 try:
-                    idx = updated_data.options.index(updated_data.value)
-                    self._status_callback(updated_data.status[idx])
+                    if (updated_data.value is ""):
+                        self._status_callback(Status.PENDING)
+                    else:
+                        idx = updated_data.options.index(updated_data.value)
+                        self._status_callback(updated_data.status[idx])
                 except Exception as e:
                     print(e)
-                    self._status_callback(Status.Fail)
+                    self._status_callback(Status.PENDING)
 
     def _dropdown_helper(self, data: dict):
         self._panel = pn.widgets.Select(
