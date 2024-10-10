@@ -3,8 +3,8 @@ from datetime import timedelta
 import numpy as np
 from aind_data_schema.core.quality_control import QualityControl, Status
 
-ASSET_LINK_PREFIX = "http://localhost:5007/qc_asset_app?id="
-QC_LINK_PREFIX = "http://localhost:5007/qc_app?id="
+ASSET_LINK_PREFIX = "/qc_asset_app?id="
+QC_LINK_PREFIX = "/qc_app?id="
 
 
 def update_schema_version(record: dict):
