@@ -125,7 +125,13 @@ class AssetHistory(param.Parameterized):
                 "group"
             ],
         )
-        self.df = self.df.sort_values(by="timestamp", ascending=False)
+        self.df.sort_values(by="timestamp", ascending=True, inplace=True)
+        unique_groups = self.df['group'].unique()
+        group_mapping = {group: new_group for new_group, group in enumerate(unique_groups)}
+
+        # Replace the 'group' column with the new group values
+        self.df['group'] = self.df['group'].map(group_mapping)
+        self.df.sort_values(by="group", ascending=True, inplace=True)
 
     def asset_history_panel(self):
         """Create a plot showing the history of this asset, showing how assets were derived from each other"""
@@ -134,6 +140,8 @@ class AssetHistory(param.Parameterized):
 
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(self.df)
+
+        print(self.df[['timestamp', 'group']])
 
         chart = (
             alt.Chart(self.df)
