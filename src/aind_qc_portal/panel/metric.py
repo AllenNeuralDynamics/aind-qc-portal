@@ -24,11 +24,12 @@ class QCMetricPanel:
     @property
     def data(self):
         return self._data
-    
+
     def set_value(self, event):
         self._set_value(event.new)
 
     def _set_value(self, value):
+        print(f'Updating metric value to: {value}')
         self._data.value = value
         self.parent.set_dirty()
 
@@ -36,7 +37,6 @@ class QCMetricPanel:
         self._set_status(Status(event.new))
 
     def _set_status(self, status):
-
         if not isinstance(status, Status):
             status = Status(status)
         print(f'Updating metric status to: {status.value}')
@@ -84,6 +84,7 @@ class QCMetricPanel:
         name = self._data.name
         value = self._data.value
 
+        auto_value = False
         auto_state = False
         if isinstance(value, bool):
             value_widget = pn.widgets.Checkbox(name=name)
@@ -96,6 +97,7 @@ class QCMetricPanel:
         elif isinstance(value, dict):
             try:
                 custom_value = CustomMetricValue(value, self._set_value, self._set_status)
+                auto_value = True
                 auto_state = custom_value.auto_state
                 value_widget = custom_value.panel
             except ValueError as e:
@@ -104,8 +106,9 @@ class QCMetricPanel:
         else:
             value_widget = pn.pane(f"Can't deal with type {type(value)}")
 
-        value_widget.value = value
-        value_widget.param.watch(self.set_value, 'value')
+        if not auto_value:
+            value_widget.value = value
+            value_widget.param.watch(self.set_value, 'value')
 
         state_selector = pn.widgets.Select(value=self._data.status.status.value, options=["Pass", "Fail", "Pending"], name="Metric status")
         if auto_state:

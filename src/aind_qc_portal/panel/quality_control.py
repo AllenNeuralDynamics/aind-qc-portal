@@ -69,8 +69,7 @@ class QCPanel:
         self.submit_button.param.trigger('disabled')
 
     def submit_changes(self, *event):
-        print(self.data)
-        # qc_update_to_id(self.id, self.data)
+        qc_update_to_id(self.id, self.data)
         self.submit_button.disabled = True
         self.hidden_html.object = "<script>window.location.reload();</script>"
 

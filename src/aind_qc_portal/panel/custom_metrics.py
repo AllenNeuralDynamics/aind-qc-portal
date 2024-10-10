@@ -1,4 +1,6 @@
 import panel as pn
+import json
+
 from aind_qcportal_schema.metric_value import (
     CheckboxMetric,
     DropdownMetric,
@@ -18,18 +20,25 @@ class CustomMetricValue:
         """
 
         self._panel = None
-        self._data = data
+        self._auto_state = False
         self._value_callback = value_callback
         self._status_callback = status_callback
 
         if "type" in data:
             if data["type"] == "dropdown":
+                self._data = DropdownMetric.model_validate_json(json.dumps(data))
+                self._auto_state = self._data.status is not None
                 self._dropdown_helper(data)
             elif data["type"] == "checkbox":
-                self._dropdown_helper(data)
+                self._data = CheckboxMetric.model_validate_json(json.dumps(data))
+                self._auto_state = self._data.status is not None
+                self._checkbox_helper(data)
             else:
+                self._data = data  # just a dictionary
                 raise ValueError("Unknown type for custom metric value")
         elif "rule" in data:
+            self._data = RulebasedMetric.model_validate_json(json.dumps(data))
+            self._auto_state = True
             self._rulebased_helper(data)
         else:
             raise ValueError("Unknown type for custom metric value")
@@ -44,35 +53,49 @@ class CustomMetricValue:
     def auto_state(self) -> bool:
         """Where the custom value's state will get automatically updated
         """
-        return "rule" in self._data or self._data.get("status")
+        return self._auto_state
 
     def _callback_helper(self, event):
         updated_data = self._data
-        updated_data["value"]["value"] = event.new
-        self._value_callback(updated_data)
+        if hasattr(updated_data, "value"):
+            updated_data.value = event.new
+        else:
+            updated_data["value"] = event.new
 
-        if self._data.get("status"):
-            if self._data["type"] == "checkbox":
+        if isinstance(updated_data, dict):
+            self._value_callback(json.dumps(updated_data))
+        else:
+            self._value_callback(updated_data.model_dump())
+
+        if self._auto_state:
+            if hasattr(updated_data, "type") and updated_data.type == "checkbox":
+                pass
                 # parse the value
                 print(event.new)
             else:
-                self._status_callback(self._data["status"][event.new])
+                try:
+                    idx = updated_data.options.index(updated_data.value)
+                    self._status_callback(updated_data.status[idx])
+                except Exception as e:
+                    print(e)
 
     def _dropdown_helper(self, data: dict):
         self._panel = pn.widgets.Select(
             name='Value',
-            options=data["options"]
+            options=[""] + data["options"],
         )
         if data["value"]:
             self._panel.value = data["value"]
+        else:
+            self._panel.value = ""
 
         # watch the selector and pass event updates back through the callback
-        # self._panel.param.watch(self._callback_helper, "value")
+        self._panel.param.watch(self._callback_helper, "value")
 
     def _checkbox_helper(self, data: dict):
         self._panel = pn.widgets.MultiChoice(
             name='Value',
-            options=data["options"]
+            options=data["options"],
         )
         if data["value"]:
             self._panel.value = data["value"]
