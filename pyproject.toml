@@ -26,6 +26,7 @@ dependencies = [
     'matplotlib',
     'boto3',
     's3fs',
+    'aind-qcportal-schema',
 ]
 
 [project.optional-dependencies]
