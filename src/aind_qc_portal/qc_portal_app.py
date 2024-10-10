@@ -128,7 +128,7 @@ class SearchOptions(param.Parameterized):
         return df
 
     def active_names(self):
-        return self._active_names
+        return ["Clear"] + self._active_names
 
     def all_names(self):
         return list(set(self.df["name"].values))
@@ -145,19 +145,24 @@ class SearchView(param.Parameterized):
         default="", objects=options.subject_ids
     )
     date_filter = param.ObjectSelector(default="", objects=options.dates)
+    text_filter = param.String(default="")
 
     def __init__(self, **params):
         super().__init__(**params)
 
     def df_filtered(self):
         """Filter the options dataframe"""
+        if self.text_filter != "" and self.text_filter != "Clear":
+            return options.df[options.df["name"] == self.text_filter]
+
         df_filtered = options.active(
             self.modality_filter, self.subject_filter, self.date_filter
         )
         return df_filtered.style.map(qc_color, subset=["Status"])
 
     def df_textinput(self, value):
-        return options.df[options.df["name"] == value]
+        print(value)
+        self.text_filter = value
 
 
 searchview = SearchView()
@@ -187,6 +192,7 @@ search_dropdowns = pn.Param(
     name="Filters",
     show_name=False,
     default_layout=new_class(pn.GridBox, ncols=2),
+    parameters=["modality_filter", "subject_filter", "date_filter"],
 )
 
 left_col = pn.Column(text_input, search_dropdowns)
@@ -213,6 +219,7 @@ def update_dataframe(*events):
 
 
 def textinput_update(event):
+    print(event.new)
     searchview.df_textinput(event.new)
     update_dataframe()
 
@@ -230,7 +237,5 @@ header = pn.pane.Markdown(md)
 col = pn.Column(header, left_col, dataframe_pane, min_width=660)
 
 display = pn.Row(pn.HSpacer(), col, pn.HSpacer())
-
-# hall_of_shame = pn.Card(", ".join(options.shame), title="Hall of shame:")
 
 display.servable(title="AIND QC - Portal")
