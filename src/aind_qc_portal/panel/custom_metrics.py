@@ -38,7 +38,6 @@ class CustomMetricValue:
                 self._checkbox_helper(data)
             else:
                 self._data = data  # just a dictionary
-                raise ValueError("Unknown type for custom metric value")
         elif "rule" in data:
             self._data = RulebasedMetric.model_validate_json(json.dumps(data))
             self._auto_state = True
@@ -77,7 +76,7 @@ class CustomMetricValue:
                 print(event.new)
             else:
                 try:
-                    if (updated_data.value is ""):
+                    if (updated_data.value == ""):
                         self._status_callback(Status.PENDING)
                     else:
                         idx = updated_data.options.index(updated_data.value)
