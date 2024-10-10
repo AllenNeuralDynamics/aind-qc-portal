@@ -22,7 +22,7 @@ def status_html(status: Status):
     elif status.value == "Fail":
         color = "#F5736C"
     else:
-        color = "##756575"
+        color = "#756575"
 
     return f'<span style="color:{color};">{status.value}</span>'
 
