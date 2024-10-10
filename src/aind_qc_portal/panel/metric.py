@@ -72,6 +72,7 @@ class QCMetricPanel:
         name = self.data.name
         value = self.data.value
 
+        auto_state = False
         if isinstance(value, bool):
             value_widget = pn.widgets.Checkbox(name=name)
         elif isinstance(value, str):
@@ -83,6 +84,7 @@ class QCMetricPanel:
         elif isinstance(value, dict):
             try:
                 custom_value = CustomMetricValue(value, self._set_value, self._set_status)
+                auto_state = custom_value.auto_state
                 value_widget = custom_value.panel
             except ValueError as e:
                 print(e)
@@ -94,7 +96,10 @@ class QCMetricPanel:
         value_widget.param.watch(self.set_value, 'value')
 
         state_selector = pn.widgets.Select(value=self.data.status.status.value, options=["Pass", "Fail", "Pending"], name="Metric status")
-        state_selector.param.watch(self.set_status, 'value')
+        if auto_state:
+            state_selector.disabled = True
+        else:
+            state_selector.param.watch(self.set_status, 'value')
 
         header = pn.pane.Markdown(md)
 
