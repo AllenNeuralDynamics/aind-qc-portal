@@ -33,7 +33,6 @@ class QCPanel:
 
     def update(self):
         self.get_data()
-        print('update')
         self.submit_button.disabled = True
 
     def get_data(self):
@@ -48,19 +47,26 @@ class QCPanel:
 
         self.name = json_data["name"]
         try:
-            self.data = QualityControl.model_validate_json(json.dumps(json_data["quality_control"]))
+            self._data = QualityControl.model_validate_json(json.dumps(json_data["quality_control"]))
         except Exception as e:
-            self.data = None
+            self._data = None
             print(f"QC object failed to validate: {e}")
 
         self.evaluations = []
-        for evaluations in self.data.evaluations:
+        for evaluations in self._data.evaluations:
             self.evaluations.append(
                 QCEvalPanel(parent=self, qc_evaluation=evaluations)
             )
 
+    @property
+    def data(self):
+        return QualityControl(
+            evaluations=[eval.data for eval in self.evaluations],
+        )
+
     def set_dirty(self, *event):
         self.submit_button.disabled = False
+        self.submit_button.param.trigger('disabled')
 
     def submit_changes(self, *event):
         print(self.data)
@@ -89,13 +95,13 @@ class QCPanel:
 
         state_md = f"""
 <span style="font-size:14pt">Current state:</span>
-<span style="font-size:12pt">Status: **{status_html(self.data.status)}**</span>
+<span style="font-size:12pt">Status: **{status_html(self._data.status)}**</span>
 <span style="font-size:12pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
 """
 
         state_pane = pn.pane.Markdown(state_md)
 
-        notes_box = pn.widgets.TextAreaInput(name='Notes:', value=self.data.notes, placeholder="no notes provided")
+        notes_box = pn.widgets.TextAreaInput(name='Notes:', value=self._data.notes, placeholder="no notes provided")
         notes_box.param.watch(self.set_dirty, "value")
 
         # state row

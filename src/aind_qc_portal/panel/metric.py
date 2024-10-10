@@ -1,5 +1,7 @@
 import panel as pn
-from aind_data_schema.core.quality_control import Status, QCMetric
+from aind_data_schema.core.quality_control import Status, QCMetric, QCStatus
+from aind_data_schema.base import AwareDatetimeWithDefault
+from datetime import datetime
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
 from aind_qc_portal.utils import md_style
@@ -15,26 +17,36 @@ class QCMetricPanel:
         evaluation_data : dict
             See aind_data_schema.core.quality_control Evaluation
         """
-        self.data = qc_metric
+        self._data = qc_metric
         self.parent = parent
         self.reference_img = None
+
+    @property
+    def data(self):
+        return self._data
     
     def set_value(self, event):
         self._set_value(event.new)
 
     def _set_value(self, value):
-        self.data.value = value
+        self._data.value = value
         self.parent.set_dirty()
 
     def set_status(self, event):
         self._set_status(Status(event.new))
 
     def _set_status(self, status):
-        if isinstance(status, Status):
-            self.data.status.status = status
-        else:
-            self.data.status.status = Status(status)
-        
+
+        if not isinstance(status, Status):
+            status = Status(status)
+        print(f'Updating metric status to: {status.value}')
+
+        self._data.status_history.append(QCStatus(
+            evaluator="[TODO]",
+            status=status,
+            timestamp=datetime.now(),
+        ))
+
         self.parent.set_dirty()
 
     def panel(self):
@@ -45,8 +57,8 @@ class QCMetricPanel:
         _type_
             _description_
         """
-        if self.data.reference:
-            if self.data.reference == "ecephys-drift-map":
+        if self._data.reference:
+            if self._data.reference == "ecephys-drift-map":
                 self.reference_img = ""
             else:
                 self.reference_img = (
@@ -58,19 +70,19 @@ class QCMetricPanel:
         row = pn.Row(
             self.metric_panel(),
             self.reference_img,
-            name=self.data.name,
+            name=self._data.name,
         )
         return row
 
     def metric_panel(self):
         # Markdown header to display current state
         md = f"""
-{md_style(10, f"Current state: {self.data.status.status.value}")}
-{md_style(8, self.data.description if self.data.description else "*no description provided*")}
-{md_style(8, f"Value: {self.data.value}")}
+{md_style(10, f"Current state: {self._data.status.status.value}")}
+{md_style(8, self._data.description if self._data.description else "*no description provided*")}
+{md_style(8, f"Value: {self._data.value}")}
 """
-        name = self.data.name
-        value = self.data.value
+        name = self._data.name
+        value = self._data.value
 
         auto_state = False
         if isinstance(value, bool):
@@ -95,7 +107,7 @@ class QCMetricPanel:
         value_widget.value = value
         value_widget.param.watch(self.set_value, 'value')
 
-        state_selector = pn.widgets.Select(value=self.data.status.status.value, options=["Pass", "Fail", "Pending"], name="Metric status")
+        state_selector = pn.widgets.Select(value=self._data.status.status.value, options=["Pass", "Fail", "Pending"], name="Metric status")
         if auto_state:
             state_selector.disabled = True
         else:

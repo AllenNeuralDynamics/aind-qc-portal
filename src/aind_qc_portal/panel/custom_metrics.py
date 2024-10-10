@@ -46,20 +46,25 @@ class CustomMetricValue:
         """
         return "rule" in self._data or self._data.get("status")
 
-    def _callback_helper(self, event):        
+    def _callback_helper(self, event):
         updated_data = self._data
         updated_data["value"]["value"] = event.new
         self._value_callback(updated_data)
 
         if self._data.get("status"):
-            self._status_callback(self._data["status"][event.new])
+            if self._data["type"] == "checkbox":
+                # parse the value
+                print(event.new)
+            else:
+                self._status_callback(self._data["status"][event.new])
 
     def _dropdown_helper(self, data: dict):
         self._panel = pn.widgets.Select(
             name='Value',
             options=data["options"]
         )
-        self._panel.value = data["options"][0]
+        if data["value"]:
+            self._panel.value = data["value"]
 
         # watch the selector and pass event updates back through the callback
         # self._panel.param.watch(self._callback_helper, "value")
@@ -69,9 +74,11 @@ class CustomMetricValue:
             name='Value',
             options=data["options"]
         )
+        if data["value"]:
+            self._panel.value = data["value"]
 
         # watch the selector and pass event updates back through the callback
         self._panel.param.watch(self._callback_helper, "value")
 
     def _rulebased_helper(self, data: dict):
-        self._panel = pn.pane("todo")
+        self._panel = pn.widgets.StaticText("Todo")
