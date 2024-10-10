@@ -33,6 +33,7 @@ class QCPanel:
 
     def update(self):
         self.get_data()
+        print('update')
         self.submit_button.disabled = True
 
     def get_data(self):
@@ -55,17 +56,15 @@ class QCPanel:
         self.evaluations = []
         for evaluations in self.data.evaluations:
             self.evaluations.append(
-                QCEvalPanel(parent=self, evaluation_data=evaluations)
+                QCEvalPanel(parent=self, qc_evaluation=evaluations)
             )
 
-        self.dirty = False
-
     def set_dirty(self, *event):
-        self.dirty = True
         self.submit_button.disabled = False
 
     def submit_changes(self, *event):
-        qc_update_to_id(self.id, self.data)
+        print(self.data)
+        # qc_update_to_id(self.id, self.data)
         self.submit_button.disabled = True
         self.hidden_html.object = "<script>window.location.reload();</script>"
 

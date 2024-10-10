@@ -7,7 +7,7 @@ from aind_qc_portal.utils import md_style, status_html
 
 class QCEvalPanel:
 
-    def __init__(self, parent, evaluation_data: dict):
+    def __init__(self, parent, qc_evaluation: QCEvaluation):
         """Build an Evaluation object, should only be called by QualityControl()
 
         Parameters
@@ -16,7 +16,7 @@ class QCEvalPanel:
             See aind_data_schema.core.quality_control Evaluation
         """
         self.parent = parent
-        self.update(evaluation_data)
+        self.update(qc_evaluation)
 
     def update(self, evaluation_data: QCEvaluation):
         self.data = evaluation_data

@@ -48,7 +48,7 @@ class CustomMetricValue:
 
     def _callback_helper(self, event):        
         updated_data = self._data
-        updated_data["value"] = event.new
+        updated_data["value"]["value"] = event.new
         self._value_callback(updated_data)
 
         if self._data.get("status"):

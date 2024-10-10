@@ -23,7 +23,6 @@ class SearchOptions(param.Parameterized):
         self.shame = []
 
         for record in meta_list:
-            print(record)
 
             record_split = record["name"].split("_")
             if len(record_split) >= 4:  # drop names that are junk

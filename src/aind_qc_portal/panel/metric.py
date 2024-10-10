@@ -1,5 +1,5 @@
 import panel as pn
-from aind_data_schema.core.quality_control import Status
+from aind_data_schema.core.quality_control import Status, QCMetric
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
 from aind_qc_portal.utils import md_style
@@ -7,7 +7,7 @@ from aind_qc_portal.utils import md_style
 
 class QCMetricPanel:
 
-    def __init__(self, parent, metric_data: dict):
+    def __init__(self, parent, qc_metric: QCMetric):
         """Build a Metric object, should only be called by Evaluation()
 
         Parameters
@@ -15,7 +15,7 @@ class QCMetricPanel:
         evaluation_data : dict
             See aind_data_schema.core.quality_control Evaluation
         """
-        self.data = metric_data
+        self.data = qc_metric
         self.parent = parent
         self.reference_img = None
     
