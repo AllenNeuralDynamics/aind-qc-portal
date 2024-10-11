@@ -17,12 +17,23 @@ from aind_qc_portal.utils import (
     df_timestamp_range,
     qc_color,
     update_schema_version,
+    AIND_COLORS,
+    OUTER_STYLE,
 )
 
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
 
-type_colors = {"raw": "yellow", "sorted-ks25": "blue", "nwb": "green"}
+# Define CSS to set the background color
+background_color = AIND_COLORS["dark_blue"]
+css = f"""
+body {{
+    background-color: {background_color} !important;
+}}
+"""
+
+# Add the custom CSS
+pn.config.raw_css.append(css)
 
 
 class AssetHistory(param.Parameterized):
@@ -202,7 +213,9 @@ else:
     error_string = ""
 
 md = f"""
-# QC Portal - Subject View
+<h1 style="color:{AIND_COLORS["dark_blue"]};">
+    QC Portal - Subject View
+</h1>
 This view shows the history of a single subject's asset records, back to their original raw dataset along with any derived assets. Select a single asset to view its quality control data.
 {error_string}
 """
@@ -219,6 +232,7 @@ col = pn.Column(
     asset_history.panel(),
     json_pane,
     min_width=660,
+    styles=OUTER_STYLE,
 )
 
 # Create the layout

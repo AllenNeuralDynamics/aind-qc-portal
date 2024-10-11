@@ -8,8 +8,21 @@ import json
 from datetime import datetime
 
 from aind_qc_portal.docdb.database import get_meta, API_GATEWAY_HOST, DATABASE, COLLECTION
-from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color, update_schema_version
+from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color, update_schema_version, OUTER_STYLE, AIND_COLORS
 from aind_data_schema.core.quality_control import QualityControl
+
+pn.extension()
+
+# Define CSS to set the background color
+background_color = AIND_COLORS["dark_blue"]
+css = f"""
+body {{
+    background-color: {background_color} !important;
+}}
+"""
+
+# Add the custom CSS
+pn.config.raw_css.append(css)
 
 
 class SearchOptions(param.Parameterized):
@@ -228,13 +241,15 @@ text_input.param.watch(textinput_update, 'value')
 
 
 md = f"""
-# Allen Institute for Neural Dynamics - QC Portal
-This portal allows you to search all existing metadata and explore the **quality control** file. Open the subject view to see the raw and derived assets related to a single record. Open the QC view to explore the quality control object for that record.
-Connected to: {API_GATEWAY_HOST}/{DATABASE}/{COLLECTION}
+<h1 style="color:{AIND_COLORS["dark_blue"]};">
+    Allen Institute for Neural Dynamics - QC Portal
+</h1>
+This portal allows you to search all existing metadata and explore the <span style="color:{AIND_COLORS["dark_blue"]}"><b>quality control</b></span> file. Open the subject view to see the raw and derived assets related to a single record. Open the QC view to explore the quality control object for that record.
+Connected to: <span style="color:{AIND_COLORS["light_blue"]}">{API_GATEWAY_HOST}/{DATABASE}/{COLLECTION}</span>
 """
 header = pn.pane.Markdown(md)
 
-col = pn.Column(header, left_col, dataframe_pane, min_width=660)
+col = pn.Column(header, left_col, dataframe_pane, min_width=700, styles=OUTER_STYLE)
 
 display = pn.Row(pn.HSpacer(), col, pn.HSpacer())
 

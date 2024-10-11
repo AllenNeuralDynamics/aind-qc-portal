@@ -6,6 +6,23 @@ from aind_data_schema.core.quality_control import QualityControl, Status
 ASSET_LINK_PREFIX = "/qc_asset_app?id="
 QC_LINK_PREFIX = "/qc_app?id="
 
+AIND_COLORS = colors = {
+    "dark_blue": "#003057",
+    "light_blue": "#2A7DE1",
+    "green": "#1D8649",
+    "yellow": "#FFB71B",
+    "grey": "#7C7C7F"
+}
+
+OUTER_STYLE = {
+    'background': '#ffffff',
+    'border-radius': '5px',
+    'border': '2px solid black',
+    'padding': '10px',
+    'box-shadow': '5px 5px 5px #bcbcbc',
+    'margin': "5px",
+}
+
 
 def update_schema_version(record: dict):
     if record.get("quality_control") and record.get("schema_version"):
@@ -16,11 +33,11 @@ def update_schema_version(record: dict):
 
 def status_html(status: Status):
     if status.value == "Pass":
-        color = "#6CF573"
+        color = AIND_COLORS["green"]
     elif status.value == "Pending":
-        color = "#657566"
+        color = AIND_COLORS["light_blue"]
     elif status.value == "Fail":
-        color = "#F5736C"
+        color = AIND_COLORS["yellow"]
     else:
         color = "#756575"
 
@@ -96,13 +113,13 @@ def qc_color(v):
         CSS style string
     """
     if v == "No QC":
-        return "background-color: yellow"
+        return f"background-color: {AIND_COLORS['yellow']}"
     elif v == "Pass":
-        return "background-color: green"
+        return f"background-color: {AIND_COLORS['green']}"
     elif v == "Fail":
-        return "background-color: red"
+        return f"background-color: {AIND_COLORS['yellow']}"
     elif v == "Pending":
-        return "background-color: blue"
+        return f"background-color: {AIND_COLORS['light_blue']}"
 
 
 def bincount2D(x, y, xbin=0, ybin=0, xlim=None, ylim=None, weights=None):
