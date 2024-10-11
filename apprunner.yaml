@@ -1,0 +1,22 @@
+version: 1.10 # Version of the AppRunner specification
+runtime: python311 # Runtime to use
+
+build:
+  commands:
+    build:
+      - pip3 install . # Install dependencies, assumes your app has a setup.py or pyproject.toml
+
+run:
+  runtime-version: 3.11 # Specify Python version
+  pre-run:
+    - pip3 install . # Install dependencies before the app starts
+  command: panel serve src/aind_qc_portal/qc_portal_app.py src/aind_qc_portal/qc_asset_app.py src/aind_qc_portal/qc_app.py --port 8080 --allow-websocket-origin=* --keep-alive 10000
+  network:
+    port: 8080 # Port that AppRunner will expose to the internet
+  env: # Define environment variables if needed
+    - name: API_GATEWAY_HOST
+      value: 'api.allenneuraldynamics-test.org'
+    - name: DATABASE
+      value: 'metadata_index'
+    - name: COLLECTION
+      value: 'data_assets'
