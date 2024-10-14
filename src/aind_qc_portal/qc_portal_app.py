@@ -8,21 +8,12 @@ import json
 from datetime import datetime
 
 from aind_qc_portal.docdb.database import get_meta, API_GATEWAY_HOST, DATABASE, COLLECTION
-from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color, update_schema_version, OUTER_STYLE, AIND_COLORS
+from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color, update_schema_version, OUTER_STYLE, AIND_COLORS, set_background
 from aind_data_schema.core.quality_control import QualityControl
 
 pn.extension()
 
-# Define CSS to set the background color
-background_color = AIND_COLORS["dark_blue"]
-css = f"""
-body {{
-    background-color: {background_color} !important;
-}}
-"""
-
-# Add the custom CSS
-pn.config.raw_css.append(css)
+set_background()
 
 
 class SearchOptions(param.Parameterized):
@@ -214,8 +205,6 @@ dataframe_pane = pn.pane.DataFrame(
     searchview.df_filtered(),
     escape=False,
     sizing_mode="stretch_both",
-    min_height=800,
-    max_height=1200,
     index=False,
 )
 

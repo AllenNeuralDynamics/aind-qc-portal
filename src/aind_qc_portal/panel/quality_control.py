@@ -7,7 +7,7 @@ from aind_data_schema.core.quality_control import QualityControl
 
 from aind_qc_portal.docdb.database import qc_from_id, qc_update_to_id
 from aind_qc_portal.panel.evaluation import QCEvalPanel
-from aind_qc_portal.utils import status_html, update_schema_version
+from aind_qc_portal.utils import status_html, update_schema_version, OUTER_STYLE
 
 
 class QCPanel(param.Parameterized):
@@ -157,12 +157,12 @@ class QCPanel(param.Parameterized):
         self.modality_selector.param.watch(self._update_modality_filter, "value")
         self.stage_selector.param.watch(self._update_stage_filter, "value")
 
-        header_col = pn.Column(header_row, pn.Row(self.modality_selector, self.stage_selector))
+        header_col = pn.Column(header_row, pn.Row(self.modality_selector, self.stage_selector), styles=OUTER_STYLE)
 
-        self.tabs = pn.Tabs(sizing_mode='stretch_width')
+        self.tabs = pn.Tabs(sizing_mode='stretch_width', styles=OUTER_STYLE)
         self.update_objects()
 
-        col = pn.Column(header_col, pn.layout.Divider(), self.tabs, self.hidden_html)
+        col = pn.Column(header_col, self.tabs, self.hidden_html)
 
         return col
 

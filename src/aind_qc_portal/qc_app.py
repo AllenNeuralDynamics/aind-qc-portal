@@ -7,10 +7,12 @@ import param
 alt.data_transformers.disable_max_rows()
 # from aind_qc_portal.search import search_bar
 from aind_qc_portal.panel.quality_control import QCPanel
+from aind_qc_portal.utils import set_background
 
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
-# pn.state.template.title = "AIND QC"
+
+set_background()
 
 
 # State sync

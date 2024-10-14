@@ -19,21 +19,13 @@ from aind_qc_portal.utils import (
     update_schema_version,
     AIND_COLORS,
     OUTER_STYLE,
+    set_background
 )
 
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
 
-# Define CSS to set the background color
-background_color = AIND_COLORS["dark_blue"]
-css = f"""
-body {{
-    background-color: {background_color} !important;
-}}
-"""
-
-# Add the custom CSS
-pn.config.raw_css.append(css)
+set_background()
 
 
 class AssetHistory(param.Parameterized):

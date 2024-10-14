@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import numpy as np
+import panel as pn
 from aind_data_schema.core.quality_control import QualityControl, Status
 
 ASSET_LINK_PREFIX = "/qc_asset_app?id="
@@ -12,7 +13,7 @@ AIND_COLORS = colors = {
     "green": "#1D8649",
     "yellow": "#FFB71B",
     "grey": "#7C7C7F",
-    "red": "FF5733",
+    "red": "#FF5733",
 }
 
 OUTER_STYLE = {
@@ -23,6 +24,18 @@ OUTER_STYLE = {
     'box-shadow': '5px 5px 5px #bcbcbc',
     'margin': "5px",
 }
+
+BACKGROUND_CSS = f"""
+body {{
+    background-color: {AIND_COLORS["dark_blue"]} !important;
+}}
+"""
+
+
+def set_background():
+
+    # Add the custom CSS
+    pn.config.raw_css.append(BACKGROUND_CSS)
 
 
 def update_schema_version(record: dict):
@@ -114,13 +127,15 @@ def qc_color(v):
         CSS style string
     """
     if v == "No QC":
-        return f"background-color: {AIND_COLORS['yellow']}"
+        color = AIND_COLORS['yellow']
     elif v == "Pass":
-        return f"background-color: {AIND_COLORS['green']}"
+        color = AIND_COLORS['green']
     elif v == "Fail":
-        return f"background-color: {AIND_COLORS['red']}"
+        color = AIND_COLORS['red']
     elif v == "Pending":
-        return f"background-color: {AIND_COLORS['light_blue']}"
+        color = AIND_COLORS['light_blue']
+    print(color)
+    return f"background-color: {color}"
 
 
 def bincount2D(x, y, xbin=0, ybin=0, xlim=None, ylim=None, weights=None):
