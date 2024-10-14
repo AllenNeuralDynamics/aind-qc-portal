@@ -9,8 +9,6 @@ API_GATEWAY_HOST = os.getenv("API_GATEWAY_HOST", "api.allenneuraldynamics-test.o
 DATABASE = os.getenv("DATABASE", "metadata_index")
 COLLECTION = os.getenv("COLLECTION", "data_assets")
 
-print(API_GATEWAY_HOST, DATABASE, COLLECTION)
-
 TIMEOUT_1M = 60
 TIMEOUT_1H = 60 * 60
 TIMEOUT_24H = 60 * 60 * 24
@@ -28,9 +26,12 @@ def qc_from_id(id: str):
 
 
 def qc_update_to_id(id: str, qc: QualityControl):
+    print('Uploading QC')
+    print(qc.model_dump())
     response = client.upsert_one_docdb_record(
         record={"_id": id, "quality_control": qc.model_dump()}
     )
+    print(response)
     if response.status_code != 200:
         print(response.json())
 
