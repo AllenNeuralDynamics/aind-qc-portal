@@ -11,7 +11,8 @@ AIND_COLORS = colors = {
     "light_blue": "#2A7DE1",
     "green": "#1D8649",
     "yellow": "#FFB71B",
-    "grey": "#7C7C7F"
+    "grey": "#7C7C7F",
+    "red": "FF5733",
 }
 
 OUTER_STYLE = {
@@ -37,7 +38,7 @@ def status_html(status: Status):
     elif status.value == "Pending":
         color = AIND_COLORS["light_blue"]
     elif status.value == "Fail":
-        color = AIND_COLORS["yellow"]
+        color = AIND_COLORS["red"]
     else:
         color = "#756575"
 
@@ -117,7 +118,7 @@ def qc_color(v):
     elif v == "Pass":
         return f"background-color: {AIND_COLORS['green']}"
     elif v == "Fail":
-        return f"background-color: {AIND_COLORS['yellow']}"
+        return f"background-color: {AIND_COLORS['red']}"
     elif v == "Pending":
         return f"background-color: {AIND_COLORS['light_blue']}"
 
