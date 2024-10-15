@@ -25,9 +25,11 @@ OUTER_STYLE = {
     'margin': "5px",
 }
 
+background_color = AIND_COLORS[pn.state.location.query_params["background"] if "background" in pn.state.location.query_params else "dark_blue"]
 BACKGROUND_CSS = f"""
 body {{
-    background-color: {AIND_COLORS["dark_blue"]} !important;
+    background-color: {background_color} !important;
+    background-image: url('/images/background.svg') !important;
 }}
 """
 
