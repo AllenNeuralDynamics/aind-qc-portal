@@ -58,12 +58,23 @@ class QCMetricPanel:
             _description_
         """
         if self._data.reference:
-            if self._data.reference == "ecephys-drift-map":
+            self._data.reference = "https://assets.holoviz.org/panel/samples/png_sample.png"
+            print(self._data.reference)
+            print("http" in self._data.reference)
+            if "http" in self._data.reference:
+                self.reference_img = pn.pane.Image(self._data.reference, sizing_mode='scale_width', max_width=1200)
+                # self.reference_img.js
+            elif "s3" in self._data.reference:
+                self.reference_img = pn.widgets.StaticText(f"s3 reference: {self._data.reference}")
+
+            elif self._data.reference == "ecephys-drift-map":
                 self.reference_img = ""
+
             else:
                 self.reference_img = (
                     f"Unable to parse {self.reference_img}"
                 )
+
         else:
             self.reference_img = "No references included"
 
@@ -118,6 +129,6 @@ class QCMetricPanel:
 
         header = pn.pane.Markdown(md)
 
-        col = pn.Column(header, pn.WidgetBox(value_widget, state_selector))
+        col = pn.Column(header, pn.WidgetBox(value_widget, state_selector), width=350)
 
         return col
