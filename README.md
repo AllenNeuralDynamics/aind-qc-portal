@@ -19,3 +19,15 @@ panel serve src/aind_qc_portal/qc_portal_app.py src/aind_qc_portal/qc_asset_app.
 ```
 
 (port is set to differentiate from aind-metadata-viz app)
+
+
+## CI/CD
+There is a `Dockerfile` which includes the entrypoint to launch the app.
+
+### Local dev
+1. Build the Docker image locally and run a Docker container:
+```sh
+docker build -t aind-qc-portal .
+docker run -e ALLOW_WEBSOCKET_ORIGIN=localhost:8000 -p 8000:8000 aind-qc-portal
+```
+2. Navigate to 'localhost:8000` to view the app.
