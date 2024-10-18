@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - dev
-      - ci-11-deploy-aws
 
 jobs:
   publish_ghcr:
