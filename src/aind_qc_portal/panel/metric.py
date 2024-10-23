@@ -2,9 +2,11 @@ import panel as pn
 from aind_data_schema.core.quality_control import Status, QCMetric, QCStatus
 from aind_data_schema.base import AwareDatetimeWithDefault
 from datetime import datetime
+import html
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
 from aind_qc_portal.utils import md_style
+from urllib.parse import urlparse
 
 
 class QCMetricPanel:
@@ -58,14 +60,18 @@ class QCMetricPanel:
             _description_
         """
         if self._data.reference:
-            self._data.reference = "https://assets.holoviz.org/panel/samples/png_sample.png"
-            print(self._data.reference)
-            print("http" in self._data.reference)
             if "http" in self._data.reference:
-                self.reference_img = pn.pane.Image(self._data.reference, sizing_mode='scale_width', max_width=1200)
-                # self.reference_img.js
+                parsed_url = urlparse(self._data.reference)
+
+                if parsed_url.path.endswith(".png") or parsed_url.path.endswith(".jpg"):
+                    self.reference_img = pn.pane.Image(self._data.reference, sizing_mode='scale_width', max_width=1200)
+                elif "neuroglancer" in self._data.reference:
+                    iframe_html = f'<iframe src="{self._data.reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
+                    self.reference_img = pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
+                else:
+                    self.reference_img = pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{self._data.reference}">link</a>')
             elif "s3" in self._data.reference:
-                self.reference_img = pn.widgets.StaticText(f"s3 reference: {self._data.reference}")
+                self.reference_img = pn.widgets.StaticText(value=f"s3 reference: {self._data.reference}")
 
             elif self._data.reference == "ecephys-drift-map":
                 self.reference_img = ""
