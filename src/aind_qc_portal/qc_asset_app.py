@@ -41,13 +41,15 @@ class AssetHistory(param.Parameterized):
 
         self.asset_name = get_subj_from_id(str(self.id))
 
-        self._records = get_assets_by_subj(self.asset_name)
-
-        self.parse_records()
+        if self.asset_name:
+            self._records = get_assets_by_subj(self.asset_name)
+            self.parse_records()
+        else:
+            self.df = None
 
     @property
     def records(self):
-        if self.has_id:
+        if self.has_id and self.df:
             return self._records
         else:
             return {}
@@ -140,6 +142,8 @@ class AssetHistory(param.Parameterized):
         """Create a plot showing the history of this asset, showing how assets were derived from each other"""
         if not self.has_id:
             return "No ID is set"
+        if not self.df:
+            return pn.widgets.StaticText(value=f"No data found for ID: {self.id}")
 
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(self.df)
@@ -182,13 +186,16 @@ class AssetHistory(param.Parameterized):
         )
 
         return df.style.map(qc_color, subset=["Status"])
-    
-    def panel(self):
-        panes = []
-        for group in set(self.df["group"]):
-            panes.append(pn.pane.DataFrame(self.asset_history_df(group), index=False, escape=False, width=660))
 
-        return pn.Column(*panes)
+    def panel(self):
+        if self.df:
+            panes = []
+            for group in set(self.df["group"]):
+                panes.append(pn.pane.DataFrame(self.asset_history_df(group), index=False, escape=False, width=660))
+
+            return pn.Column(*panes)
+        else:
+            return pn.pane.Markdown("")
 
 
 asset_history = AssetHistory()

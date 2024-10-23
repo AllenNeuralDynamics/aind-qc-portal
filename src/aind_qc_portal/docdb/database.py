@@ -22,6 +22,8 @@ client = MetadataDbClient(
 
 def qc_from_id(id: str):
     response = client.retrieve_docdb_records(filter_query={"_id": id}, limit=1)
+    if len(response) == 0:
+        return None
     return response[0]
 
 
@@ -49,6 +51,8 @@ def get_subj_from_id(id: str):
     response = client.aggregate_docdb_records(
         pipeline=[{"$match": {"_id": id}}, {"$project": {"subject": 1, "_id": 0}}]
     )
+    if len(response) == 0:
+        return None
     return response[0]["subject"]["subject_id"]
 
 

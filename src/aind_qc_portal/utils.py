@@ -136,7 +136,8 @@ def qc_color(v):
         color = AIND_COLORS['red']
     elif v == "Pending":
         color = AIND_COLORS['light_blue']
-    print(color)
+    else:
+        color = AIND_COLORS['grey']
     return f"background-color: {color}"
 
 
