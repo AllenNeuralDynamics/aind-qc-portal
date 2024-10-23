@@ -39,6 +39,9 @@ class QCPanel(param.Parameterized):
     def get_data(self):
         json_data = qc_from_id(self.id)
 
+        if not json_data:
+            return
+
         if "quality_control" in json_data:
             self._has_data = True
         else:
@@ -112,7 +115,7 @@ class QCPanel(param.Parameterized):
     def panel(self):
         """Build a Panel object representing this QC action"""
         if not self._has_data:
-            return pn.widgets.StaticText("No QC object available")
+            return pn.widgets.StaticText(value="No QC object available")
 
         # build the header
         md = f"""
