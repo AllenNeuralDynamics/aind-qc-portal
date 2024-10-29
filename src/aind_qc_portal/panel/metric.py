@@ -22,6 +22,8 @@ class QCMetricPanel:
         self._data = qc_metric
         self.parent = parent
         self.reference_img = None
+        self.hidden_html = pn.pane.HTML("")
+        self.hidden_html.visible = False
 
     @property
     def data(self):
@@ -36,15 +38,32 @@ class QCMetricPanel:
         self.parent.set_dirty()
 
     def set_status(self, event):
+        """Set the status from a Panel event
+
+        Parameters
+        ----------
+        event : Event
+        """
         self._set_status(Status(event.new))
 
     def _set_status(self, status):
+        """Set the status of this metric and record
+
+        Parameters
+        ----------
+        status : _type_
+            _description_
+        """
+        if pn.state.user == 'guest':
+            self.hidden_html.object = "<script>window.location.href = '/login';</script>"
+            return
+
         if not isinstance(status, Status):
             status = Status(status)
         print(f'Updating metric status to: {status.value}')
 
         self._data.status_history.append(QCStatus(
-            evaluator="[TODO]",
+            evaluator=f"{pn.state.user_info['given_name']} {pn.state.user_info['family_name']}",
             status=status,
             timestamp=datetime.now(),
         ))
@@ -135,6 +154,6 @@ class QCMetricPanel:
 
         header = pn.pane.Markdown(md)
 
-        col = pn.Column(header, pn.WidgetBox(value_widget, state_selector), width=350)
+        col = pn.Column(header, pn.WidgetBox(value_widget, state_selector), self.hidden_html, width=350)
 
         return col

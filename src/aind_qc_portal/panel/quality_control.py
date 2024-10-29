@@ -1,4 +1,4 @@
-# Build a single QCEvaluation panel
+"""Build the Quality Control Panel object"""
 import json
 
 import panel as pn
@@ -11,6 +11,7 @@ from aind_qc_portal.utils import status_html, update_schema_version, OUTER_STYLE
 
 
 class QCPanel(param.Parameterized):
+    """QualityControl Panel object"""
     modality_filter = param.String(default="All")
     stage_filter = param.String(default="All")
 
@@ -88,6 +89,13 @@ class QCPanel(param.Parameterized):
         self.submit_button.param.trigger('disabled')
 
     def submit_changes(self, *event):
+        """Submit the current state to DocDB"""
+
+        # redirect users to login 
+        if pn.state.user == 'guest':
+            self.hidden_html.object = "<script>window.location.href = '/login';</script>"
+            return
+
         qc_update_to_id(self.id, self.data)
         self.submit_button.disabled = True
         self.hidden_html.object = "<script>window.location.reload();</script>"

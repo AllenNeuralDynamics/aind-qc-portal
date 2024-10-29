@@ -49,7 +49,7 @@ class AssetHistory(param.Parameterized):
 
     @property
     def records(self):
-        if self.has_id and self.df:
+        if self.has_id and self.df is not None:
             return self._records
         else:
             return {}
@@ -142,7 +142,7 @@ class AssetHistory(param.Parameterized):
         """Create a plot showing the history of this asset, showing how assets were derived from each other"""
         if not self.has_id:
             return "No ID is set"
-        if not self.df:
+        if self.df is None:
             return pn.widgets.StaticText(value=f"No data found for ID: {self.id}")
 
         # Calculate the time range to show on the x axis
@@ -188,7 +188,7 @@ class AssetHistory(param.Parameterized):
         return df.style.map(qc_color, subset=["Status"])
 
     def panel(self):
-        if self.df:
+        if self.df is not None:
             panes = []
             for group in set(self.df["group"]):
                 panes.append(pn.pane.DataFrame(self.asset_history_df(group), index=False, escape=False, width=660))
