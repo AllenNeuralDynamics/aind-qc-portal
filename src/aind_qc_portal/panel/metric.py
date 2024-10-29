@@ -46,13 +46,12 @@ class QCMetricPanel:
         """
         self._set_status(Status(event.new))
 
-    def _set_status(self, status):
+    def _set_status(self, status: Status | str):
         """Set the status of this metric and record
 
         Parameters
         ----------
-        status : _type_
-            _description_
+        status : Status or str
         """
         if pn.state.user == 'guest':
             self.hidden_html.object = "<script>window.location.href = '/login';</script>"
@@ -61,6 +60,9 @@ class QCMetricPanel:
         if not isinstance(status, Status):
             status = Status(status)
         print(f'Updating metric status to: {status.value}')
+
+        if self.state_selector:
+            self.state_selector.value = status.value
 
         self._data.status_history.append(QCStatus(
             evaluator=f"{pn.state.user_info['given_name']} {pn.state.user_info['family_name']}",
@@ -71,12 +73,7 @@ class QCMetricPanel:
         self.parent.set_dirty()
 
     def panel(self):
-        """Build a Panel object representing this metric object
-
-        Returns
-        -------
-        _type_
-            _description_
+        """Build the full panel for this metric with both the metric status and reference media
         """
         if self._data.reference:
             if "http" in self._data.reference:
@@ -111,6 +108,8 @@ class QCMetricPanel:
         return row
 
     def metric_panel(self):
+        """Build the left column with the metric status and value, plus any custom controls"""
+
         # Markdown header to display current state
         md = f"""
 {md_style(10, f"Current state: {self._data.status.status.value}")}
@@ -146,14 +145,14 @@ class QCMetricPanel:
             value_widget.value = value
             value_widget.param.watch(self.set_value, 'value')
 
-        state_selector = pn.widgets.Select(value=self._data.status.status.value, options=["Pass", "Fail", "Pending"], name="Metric status")
+        self.state_selector = pn.widgets.Select(value=self._data.status.status.value, options=["Pass", "Fail", "Pending"], name="Metric status")
         if auto_state:
-            state_selector.disabled = True
+            self.state_selector.disabled = True
         else:
-            state_selector.param.watch(self.set_status, 'value')
+            self.state_selector.param.watch(self.set_status, 'value')
 
         header = pn.pane.Markdown(md)
 
-        col = pn.Column(header, pn.WidgetBox(value_widget, state_selector), self.hidden_html, width=350)
+        col = pn.Column(header, pn.WidgetBox(value_widget, self.state_selector), self.hidden_html, width=350)
 
         return col
