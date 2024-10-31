@@ -30,12 +30,17 @@ class QCMetricPanel:
         return self._data
 
     def set_value(self, event):
+        """Set value (event callback)"""
         self._set_value(event.new)
 
     def _set_value(self, value):
+        """Set the value of this metric
+        
+        Note that this doesn't automatically set_dirty in the parent
+        This is because the status_history needs to be updated before a new value can be saved
+        """
         print(f'Updating metric value to: {value}')
         self._data.value = value
-        self.parent.set_dirty()
 
     def set_status(self, event):
         """Set the status from a Panel event
