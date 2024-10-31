@@ -81,6 +81,8 @@ class QCMetricPanel:
 
                 if parsed_url.path.endswith(".png") or parsed_url.path.endswith(".jpg"):
                     self.reference_img = pn.pane.Image(self._data.reference, sizing_mode='scale_width', max_width=1200)
+                elif parsed_url.path.endswith(".mp4"):
+                    self.reference_img = pn.pane.Video(self._data.reference, controls=True, sizing_mode='scale_width', max_width=1200)
                 elif "neuroglancer" in self._data.reference:
                     iframe_html = f'<iframe src="{self._data.reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
                     self.reference_img = pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
