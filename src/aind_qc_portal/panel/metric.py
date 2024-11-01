@@ -3,6 +3,7 @@ from aind_data_schema.core.quality_control import Status, QCMetric, QCStatus
 from aind_data_schema.base import AwareDatetimeWithDefault
 from datetime import datetime
 import html
+import pandas as pd
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
 from aind_qc_portal.utils import md_style
@@ -96,6 +97,10 @@ class QCMetricPanel:
             elif "s3" in self._data.reference:
                 self.reference_img = pn.widgets.StaticText(value=f"s3 reference: {self._data.reference}")
 
+            elif "png" in self._data.reference:
+                # this is 
+                self.reference_img = pn.pane.Image(self._data.reference, sizing_mode='scale_width', max_width=1200)
+
             elif self._data.reference == "ecephys-drift-map":
                 self.reference_img = ""
 
@@ -136,6 +141,10 @@ class QCMetricPanel:
             value_widget = pn.widgets.FloatInput(name=name)
         elif isinstance(value, int):
             value_widget = pn.widgets.IntInput(name=name)
+        elif isinstance(value, list):
+            df = pd.DataFrame({'values': value})
+            value_widget = pn.pane.DataFrame(df)
+            auto_value = True
         elif isinstance(value, dict):
             try:
                 custom_value = CustomMetricValue(value, self._set_value, self._set_status)
