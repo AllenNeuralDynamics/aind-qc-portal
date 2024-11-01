@@ -22,7 +22,6 @@ dependencies = [
     'aind-data-access-api[docdb]',
     'panel>=1.5.3',
     'altair',
-    'zarr',
     'matplotlib',
     'boto3',
     's3fs',
