@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 
 from aind_qc_portal.docdb.database import get_meta, API_GATEWAY_HOST, DATABASE, COLLECTION
-from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color, update_schema_version, OUTER_STYLE, AIND_COLORS, set_background
+from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color, update_schema_version, OUTER_STYLE, AIND_COLORS, set_background, format_link
 from aind_data_schema.core.quality_control import QualityControl
 
 pn.extension()
@@ -58,8 +58,8 @@ class SearchOptions(param.Parameterized):
                     "subject_id": record_split[1],
                     "date": record_split[2],
                     "status": status,
-                    "subject_view": f'<a href="{ASSET_LINK_PREFIX}{record["_id"]}" target="_blank">link</a>',
-                    "qc_view": f'<a href="{QC_LINK_PREFIX}{record["_id"]}" target="_blank">link</a>',
+                    "subject_view": format_link(ASSET_LINK_PREFIX + record["_id"], "link"),
+                    "qc_view": format_link(QC_LINK_PREFIX + record["_id"], "link"),
                 }
                 data.append(r)
             else:

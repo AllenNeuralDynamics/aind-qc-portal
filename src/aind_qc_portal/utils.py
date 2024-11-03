@@ -6,6 +6,7 @@ from aind_data_schema.core.quality_control import QualityControl, Status
 
 ASSET_LINK_PREFIX = "/qc_asset_app?id="
 QC_LINK_PREFIX = "/qc_app?id="
+PROJECT_LINK_PREFIX = "/qc_project_app?project="
 
 AIND_COLORS = colors = {
     "dark_blue": "#003057",
@@ -34,13 +35,26 @@ body {{
 """
 
 
-def set_background():
+def format_link(link: str, text: str = "link"):
+    """Format link as an HTML anchor tag
 
+    Parameters
+    ----------
+    link : str
+    text : str, optional
+        by default "link"
+    """
+    return f'<a href="{link}" target="_blank">{text}</a>'
+
+
+def set_background():
+    """Set the background color of the Panel app"""
     # Add the custom CSS
     pn.config.raw_css.append(BACKGROUND_CSS)
 
 
 def update_schema_version(record: dict):
+    """Update the schema version in the quality control field"""
     if record.get("quality_control") and record.get("schema_version"):
         record["quality_control"]["schema_version"] = QualityControl.model_construct().schema_version
 
