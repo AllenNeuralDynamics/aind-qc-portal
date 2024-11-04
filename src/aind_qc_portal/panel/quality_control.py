@@ -93,7 +93,7 @@ class QCPanel(param.Parameterized):
 
         # redirect users to login 
         if pn.state.user == 'guest':
-            self.hidden_html.object = "<script>window.location.href = '/login';</script>"
+            self.hidden_html.object = f"<script>window.location.href = '/login?next={pn.state.location.href}';</script>"
             return
 
         qc_update_to_id(self.id, self.data)
