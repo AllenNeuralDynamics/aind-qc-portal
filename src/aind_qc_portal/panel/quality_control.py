@@ -25,7 +25,7 @@ class QCPanel(param.Parameterized):
         self.submit_button = pn.widgets.Button(
             name="Submit changes", button_type="success",
         )
-        self.submit_error = pn.widgets.StaticText("")
+        self.submit_error = pn.widgets.StaticText(value="")
         self.submit_col = pn.Column(self.submit_button, self.submit_error)
         pn.bind(self.submit_changes, self.submit_button, watch=True)
 
