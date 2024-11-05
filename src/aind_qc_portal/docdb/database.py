@@ -20,7 +20,17 @@ client = MetadataDbClient(
 )
 
 
-def qc_from_id(id: str):
+def qc_from_id(id: str) -> QualityControl | None:
+    """Get the QC object from the database for a given ID
+
+    Parameters
+    ----------
+    id : str
+
+    Returns
+    -------
+    QualityControl
+    """
     response = client.retrieve_docdb_records(filter_query={"_id": id}, limit=1)
     if len(response) == 0:
         return None
@@ -33,9 +43,7 @@ def qc_update_to_id(id: str, qc: QualityControl):
     response = client.upsert_one_docdb_record(
         record={"_id": id, "quality_control": qc.model_dump()}
     )
-    print(response)
-    if response.status_code != 200:
-        print(response.json())
+    return response
 
 
 @pn.cache()

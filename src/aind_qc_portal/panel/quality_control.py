@@ -21,9 +21,12 @@ class QCPanel(param.Parameterized):
 
         self.id = id
 
+        # Set up the submission area
         self.submit_button = pn.widgets.Button(
             name="Submit changes", button_type="success",
         )
+        self.submit_error = pn.widgets.StaticText("")
+        self.submit_col = pn.Column(self.submit_button, self.submit_error)
         pn.bind(self.submit_changes, self.submit_button, watch=True)
 
         self.hidden_html = pn.pane.HTML("")
@@ -96,9 +99,14 @@ class QCPanel(param.Parameterized):
             self.hidden_html.object = f"<script>window.location.href = '/login?next={pn.state.location.href}';</script>"
             return
 
-        qc_update_to_id(self.id, self.data)
-        self.submit_button.disabled = True
-        self.hidden_html.object = "<script>window.location.reload();</script>"
+        response = qc_update_to_id(self.id, self.data)
+
+        if response.status_code != 200:
+            self.submit_error.value = f"Error ({response.status_code}) submitting changes: {response.text}"
+            return
+        else:
+            self.submit_button.disabled = True
+            self.hidden_html.object = "<script>window.location.reload();</script>"
 
     def _update_modality_filter(self, event):
         self.modality_filter = event.new
@@ -149,10 +157,11 @@ class QCPanel(param.Parameterized):
         # state row
         state_row = pn.Row(state_pane, notes_box)
         quality_control_pane = pn.Column(header, state_row)
+        
 
         # button
         header_row = pn.Row(
-            quality_control_pane, pn.HSpacer(), self.submit_button
+            quality_control_pane, pn.HSpacer(), self.submit_col
         )
 
         # filters for modality and stage
