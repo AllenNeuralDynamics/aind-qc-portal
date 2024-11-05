@@ -103,6 +103,7 @@ class QCPanel(param.Parameterized):
 
         if response.status_code != 200:
             self.submit_error.value = f"Error ({response.status_code}) submitting changes: {response.text}"
+            self.submit_button.button_type = "danger"
             return
         else:
             self.submit_button.disabled = True
