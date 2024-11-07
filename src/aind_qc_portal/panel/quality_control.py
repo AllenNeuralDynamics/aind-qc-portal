@@ -69,6 +69,7 @@ class QCPanel(param.Parameterized):
 
         except Exception as e:
             self._data = None
+            self._has_data = False
             print(f"QC object failed to validate: {e}")
             return
 
