@@ -23,10 +23,11 @@ class QCPanel(param.Parameterized):
 
         # Set up the submission area
         self.submit_button = pn.widgets.Button(
-            name="Submit changes", button_type="success",
+            name="Submit changes" if pn.state.user != 'guest' else "Log in", button_type="success",
         )
+        self.submit_info = pn.widgets.StaticText(value=f"Logged in as {pn.state.user}" if pn.state.user != 'guest' else "Log in to submit changes")
         self.submit_error = pn.widgets.StaticText(value="")
-        self.submit_col = pn.Column(self.submit_button, self.submit_error)
+        self.submit_col = pn.Column(self.submit_button, self.submit_info, self.submit_error)
         pn.bind(self.submit_changes, self.submit_button, watch=True)
 
         self.hidden_html = pn.pane.HTML("")
@@ -38,7 +39,7 @@ class QCPanel(param.Parameterized):
 
     def update(self):
         self.get_data()
-        self.submit_button.disabled = True
+        self.submit_button.disabled = pn.state.user != 'guest'
 
     def get_data(self):
         json_data = qc_from_id(self.id)
@@ -50,7 +51,7 @@ class QCPanel(param.Parameterized):
             self._has_data = True
         else:
             return
-        
+
         if "data_description" in json_data:
             self.modalities = [modality['abbreviation'] for modality in json_data["data_description"]["modality"]]
 
