@@ -30,7 +30,8 @@ background_color = AIND_COLORS[pn.state.location.query_params["background"] if "
 BACKGROUND_CSS = f"""
 body {{
     background-color: {background_color} !important;
-    background-image: url('/images/background.svg') !important;
+    background-image: url('/images/aind-pattern.svg') !important;
+    background-size: 60%;
 }}
 """
 
