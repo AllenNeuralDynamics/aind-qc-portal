@@ -133,7 +133,7 @@ class QCPanel(param.Parameterized):
 
     def panel(self):
         """Build a Panel object representing this QC action"""
-        if not self._has_data:
+        if not self._has_data or not self._data:
             return pn.widgets.StaticText(value="No QC object available")
 
         # build the header
@@ -148,7 +148,7 @@ class QCPanel(param.Parameterized):
 
         state_md = f"""
 <span style="font-size:14pt">Current state:</span>
-<span style="font-size:12pt">Status: **{status_html(self._data.status) if self._has_data else ""}**</span>
+<span style="font-size:12pt">Status: **{status_html(self._data.status)}**</span>
 <span style="font-size:12pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
 """
 
