@@ -1,11 +1,12 @@
 """Build the Quality Control Panel object"""
 import json
+import boto3
 
 import panel as pn
 import param
 from aind_data_schema.core.quality_control import QualityControl
 
-from aind_qc_portal.docdb.database import qc_from_id, qc_update_to_id
+from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id
 from aind_qc_portal.panel.evaluation import QCEvalPanel
 from aind_qc_portal.utils import status_html, update_schema_version, OUTER_STYLE
 
@@ -20,6 +21,7 @@ class QCPanel(param.Parameterized):
         super().__init__(**params)
 
         self.id = id
+        self.s3_client = boto3.client('s3')
 
         # Set up the submission area
         self.submit_button = pn.widgets.Button(
@@ -42,7 +44,7 @@ class QCPanel(param.Parameterized):
         self.submit_button.disabled = pn.state.user != 'guest'
 
     def get_data(self):
-        json_data = qc_from_id(self.id)
+        json_data = record_from_id(self.id)
 
         if not json_data:
             return
@@ -54,6 +56,12 @@ class QCPanel(param.Parameterized):
 
         if "data_description" in json_data:
             self.modalities = [modality['abbreviation'] for modality in json_data["data_description"]["modality"]]
+
+        s3_location = json_data.get("location", None)
+        if s3_location:
+            s3_location = s3_location.replace("s3://", "")
+            self.s3_bucket = s3_location.split("/")[0]
+            self.s3_prefix = s3_location.split("/")[1]
 
         update_schema_version(json_data)
 

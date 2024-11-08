@@ -4,6 +4,7 @@ from aind_data_schema.base import AwareDatetimeWithDefault
 from datetime import datetime
 import html
 import pandas as pd
+from io import BytesIO
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
 from aind_qc_portal.utils import md_style
@@ -81,6 +82,7 @@ class QCMetricPanel:
     def panel(self):
         """Build the full panel for this metric with both the metric status and reference media
         """
+
         if self._data.reference:
             if "http" in self._data.reference:
                 parsed_url = urlparse(self._data.reference)
@@ -98,8 +100,16 @@ class QCMetricPanel:
                 self.reference_img = pn.widgets.StaticText(value=f"s3 reference: {self._data.reference}")
 
             elif "png" in self._data.reference:
-                # this is 
-                self.reference_img = pn.pane.Image(self._data.reference, sizing_mode='scale_width', max_width=1200)
+                # this is an S3 link to a relative asset
+
+                # strip asset name from reference, if needed
+                if self._data.reference.startswith("/"):
+                    self._data.reference = self._data.reference[self._data.reference.find("/", 1):]
+
+                print(f"Fetching {self.parent.s3_bucket}/{self.parent.s3_prefix + self._data.reference}")
+                response = self.parent.s3_client.get_object(Bucket=self.parent.s3_bucket, Key=self.parent.s3_prefix + self._data.reference)
+                image_data = BytesIO(response['Body'].read())
+                self.reference_img = pn.pane.Image(image_data, sizing_mode='scale_width', max_width=1200, max_height=2000)
 
             elif self._data.reference == "ecephys-drift-map":
                 self.reference_img = ""

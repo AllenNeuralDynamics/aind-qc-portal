@@ -17,7 +17,7 @@ set_background()
 
 # State sync
 class Settings(param.Parameterized):
-    id = param.String(default="a61f285e-c79b-46cd-b554-991d711b6e53")
+    id = param.String(default="4ceba2a9-ecb0-458e-b874-9923762d7725")
 
 
 settings = Settings()

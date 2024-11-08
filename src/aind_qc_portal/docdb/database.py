@@ -20,7 +20,7 @@ client = MetadataDbClient(
 )
 
 
-def qc_from_id(id: str) -> QualityControl | None:
+def record_from_id(id: str) -> dict | None:
     """Get the QC object from the database for a given ID
 
     Parameters
