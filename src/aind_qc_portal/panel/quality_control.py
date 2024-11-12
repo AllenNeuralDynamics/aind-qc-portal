@@ -146,7 +146,7 @@ class QCPanel(param.Parameterized):
 
         # build the header
         md = f"""
-# Quality control for {self.asset_name}
+<span style="font-size:14pt">Quality control for {self.asset_name}</span>
 """
         header = pn.pane.Markdown(md)
 
@@ -155,9 +155,9 @@ class QCPanel(param.Parameterized):
         failing_eval_str = ""
 
         state_md = f"""
-<span style="font-size:14pt">Current state:</span>
-<span style="font-size:12pt">Status: **{status_html(self._data.status)}**</span>
-<span style="font-size:12pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
+<span style="font-size:12pt">Current state:</span>
+<span style="font-size:10pt">Status: **{status_html((self._data.status()))}**</span>
+<span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
 """
 
         state_pane = pn.pane.Markdown(state_md)

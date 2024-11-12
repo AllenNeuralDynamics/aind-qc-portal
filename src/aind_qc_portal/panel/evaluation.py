@@ -46,7 +46,7 @@ class QCEvalPanel:
 
         md = f"""
 {md_style(12, self._data.description if self._data.description else "*no description provided*")}
-{md_style(8, f"Current state: **{status_html(self._data.status)}**")}
+{md_style(8, f"Current state: **{status_html(self._data.status())}**")}
 {md_style(8, f"Contains **{len(self._data.metrics)}** metrics. {allow_failing_str}")}
 """
         

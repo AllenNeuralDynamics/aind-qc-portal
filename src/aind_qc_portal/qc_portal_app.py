@@ -37,7 +37,7 @@ class SearchOptions(param.Parameterized):
 
                     try:
                         qc = QualityControl.model_validate_json(json.dumps(record["quality_control"]))
-                        status = qc.status.value
+                        status = qc.status().value
                     except Exception as e:
                         print(f"QC object failed to validate: {e}")
                         status = "Invalid QC"

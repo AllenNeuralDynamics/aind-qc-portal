@@ -94,7 +94,7 @@ class AssetHistory(param.Parameterized):
 
             if "quality_control" in record and record["quality_control"]:
                 qc = QualityControl.model_validate_json(json.dumps(record["quality_control"]))
-                status = qc.status.value
+                status = qc.status().value
             else:
                 status = "No QC"
 
