@@ -160,6 +160,7 @@ class QCMetricPanel:
 
         return col
 
+
 def _media_panel(reference, parent):
     """Get the Panel media object for this reference URL
 
@@ -181,18 +182,18 @@ def _media_panel(reference, parent):
         else:
             return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
     elif "s3" in reference:
-        return pn.widgets.StaticText(value=f"s3 reference: {reference}")
+        bucket = reference.split("/")[2]
+        key = "/".join(reference.split("/")[3:])
+        media_data = _get_s3_asset(parent.s3_client, bucket, key)
+        # [TODO] this needs to handle different media types
+        return pn.pane.Image(media_data, sizing_mode='scale_width', max_width=1200, max_height=2000)
 
     elif "png" in reference:
-        # this is an S3 link to a relative asset
-
-        # strip asset name from reference, if needed
         if reference.startswith("/"):
             reference = reference[reference.find("/", 1):]
 
-        print(f"Fetching {parent.s3_bucket}/{parent.s3_prefix + reference}")
-        response = parent.s3_client.get_object(Bucket=parent.s3_bucket, Key=parent.s3_prefix + reference)
-        image_data = BytesIO(response['Body'].read())
+        image_data = _get_s3_asset(parent.s3_client, parent.s3_bucket, parent.s3_prefix + reference)
+        # [TODO] this needs to handle different media types
         return pn.pane.Image(image_data, sizing_mode='scale_width', max_width=1200, max_height=2000)
 
     elif reference == "ecephys-drift-map":
@@ -200,3 +201,43 @@ def _media_panel(reference, parent):
 
     else:
         return f"Unable to parse {reference}"
+
+
+# def _parse_type(reference, media_data):
+#     """Interpret the media type from the reference string
+
+#     Parameters
+#     ----------
+#     reference : _type_
+#         _description_
+#     media_data : _type_
+#         _description_
+#     """
+#     if parsed_url.path.endswith(".png") or parsed_url.path.endswith(".jpg"):
+#         return pn.pane.Image(reference, sizing_mode='scale_width', max_width=1200)
+#     elif parsed_url.path.endswith(".mp4"):
+#         return pn.pane.Video(reference, controls=True, sizing_mode='scale_width', max_width=1200)
+#     elif "neuroglancer" in reference:
+#         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
+#         return pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
+#     else:
+#         return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
+
+
+def _get_s3_asset(s3_client, bucket, key):
+    """Get an S3 asset from the given bucket and key
+
+    Parameters
+    ----------
+    s3_client : boto3.client
+        S3 client object
+    bucket : str
+        S3 bucket name
+    key : str
+        S3 key name
+    """
+    try:
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        return BytesIO(response['Body'].read())
+    except Exception as e:
+        return f"[ERROR] Failed to fetch asset {bucket}/{key}: {e}"
