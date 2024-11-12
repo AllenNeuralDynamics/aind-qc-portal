@@ -84,40 +84,7 @@ class QCMetricPanel:
         """
 
         if self._data.reference:
-            if "http" in self._data.reference:
-                parsed_url = urlparse(self._data.reference)
-
-                if parsed_url.path.endswith(".png") or parsed_url.path.endswith(".jpg"):
-                    self.reference_img = pn.pane.Image(self._data.reference, sizing_mode='scale_width', max_width=1200)
-                elif parsed_url.path.endswith(".mp4"):
-                    self.reference_img = pn.pane.Video(self._data.reference, controls=True, sizing_mode='scale_width', max_width=1200)
-                elif "neuroglancer" in self._data.reference:
-                    iframe_html = f'<iframe src="{self._data.reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
-                    self.reference_img = pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
-                else:
-                    self.reference_img = pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{self._data.reference}">link</a>')
-            elif "s3" in self._data.reference:
-                self.reference_img = pn.widgets.StaticText(value=f"s3 reference: {self._data.reference}")
-
-            elif "png" in self._data.reference:
-                # this is an S3 link to a relative asset
-
-                # strip asset name from reference, if needed
-                if self._data.reference.startswith("/"):
-                    self._data.reference = self._data.reference[self._data.reference.find("/", 1):]
-
-                print(f"Fetching {self.parent.s3_bucket}/{self.parent.s3_prefix + self._data.reference}")
-                response = self.parent.s3_client.get_object(Bucket=self.parent.s3_bucket, Key=self.parent.s3_prefix + self._data.reference)
-                image_data = BytesIO(response['Body'].read())
-                self.reference_img = pn.pane.Image(image_data, sizing_mode='scale_width', max_width=1200, max_height=2000)
-
-            elif self._data.reference == "ecephys-drift-map":
-                self.reference_img = ""
-
-            else:
-                self.reference_img = (
-                    f"Unable to parse {self.reference_img}"
-                )
+            self.reference_img = _media_panel(self._data.reference)
 
         else:
             self.reference_img = "No references included"
@@ -187,3 +154,44 @@ class QCMetricPanel:
         col = pn.Column(header, pn.WidgetBox(value_widget, self.state_selector), self.hidden_html, width=350)
 
         return col
+
+def _media_panel(reference, parent):
+    """Get the Panel media object for this reference URL
+
+    Parameters
+    ----------
+    reference : _type_
+        _description_
+    """
+    if "http" in reference:
+        parsed_url = urlparse(reference)
+
+        if parsed_url.path.endswith(".png") or parsed_url.path.endswith(".jpg"):
+            return pn.pane.Image(reference, sizing_mode='scale_width', max_width=1200)
+        elif parsed_url.path.endswith(".mp4"):
+            return pn.pane.Video(reference, controls=True, sizing_mode='scale_width', max_width=1200)
+        elif "neuroglancer" in reference:
+            iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
+            return pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
+        else:
+            return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
+    elif "s3" in reference:
+        return pn.widgets.StaticText(value=f"s3 reference: {reference}")
+
+    elif "png" in reference:
+        # this is an S3 link to a relative asset
+
+        # strip asset name from reference, if needed
+        if reference.startswith("/"):
+            reference = reference[reference.find("/", 1):]
+
+        print(f"Fetching {parent.s3_bucket}/{parent.s3_prefix + reference}")
+        response = parent.s3_client.get_object(Bucket=parent.s3_bucket, Key=parent.s3_prefix + reference)
+        image_data = BytesIO(response['Body'].read())
+        return pn.pane.Image(image_data, sizing_mode='scale_width', max_width=1200, max_height=2000)
+
+    elif reference == "ecephys-drift-map":
+        return ""
+
+    else:
+        return f"Unable to parse {reference}"
