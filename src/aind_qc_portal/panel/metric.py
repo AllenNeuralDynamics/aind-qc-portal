@@ -156,14 +156,19 @@ class QCMetricPanel:
             value_widget = pn.pane.DataFrame(df)
             auto_value = True
         elif isinstance(value, dict):
-            try:
-                custom_value = CustomMetricValue(value, self._set_value, self._set_status)
-                auto_value = True
-                auto_state = custom_value.auto_state
-                value_widget = custom_value.panel
-            except ValueError as e:
-                print(e)
-                value_widget = pn.widgets.JSONEditor(name=name)
+            # first, check if every key/value pair has the same length, if so coerce to a dataframe
+            if all([len(v) == len(value[list(value.keys())[0]]) for v in value.values()]):
+                df = pd.DataFrame(value)
+                value_widget = pn.pane.DataFrame(df)
+            else:
+                try:
+                    custom_value = CustomMetricValue(value, self._set_value, self._set_status)
+                    auto_value = True
+                    auto_state = custom_value.auto_state
+                    value_widget = custom_value.panel
+                except ValueError as e:
+                    print(e)
+                    value_widget = pn.widgets.JSONEditor(name=name)
         else:
             value_widget = pn.pane(f"Can't deal with type {type(value)}")
 
