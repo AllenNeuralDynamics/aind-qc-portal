@@ -16,19 +16,20 @@ CSS = """
   height: 24px;
   z-index: 10000;
   opacity: 1;
-  color: grey;
+  color: white;
   transition-delay: 0.5s;
   transition: 0.5s;
   cursor: pointer;
+  border-radius:4px;
 }
 
 .fullscreen-button:hover {
   transition: 0.5s;
-  color: white;
+  background-color: black;
 }
 
 .fullscreen-button:focus {
-  color: white;
+  background-color: black;
 }
 .pn-container, .object-container {
     height: 100%;
@@ -108,6 +109,11 @@ class Media():
         self.object = self.parse_reference(reference)
 
     def parse_reference(self, reference):
+        if ';' in reference:
+            return pn.layout.Swipe(
+                self.parse_reference(reference.split(';')[0]),
+                self.parse_reference(reference.split(';')[1]),
+            )
         if "http" in reference:
             parsed_url = urlparse(reference)
 
