@@ -84,40 +84,12 @@ class QCMetricPanel:
         """
 
         if self._data.reference:
-            if "http" in self._data.reference:
-                parsed_url = urlparse(self._data.reference)
-
-                if parsed_url.path.endswith(".png") or parsed_url.path.endswith(".jpg"):
-                    self.reference_img = pn.pane.Image(self._data.reference, sizing_mode='scale_width', max_width=1200)
-                elif parsed_url.path.endswith(".mp4"):
-                    self.reference_img = pn.pane.Video(self._data.reference, controls=True, sizing_mode='scale_width', max_width=1200)
-                elif "neuroglancer" in self._data.reference:
-                    iframe_html = f'<iframe src="{self._data.reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
-                    self.reference_img = pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
-                else:
-                    self.reference_img = pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{self._data.reference}">link</a>')
-            elif "s3" in self._data.reference:
-                self.reference_img = pn.widgets.StaticText(value=f"s3 reference: {self._data.reference}")
-
-            elif "png" in self._data.reference:
-                # this is an S3 link to a relative asset
-
-                # strip asset name from reference, if needed
-                if self._data.reference.startswith("/"):
-                    self._data.reference = self._data.reference[self._data.reference.find("/", 1):]
-
-                print(f"Fetching {self.parent.s3_bucket}/{self.parent.s3_prefix + self._data.reference}")
-                response = self.parent.s3_client.get_object(Bucket=self.parent.s3_bucket, Key=self.parent.s3_prefix + self._data.reference)
-                image_data = BytesIO(response['Body'].read())
-                self.reference_img = pn.pane.Image(image_data, sizing_mode='scale_width', max_width=1200, max_height=2000)
-
-            elif self._data.reference == "ecephys-drift-map":
-                self.reference_img = ""
-
-            else:
-                self.reference_img = (
-                    f"Unable to parse {self.reference_img}"
+            if ';' in self._data.reference:
+                self.reference_img = pn.layout.Swipe(
+                    _media_panel(self._data.reference.split(';')[0], self.parent),
+                    _media_panel(self._data.reference.split(';')[1], self.parent),
                 )
+            self.reference_img = _media_panel(self._data.reference, self.parent)
 
         else:
             self.reference_img = "No references included"
@@ -156,14 +128,19 @@ class QCMetricPanel:
             value_widget = pn.pane.DataFrame(df)
             auto_value = True
         elif isinstance(value, dict):
-            try:
-                custom_value = CustomMetricValue(value, self._set_value, self._set_status)
-                auto_value = True
-                auto_state = custom_value.auto_state
-                value_widget = custom_value.panel
-            except ValueError as e:
-                print(e)
-                value_widget = pn.widgets.JSONEditor(name=name)
+            # first, check if every key/value pair has the same length, if so coerce to a dataframe
+            if all([len(v) == len(value[list(value.keys())[0]]) for v in value.values()]):
+                df = pd.DataFrame(value)
+                value_widget = pn.pane.DataFrame(df)
+            else:
+                try:
+                    custom_value = CustomMetricValue(value, self._set_value, self._set_status)
+                    auto_value = True
+                    auto_state = custom_value.auto_state
+                    value_widget = custom_value.panel
+                except ValueError as e:
+                    print(e)
+                    value_widget = pn.widgets.JSONEditor(name=name)
         else:
             value_widget = pn.pane(f"Can't deal with type {type(value)}")
 
@@ -182,3 +159,85 @@ class QCMetricPanel:
         col = pn.Column(header, pn.WidgetBox(value_widget, self.state_selector), self.hidden_html, width=350)
 
         return col
+
+
+def _media_panel(reference, parent):
+    """Get the Panel media object for this reference URL
+
+    Parameters
+    ----------
+    reference : _type_
+        _description_
+    """
+    if "http" in reference:
+        parsed_url = urlparse(reference)
+
+        if parsed_url.path.endswith(".png") or parsed_url.path.endswith(".jpg"):
+            return pn.pane.Image(reference, sizing_mode='scale_width', max_width=1200)
+        elif parsed_url.path.endswith(".mp4"):
+            return pn.pane.Video(reference, controls=True, sizing_mode='scale_width', max_width=1200)
+        elif "neuroglancer" in reference:
+            iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
+            return pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
+        else:
+            return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
+    elif "s3" in reference:
+        bucket = reference.split("/")[2]
+        key = "/".join(reference.split("/")[3:])
+        media_data = _get_s3_asset(parent.s3_client, bucket, key)
+        # [TODO] this needs to handle different media types
+        return pn.pane.Image(media_data, sizing_mode='scale_width', max_width=1200, max_height=2000)
+
+    elif "png" in reference:
+        if reference.startswith("/"):
+            reference = reference[reference.find("/", 1):]
+
+        image_data = _get_s3_asset(parent.s3_client, parent.s3_bucket, parent.s3_prefix + reference)
+        # [TODO] this needs to handle different media types
+        return pn.pane.Image(image_data, sizing_mode='scale_width', max_width=1200, max_height=2000)
+
+    elif reference == "ecephys-drift-map":
+        return ""
+
+    else:
+        return f"Unable to parse {reference}"
+
+
+# def _parse_type(reference, media_data):
+#     """Interpret the media type from the reference string
+
+#     Parameters
+#     ----------
+#     reference : _type_
+#         _description_
+#     media_data : _type_
+#         _description_
+#     """
+#     if parsed_url.path.endswith(".png") or parsed_url.path.endswith(".jpg"):
+#         return pn.pane.Image(reference, sizing_mode='scale_width', max_width=1200)
+#     elif parsed_url.path.endswith(".mp4"):
+#         return pn.pane.Video(reference, controls=True, sizing_mode='scale_width', max_width=1200)
+#     elif "neuroglancer" in reference:
+#         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
+#         return pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
+#     else:
+#         return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
+
+
+def _get_s3_asset(s3_client, bucket, key):
+    """Get an S3 asset from the given bucket and key
+
+    Parameters
+    ----------
+    s3_client : boto3.client
+        S3 client object
+    bucket : str
+        S3 bucket name
+    key : str
+        S3 key name
+    """
+    try:
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        return BytesIO(response['Body'].read())
+    except Exception as e:
+        return f"[ERROR] Failed to fetch asset {bucket}/{key}: {e}"
