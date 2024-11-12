@@ -84,7 +84,12 @@ class QCMetricPanel:
         """
 
         if self._data.reference:
-            self.reference_img = _media_panel(self._data.reference)
+            if ';' in self._data.reference:
+                self.reference_img = pn.layout.Swipe(
+                    _media_panel(self._data.reference.split(';')[0], self.parent),
+                    _media_panel(self._data.reference.split(';')[1], self.parent),
+                )
+            self.reference_img = _media_panel(self._data.reference, self.parent)
 
         else:
             self.reference_img = "No references included"
