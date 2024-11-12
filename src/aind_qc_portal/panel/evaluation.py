@@ -42,7 +42,7 @@ class QCEvalPanel:
         for metric in self.metrics:
             objects.append(metric.panel())
 
-        allow_failing_str = "Metrics are allowed to fail in this evaluation." if self._data.allow_failed_metrics else ""
+        allow_failing_str = "Metrics are allowed to fail." if self._data.allow_failed_metrics else ""
 
         md = f"""
 {md_style(12, self._data.description if self._data.description else "*no description provided*")}
@@ -57,7 +57,10 @@ class QCEvalPanel:
             value=self._data.notes, placeholder="no notes provided"
         )
 
-        notes.param.watch(self.set_notes, "value")
+        if pn.state.user == 'guest':
+            notes.disabled = True
+        else:
+            notes.param.watch(self.set_notes, "value")
 
         header_row = pn.Row(header, notes)
 

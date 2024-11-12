@@ -1,14 +1,12 @@
 import panel as pn
 from aind_data_schema.core.quality_control import Status, QCMetric, QCStatus
-from aind_data_schema.base import AwareDatetimeWithDefault
 from datetime import datetime
-import html
 import pandas as pd
 from io import BytesIO
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
+from aind_qc_portal.panel.media import Media
 from aind_qc_portal.utils import md_style
-from urllib.parse import urlparse
 
 
 class QCMetricPanel:
@@ -84,13 +82,7 @@ class QCMetricPanel:
         """
 
         if self._data.reference:
-            if ';' in self._data.reference:
-                self.reference_img = pn.layout.Swipe(
-                    _media_panel(self._data.reference.split(';')[0], self.parent),
-                    _media_panel(self._data.reference.split(';')[1], self.parent),
-                )
-            self.reference_img = _media_panel(self._data.reference, self.parent)
-
+            self.reference_img = Media(self._data.reference, self.parent).panel()
         else:
             self.reference_img = "No references included"
 
@@ -144,6 +136,9 @@ class QCMetricPanel:
         else:
             value_widget = pn.pane(f"Can't deal with type {type(value)}")
 
+        if pn.state.user == 'guest':
+            value_widget.disabled = True
+
         if not auto_value:
             value_widget.value = value
             value_widget.param.watch(self.set_value, 'value')
@@ -159,81 +154,3 @@ class QCMetricPanel:
         col = pn.Column(header, pn.WidgetBox(value_widget, self.state_selector), self.hidden_html, width=350)
 
         return col
-
-
-def _media_panel(reference, parent):
-    """Get the Panel media object for this reference URL
-
-    Parameters
-    ----------
-    reference : _type_
-        _description_
-    """
-    if "http" in reference:
-        parsed_url = urlparse(reference)
-
-        if parsed_url.path.endswith(".png") or parsed_url.path.endswith(".jpg"):
-            return pn.pane.Image(reference, sizing_mode='scale_width', max_width=1200)
-        elif parsed_url.path.endswith(".mp4"):
-            return pn.pane.Video(reference, controls=True, sizing_mode='scale_width', max_width=1200)
-        elif "neuroglancer" in reference:
-            iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
-            return pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
-        else:
-            return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
-    elif "s3" in reference:
-        bucket = reference.split("/")[2]
-        key = "/".join(reference.split("/")[3:])
-        return _get_s3_asset(parent.s3_client, bucket, key)
-
-    elif "png" in reference:
-        return _get_s3_asset(parent.s3_client, parent.s3_bucket, parent.s3_prefix + reference)
-
-    elif reference == "ecephys-drift-map":
-        return ""
-
-    else:
-        return f"Unable to parse {reference}"
-
-
-def _parse_type(reference, data):
-    """Interpret the media type from the reference string
-
-    Parameters
-    ----------
-    reference : _type_
-        _description_
-    data : _type_
-        _description_
-    """
-    if reference.endswith(".png") or reference.endswith(".jpg"):
-        return pn.pane.Image(data, sizing_mode='scale_width', max_width=1200)
-    elif reference.endswith(".mp4"):
-        return pn.pane.Video(reference, controls=True, sizing_mode='scale_width', max_width=1200)
-    elif "neuroglancer" in reference:
-        iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
-        return pn.pane.HTML(iframe_html, sizing_mode='stretch_both')
-    elif "http" in reference:
-        return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
-    else:
-        return pn.widgets.StaticText(value=data)
-
-
-def _get_s3_asset(s3_client, bucket, key):
-    """Get an S3 asset from the given bucket and key
-
-    Parameters
-    ----------
-    s3_client : boto3.client
-        S3 client object
-    bucket : str
-        S3 bucket name
-    key : str
-        S3 key name
-    """
-    try:
-        response = s3_client.get_object(Bucket=bucket, Key=key)
-        data = BytesIO(response['Body'].read())
-        return _parse_type(key, data)
-    except Exception as e:
-        return f"[ERROR] Failed to fetch asset {bucket}/{key}: {e}"

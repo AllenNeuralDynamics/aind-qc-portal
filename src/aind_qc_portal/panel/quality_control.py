@@ -38,7 +38,34 @@ class QCPanel(param.Parameterized):
 
         self._has_data = False
 
+        self.build_fullscreen()
         self.update()
+
+    def build_fullscreen(self):
+        fullscreen_html = """
+<div id="fullscreen-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background-color:rgba(0,0,0,0.8); z-index:1000;">
+  <div style="position:relative; width:90%; height:90%; margin:auto; top:5%; display:flex; justify-content:center; align-items:center;">
+    <img id="fullscreen-image" src="https://placekitten.com/800/400" style="max-width:100%; max-height:100%;" />
+  </div>
+  <span id="close-btn" style="position:absolute; top:10px; right:20px; font-size:2em; color:white; cursor:pointer;">&times;</span>
+</div>
+
+<script>
+  // JavaScript to toggle modal visibility
+  function openFullscreen() {
+    document.getElementById("fullscreen-modal").style.display = "block";
+  }
+  function closeFullscreen() {
+    document.getElementById("fullscreen-modal").style.display = "none";
+  }
+  // Event listeners for close button and escape key
+  document.getElementById("close-btn").onclick = closeFullscreen;
+  document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") closeFullscreen();
+  });
+</script>
+"""
+        self.fullscreen = pn.pane.HTML(fullscreen_html, width=0, height=0)
 
     def update(self):
         self.get_data()
@@ -187,7 +214,10 @@ class QCPanel(param.Parameterized):
         state_pane = pn.pane.Markdown(state_md)
 
         notes_box = pn.widgets.TextAreaInput(name='Notes:', value=self._data.notes, placeholder="no notes provided")
-        notes_box.param.watch(self.set_dirty, "value")
+        if pn.state.user == 'guest':
+            notes_box.disabled = True
+        else:
+            notes_box.param.watch(self.set_dirty, "value")
 
         # state row
         state_row = pn.Row(state_pane, notes_box, self.status_panel())
@@ -216,7 +246,7 @@ class QCPanel(param.Parameterized):
         self.tabs = pn.Tabs(sizing_mode='stretch_width', styles=OUTER_STYLE)
         self.update_objects()
 
-        col = pn.Column(header_col, self.tabs, self.hidden_html)
+        col = pn.Column(self.fullscreen, header_col, self.tabs, self.hidden_html)
 
         return col
 
