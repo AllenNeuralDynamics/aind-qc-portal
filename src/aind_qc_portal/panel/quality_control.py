@@ -3,6 +3,7 @@ import json
 import boto3
 
 import panel as pn
+import pandas as pd
 import param
 from aind_data_schema.core.quality_control import QualityControl
 
@@ -139,6 +140,30 @@ class QCPanel(param.Parameterized):
 
         self.tabs.objects = objects
 
+    def status_panel(self):
+        """Build a Panel table that shows the current status of all evaluations"""
+        # We'll loop over stage and modality to build a table
+        
+        data = []
+        for modality in self.modalities:
+            for stage in self.stages:
+                data.append({
+                    "Modality": modality,
+                    "Stage": stage,
+                    "Status": status_html(self._data.status(modality=modality, stage=stage))
+                })
+
+        df = pd.DataFrame(data, columns=["Modality", "Stage", "Status"])
+
+        # Reshape the DataFrame using pivot_table
+        df_squashed = df.pivot_table(index="Stage", columns="Modality", values="Status", aggfunc="first")
+
+        # Optional: Clean up column names by flattening the MultiIndex if needed
+        df_squashed.columns.name = None
+        df_squashed.reset_index(inplace=True)
+
+        return pn.pane.DataFrame(df_squashed, index=False, escape=False)
+
     def panel(self):
         """Build a Panel object representing this QC action"""
         if not self._has_data or not self._data:
@@ -159,16 +184,14 @@ class QCPanel(param.Parameterized):
 <span style="font-size:10pt">Status: **{status_html((self._data.status()))}**</span>
 <span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
 """
-
         state_pane = pn.pane.Markdown(state_md)
 
         notes_box = pn.widgets.TextAreaInput(name='Notes:', value=self._data.notes, placeholder="no notes provided")
         notes_box.param.watch(self.set_dirty, "value")
 
         # state row
-        state_row = pn.Row(state_pane, notes_box)
-        quality_control_pane = pn.Column(header, state_row)
-        
+        state_row = pn.Row(state_pane, notes_box, self.status_panel())
+        quality_control_pane = pn.Column(header, state_row)        
 
         # button
         header_row = pn.Row(
