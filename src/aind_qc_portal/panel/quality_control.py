@@ -1,4 +1,5 @@
 """Build the Quality Control Panel object"""
+
 import json
 import boto3
 
@@ -9,11 +10,16 @@ from aind_data_schema.core.quality_control import QualityControl
 
 from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id
 from aind_qc_portal.panel.evaluation import QCEvalPanel
-from aind_qc_portal.utils import status_html, update_schema_version, OUTER_STYLE
+from aind_qc_portal.utils import (
+    status_html,
+    update_schema_version,
+    OUTER_STYLE,
+)
 
 
 class QCPanel(param.Parameterized):
     """QualityControl Panel object"""
+
     modality_filter = param.String(default="All")
     stage_filter = param.String(default="All")
 
@@ -22,15 +28,24 @@ class QCPanel(param.Parameterized):
         super().__init__(**params)
 
         self.id = id
-        self.s3_client = boto3.client('s3')
+        self.s3_client = boto3.client("s3")
 
         # Set up the submission area
         self.submit_button = pn.widgets.Button(
-            name="Submit changes" if pn.state.user != 'guest' else "Log in", button_type="success",
+            name="Submit changes" if pn.state.user != "guest" else "Log in",
+            button_type="success",
         )
-        self.submit_info = pn.widgets.StaticText(value=f"Logged in as {pn.state.user}" if pn.state.user != 'guest' else "Log in to submit changes")
+        self.submit_info = pn.widgets.StaticText(
+            value=(
+                f"Logged in as {pn.state.user}"
+                if pn.state.user != "guest"
+                else "Log in to submit changes"
+            )
+        )
         self.submit_error = pn.widgets.StaticText(value="")
-        self.submit_col = pn.Column(self.submit_button, self.submit_info, self.submit_error)
+        self.submit_col = pn.Column(
+            self.submit_button, self.submit_info, self.submit_error
+        )
         pn.bind(self.submit_changes, self.submit_button, watch=True)
 
         self.hidden_html = pn.pane.HTML("")
@@ -38,38 +53,11 @@ class QCPanel(param.Parameterized):
 
         self._has_data = False
 
-        self.build_fullscreen()
         self.update()
-
-    def build_fullscreen(self):
-        fullscreen_html = """
-<div id="fullscreen-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background-color:rgba(0,0,0,0.8); z-index:1000;">
-  <div style="position:relative; width:90%; height:90%; margin:auto; top:5%; display:flex; justify-content:center; align-items:center;">
-    <img id="fullscreen-image" src="https://placekitten.com/800/400" style="max-width:100%; max-height:100%;" />
-  </div>
-  <span id="close-btn" style="position:absolute; top:10px; right:20px; font-size:2em; color:white; cursor:pointer;">&times;</span>
-</div>
-
-<script>
-  // JavaScript to toggle modal visibility
-  function openFullscreen() {
-    document.getElementById("fullscreen-modal").style.display = "block";
-  }
-  function closeFullscreen() {
-    document.getElementById("fullscreen-modal").style.display = "none";
-  }
-  // Event listeners for close button and escape key
-  document.getElementById("close-btn").onclick = closeFullscreen;
-  document.addEventListener("keydown", function(event) {
-    if (event.key === "Escape") closeFullscreen();
-  });
-</script>
-"""
-        self.fullscreen = pn.pane.HTML(fullscreen_html, width=0, height=0)
 
     def update(self):
         self.get_data()
-        self.submit_button.disabled = pn.state.user != 'guest'
+        self.submit_button.disabled = pn.state.user != "guest"
 
     def get_data(self):
         json_data = record_from_id(self.id)
@@ -83,7 +71,10 @@ class QCPanel(param.Parameterized):
             return
 
         if "data_description" in json_data:
-            self.modalities = [modality['abbreviation'] for modality in json_data["data_description"]["modality"]]
+            self.modalities = [
+                modality["abbreviation"]
+                for modality in json_data["data_description"]["modality"]
+            ]
 
         s3_location = json_data.get("location", None)
         if s3_location:
@@ -95,7 +86,9 @@ class QCPanel(param.Parameterized):
 
         self.asset_name = json_data["name"]
         try:
-            self._data = QualityControl.model_validate_json(json.dumps(json_data["quality_control"]))
+            self._data = QualityControl.model_validate_json(
+                json.dumps(json_data["quality_control"])
+            )
 
             self.stages = []
             # parse stages from QC data
@@ -127,13 +120,13 @@ class QCPanel(param.Parameterized):
 
     def set_dirty(self, *event):
         self.submit_button.disabled = False
-        self.submit_button.param.trigger('disabled')
+        self.submit_button.param.trigger("disabled")
 
     def submit_changes(self, *event):
         """Submit the current state to DocDB"""
 
-        # redirect users to login 
-        if pn.state.user == 'guest':
+        # redirect users to login
+        if pn.state.user == "guest":
             self.hidden_html.object = f"<script>window.location.href = '/login?next={pn.state.location.href}';</script>"
             return
 
@@ -145,7 +138,9 @@ class QCPanel(param.Parameterized):
             return
         else:
             self.submit_button.disabled = True
-            self.hidden_html.object = "<script>window.location.reload();</script>"
+            self.hidden_html.object = (
+                "<script>window.location.reload();</script>"
+            )
 
     def _update_modality_filter(self, event):
         self.modality_filter = event.new
@@ -153,15 +148,18 @@ class QCPanel(param.Parameterized):
     def _update_stage_filter(self, event):
         self.stage_filter = event.new
 
-    @param.depends('modality_filter', 'stage_filter', watch=True)
+    @param.depends("modality_filter", "stage_filter", watch=True)
     def update_objects(self):
         objects = []
-        for evaluation, filters in zip(self.evaluations, self.evaluation_filters):
+        for evaluation, filters in zip(
+            self.evaluations, self.evaluation_filters
+        ):
             (stage, modality) = filters
-            if (
-                not (self.modality_filter != "All" and modality != self.modality_filter)
-                and
-                not (self.stage_filter != "All" and stage != self.stage_filter)
+            if not (
+                self.modality_filter != "All"
+                and modality != self.modality_filter
+            ) and not (
+                self.stage_filter != "All" and stage != self.stage_filter
             ):
                 objects.append(evaluation.panel())
 
@@ -170,20 +168,26 @@ class QCPanel(param.Parameterized):
     def status_panel(self):
         """Build a Panel table that shows the current status of all evaluations"""
         # We'll loop over stage and modality to build a table
-        
+
         data = []
         for modality in self.modalities:
             for stage in self.stages:
-                data.append({
-                    "Modality": modality,
-                    "Stage": stage,
-                    "Status": status_html(self._data.status(modality=modality, stage=stage))
-                })
+                data.append(
+                    {
+                        "Modality": modality,
+                        "Stage": stage,
+                        "Status": status_html(
+                            self._data.status(modality=modality, stage=stage)
+                        ),
+                    }
+                )
 
         df = pd.DataFrame(data, columns=["Modality", "Stage", "Status"])
 
         # Reshape the DataFrame using pivot_table
-        df_squashed = df.pivot_table(index="Stage", columns="Modality", values="Status", aggfunc="first")
+        df_squashed = df.pivot_table(
+            index="Stage", columns="Modality", values="Status", aggfunc="first"
+        )
 
         # Optional: Clean up column names by flattening the MultiIndex if needed
         df_squashed.columns.name = None
@@ -213,15 +217,19 @@ class QCPanel(param.Parameterized):
 """
         state_pane = pn.pane.Markdown(state_md)
 
-        notes_box = pn.widgets.TextAreaInput(name='Notes:', value=self._data.notes, placeholder="no notes provided")
-        if pn.state.user == 'guest':
+        notes_box = pn.widgets.TextAreaInput(
+            name="Notes:",
+            value=self._data.notes,
+            placeholder="no notes provided",
+        )
+        if pn.state.user == "guest":
             notes_box.disabled = True
         else:
             notes_box.param.watch(self.set_dirty, "value")
 
         # state row
         state_row = pn.Row(state_pane, notes_box, self.status_panel())
-        quality_control_pane = pn.Column(header, state_row)        
+        quality_control_pane = pn.Column(header, state_row)
 
         # button
         header_row = pn.Row(
@@ -238,15 +246,23 @@ class QCPanel(param.Parameterized):
             options=["All"] + self.stages,
         )
 
-        self.modality_selector.param.watch(self._update_modality_filter, "value")
+        self.modality_selector.param.watch(
+            self._update_modality_filter, "value"
+        )
         self.stage_selector.param.watch(self._update_stage_filter, "value")
 
-        header_col = pn.Column(header_row, pn.Row(self.modality_selector, self.stage_selector), styles=OUTER_STYLE)
+        header_col = pn.Column(
+            header_row,
+            pn.Row(self.modality_selector, self.stage_selector),
+            styles=OUTER_STYLE,
+        )
 
-        self.tabs = pn.Tabs(sizing_mode='stretch_width', styles=OUTER_STYLE)
+        self.tabs = pn.Tabs(sizing_mode="stretch_width", styles=OUTER_STYLE)
         self.update_objects()
 
-        col = pn.Column(self.fullscreen, header_col, self.tabs, self.hidden_html)
+        col = pn.Column(
+            header_col, self.tabs, self.hidden_html
+        )
 
         return col
 

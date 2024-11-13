@@ -7,8 +7,22 @@ import param
 import json
 from datetime import datetime
 
-from aind_qc_portal.docdb.database import get_meta, API_GATEWAY_HOST, DATABASE, COLLECTION
-from aind_qc_portal.utils import ASSET_LINK_PREFIX, QC_LINK_PREFIX, qc_color, update_schema_version, OUTER_STYLE, AIND_COLORS, set_background, format_link
+from aind_qc_portal.docdb.database import (
+    get_meta,
+    API_GATEWAY_HOST,
+    DATABASE,
+    COLLECTION,
+)
+from aind_qc_portal.utils import (
+    ASSET_LINK_PREFIX,
+    QC_LINK_PREFIX,
+    qc_color,
+    update_schema_version,
+    OUTER_STYLE,
+    AIND_COLORS,
+    set_background,
+    format_link,
+)
 from aind_data_schema.core.quality_control import QualityControl
 
 pn.extension()
@@ -36,7 +50,9 @@ class SearchOptions(param.Parameterized):
                     record = update_schema_version(record)
 
                     try:
-                        qc = QualityControl.model_validate_json(json.dumps(record["quality_control"]))
+                        qc = QualityControl.model_validate_json(
+                            json.dumps(record["quality_control"])
+                        )
                         status = qc.status().value
                     except Exception as e:
                         print(f"QC object failed to validate: {e}")
@@ -58,8 +74,12 @@ class SearchOptions(param.Parameterized):
                     "subject_id": record_split[1],
                     "date": record_split[2],
                     "status": status,
-                    "subject_view": format_link(ASSET_LINK_PREFIX + record["_id"], "link"),
-                    "qc_view": format_link(QC_LINK_PREFIX + record["_id"], "link"),
+                    "subject_view": format_link(
+                        ASSET_LINK_PREFIX + record["_id"], "link"
+                    ),
+                    "qc_view": format_link(
+                        QC_LINK_PREFIX + record["_id"], "link"
+                    ),
                 }
                 data.append(r)
             else:
@@ -226,7 +246,7 @@ def textinput_update(event):
     update_dataframe()
 
 
-text_input.param.watch(textinput_update, 'value')
+text_input.param.watch(textinput_update, "value")
 
 
 md = f"""
@@ -238,7 +258,9 @@ Connected to: <span style="color:{AIND_COLORS["light_blue"]}">{API_GATEWAY_HOST}
 """
 header = pn.pane.Markdown(md)
 
-col = pn.Column(header, left_col, dataframe_pane, min_width=700, styles=OUTER_STYLE)
+col = pn.Column(
+    header, left_col, dataframe_pane, min_width=700, styles=OUTER_STYLE
+)
 
 display = pn.Row(pn.HSpacer(), col, pn.HSpacer())
 

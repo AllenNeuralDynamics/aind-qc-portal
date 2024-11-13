@@ -5,7 +5,9 @@ import panel as pn
 from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_schema.core.quality_control import QualityControl
 
-API_GATEWAY_HOST = os.getenv("API_GATEWAY_HOST", "api.allenneuraldynamics-test.org")
+API_GATEWAY_HOST = os.getenv(
+    "API_GATEWAY_HOST", "api.allenneuraldynamics-test.org"
+)
 DATABASE = os.getenv("DATABASE", "metadata_index")
 COLLECTION = os.getenv("COLLECTION", "data_assets")
 
@@ -38,7 +40,7 @@ def record_from_id(id: str) -> dict | None:
 
 
 def qc_update_to_id(id: str, qc: QualityControl):
-    print('Uploading QC')
+    print("Uploading QC")
     print(qc.model_dump())
     response = client.upsert_one_docdb_record(
         record={"_id": id, "quality_control": qc.model_dump()}
@@ -57,7 +59,10 @@ def get_name_from_id(id: str):
 @pn.cache()
 def get_subj_from_id(id: str):
     response = client.aggregate_docdb_records(
-        pipeline=[{"$match": {"_id": id}}, {"$project": {"subject": 1, "_id": 0}}]
+        pipeline=[
+            {"$match": {"_id": id}},
+            {"$project": {"subject": 1, "_id": 0}},
+        ]
     )
     if len(response) == 0:
         return None
@@ -103,13 +108,7 @@ def get_assets_by_subj(subj: str):
 def get_meta():
     response = client.aggregate_docdb_records(
         pipeline=[
-            {
-                "$project": {
-                    "_id": 1,
-                    "name": 1,
-                    "quality_control": 1
-                }
-            },
+            {"$project": {"_id": 1, "name": 1, "quality_control": 1}},
         ]
     )
     return response
@@ -131,9 +130,7 @@ def get_all():
 
 @pn.cache(ttl=TIMEOUT_1H)
 def get_project(project: str):
-    filter = {
-        "name": {"$regex": project}
-    }
+    filter = {"name": {"$regex": project}}
     limit = 10
     paginate_batch_size = 100
     response = client.retrieve_docdb_records(

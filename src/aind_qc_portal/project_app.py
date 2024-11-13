@@ -1,4 +1,5 @@
 """Project-specific views, uses configurations from projects/"""
+
 import panel as pn
 import param
 
@@ -16,6 +17,7 @@ class ProjectView(param.Parameterized):
 
     def panel(self):
         return pn.widgets.StaticText(value="meow")
+
 
 project_view = ProjectView()
 

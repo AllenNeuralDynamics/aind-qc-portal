@@ -18,15 +18,21 @@ AIND_COLORS = colors = {
 }
 
 OUTER_STYLE = {
-    'background': '#ffffff',
-    'border-radius': '5px',
-    'border': '2px solid black',
-    'padding': '10px',
-    'box-shadow': '5px 5px 5px #bcbcbc',
-    'margin': "5px",
+    "background": "#ffffff",
+    "border-radius": "5px",
+    "border": "2px solid black",
+    "padding": "10px",
+    "box-shadow": "5px 5px 5px #bcbcbc",
+    "margin": "5px",
 }
 
-background_color = AIND_COLORS[pn.state.location.query_params["background"] if "background" in pn.state.location.query_params else "dark_blue"]
+background_color = AIND_COLORS[
+    (
+        pn.state.location.query_params["background"]
+        if "background" in pn.state.location.query_params
+        else "dark_blue"
+    )
+]
 BACKGROUND_CSS = f"""
 body {{
     background-color: {background_color} !important;
@@ -57,7 +63,9 @@ def set_background():
 def update_schema_version(record: dict):
     """Update the schema version in the quality control field"""
     if record.get("quality_control") and record.get("schema_version"):
-        record["quality_control"]["schema_version"] = QualityControl.model_construct().schema_version
+        record["quality_control"][
+            "schema_version"
+        ] = QualityControl.model_construct().schema_version
 
     return record
 
@@ -127,7 +135,7 @@ def df_timestamp_range(df, column="timestamp"):
 
 
 def md_style(font_size: int = 12, inner_str: str = ""):
-    return f"<span style=\"font-size:{font_size}pt\">{inner_str}</span>"
+    return f'<span style="font-size:{font_size}pt">{inner_str}</span>'
 
 
 def qc_color(v):
@@ -144,15 +152,15 @@ def qc_color(v):
         CSS style string
     """
     if v == "No QC":
-        color = AIND_COLORS['yellow']
+        color = AIND_COLORS["yellow"]
     elif v == "Pass":
-        color = AIND_COLORS['green']
+        color = AIND_COLORS["green"]
     elif v == "Fail":
-        color = AIND_COLORS['red']
+        color = AIND_COLORS["red"]
     elif v == "Pending":
-        color = AIND_COLORS['light_blue']
+        color = AIND_COLORS["light_blue"]
     else:
-        color = AIND_COLORS['grey']
+        color = AIND_COLORS["grey"]
     return f"background-color: {color}"
 
 

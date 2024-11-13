@@ -42,29 +42,34 @@ class QCEvalPanel:
         for metric in self.metrics:
             objects.append(metric.panel())
 
-        allow_failing_str = "Metrics are allowed to fail." if self._data.allow_failed_metrics else ""
+        allow_failing_str = (
+            "Metrics are allowed to fail."
+            if self._data.allow_failed_metrics
+            else ""
+        )
 
         md = f"""
 {md_style(12, self._data.description if self._data.description else "*no description provided*")}
 {md_style(8, f"Current state: **{status_html(self._data.status())}**")}
 {md_style(8, f"Contains **{len(self._data.metrics)}** metrics. {allow_failing_str}")}
 """
-        
+
         header = pn.pane.Markdown(md)
 
         notes = pn.widgets.TextAreaInput(
             name="Notes:",
-            value=self._data.notes, placeholder="no notes provided"
+            value=self._data.notes,
+            placeholder="no notes provided",
         )
 
-        if pn.state.user == 'guest':
+        if pn.state.user == "guest":
             notes.disabled = True
         else:
             notes.param.watch(self.set_notes, "value")
 
         header_row = pn.Row(header, notes)
 
-        accordion = pn.Accordion(*objects, sizing_mode='stretch_width')
+        accordion = pn.Accordion(*objects, sizing_mode="stretch_width")
         accordion.active = [0]
 
         col = pn.Column(header_row, accordion, name=self._data.name)

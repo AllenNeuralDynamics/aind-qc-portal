@@ -19,7 +19,7 @@ from aind_qc_portal.utils import (
     update_schema_version,
     AIND_COLORS,
     OUTER_STYLE,
-    set_background
+    set_background,
 )
 
 alt.data_transformers.disable_max_rows()
@@ -93,7 +93,9 @@ class AssetHistory(param.Parameterized):
                 type_label = name_split[4]
 
             if "quality_control" in record and record["quality_control"]:
-                qc = QualityControl.model_validate_json(json.dumps(record["quality_control"]))
+                qc = QualityControl.model_validate_json(
+                    json.dumps(record["quality_control"])
+                )
                 status = qc.status().value
             else:
                 status = "No QC"
@@ -112,7 +114,7 @@ class AssetHistory(param.Parameterized):
                     "status": status,
                     "qc_view": qc_link,
                     "id": record["_id"],
-                    "group": groups[raw_name]
+                    "group": groups[raw_name],
                 }
             )
 
@@ -127,15 +129,17 @@ class AssetHistory(param.Parameterized):
                 "status",
                 "qc_view",
                 "id",
-                "group"
+                "group",
             ],
         )
         self.df.sort_values(by="timestamp", ascending=True, inplace=True)
-        unique_groups = self.df['group'].unique()
-        group_mapping = {group: new_group for new_group, group in enumerate(unique_groups)}
+        unique_groups = self.df["group"].unique()
+        group_mapping = {
+            group: new_group for new_group, group in enumerate(unique_groups)
+        }
 
         # Replace the 'group' column with the new group values
-        self.df['group'] = self.df['group'].map(group_mapping)
+        self.df["group"] = self.df["group"].map(group_mapping)
         self.df.sort_values(by="group", ascending=True, inplace=True)
 
     def asset_history_panel(self):
@@ -143,20 +147,33 @@ class AssetHistory(param.Parameterized):
         if not self.has_id:
             return "No ID is set"
         if self.df is None:
-            return pn.widgets.StaticText(value=f"No data found for ID: {self.id}")
+            return pn.widgets.StaticText(
+                value=f"No data found for ID: {self.id}"
+            )
 
         # Calculate the time range to show on the x axis
-        (min_range, max_range, range_unit, format) = df_timestamp_range(self.df)
+        (min_range, max_range, range_unit, format) = df_timestamp_range(
+            self.df
+        )
 
         chart = (
             alt.Chart(self.df)
             .mark_bar()
             .encode(
-                x=alt.X("timestamp:T", title="Time",
-                        scale=alt.Scale(domain=[min_range, max_range]),
-                        axis=alt.Axis(format=format, tickCount=range_unit)),
+                x=alt.X(
+                    "timestamp:T",
+                    title="Time",
+                    scale=alt.Scale(domain=[min_range, max_range]),
+                    axis=alt.Axis(format=format, tickCount=range_unit),
+                ),
                 y=alt.Y("group:N", title="Raw asset"),
-                tooltip=["name", "modality", "subject_id", "timestamp", "status"],
+                tooltip=[
+                    "name",
+                    "modality",
+                    "subject_id",
+                    "timestamp",
+                    "status",
+                ],
                 color=alt.Color("type:N"),
             )
             .properties(width=600, height=300, title="Asset history")
@@ -191,7 +208,14 @@ class AssetHistory(param.Parameterized):
         if self.df is not None:
             panes = []
             for group in set(self.df["group"]):
-                panes.append(pn.pane.DataFrame(self.asset_history_df(group), index=False, escape=False, width=660))
+                panes.append(
+                    pn.pane.DataFrame(
+                        self.asset_history_df(group),
+                        index=False,
+                        escape=False,
+                        width=660,
+                    )
+                )
 
             return pn.Column(*panes)
         else:

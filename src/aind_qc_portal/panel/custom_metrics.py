@@ -10,8 +10,7 @@ from aind_data_schema.core.quality_control import Status
 
 
 class CustomMetricValue:
-    """This class is really ugly because of how it handles multiple types... please refactor me
-    """
+    """This class is really ugly because of how it handles multiple types... please refactor me"""
 
     def __init__(self, data: dict, value_callback, status_callback):
         """Build a new CustomMetricValue object from a metric's value
@@ -19,7 +18,7 @@ class CustomMetricValue:
         Parameters
         ----------
         data : dict
-            Dictionary containing data dumped from one of the metric_value classes 
+            Dictionary containing data dumped from one of the metric_value classes
         """
 
         self._panel = None
@@ -29,11 +28,15 @@ class CustomMetricValue:
 
         if "type" in data:
             if data["type"] == "dropdown":
-                self._data = DropdownMetric.model_validate_json(json.dumps(data))
+                self._data = DropdownMetric.model_validate_json(
+                    json.dumps(data)
+                )
                 self._auto_state = self._data.status is not None
                 self._dropdown_helper(data)
             elif data["type"] == "checkbox":
-                self._data = CheckboxMetric.model_validate_json(json.dumps(data))
+                self._data = CheckboxMetric.model_validate_json(
+                    json.dumps(data)
+                )
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
             else:
@@ -47,14 +50,12 @@ class CustomMetricValue:
 
     @property
     def panel(self):
-        """Panel pane for this custom metric value
-        """
+        """Panel pane for this custom metric value"""
         return self._panel
 
     @property
     def auto_state(self) -> bool:
-        """Where the custom value's state will get automatically updated
-        """
+        """Where the custom value's state will get automatically updated"""
         return self._auto_state
 
     def _callback_helper(self, event):
@@ -70,13 +71,16 @@ class CustomMetricValue:
             self._value_callback(updated_data.model_dump())
 
         if self._auto_state:
-            if hasattr(updated_data, "type") and updated_data.type == "checkbox":
+            if (
+                hasattr(updated_data, "type")
+                and updated_data.type == "checkbox"
+            ):
                 pass
                 # parse the value
                 print(event.new)
             else:
                 try:
-                    if (updated_data.value == ""):
+                    if updated_data.value == "":
                         self._status_callback(Status.PENDING)
                     else:
                         idx = updated_data.options.index(updated_data.value)
@@ -87,7 +91,7 @@ class CustomMetricValue:
 
     def _dropdown_helper(self, data: dict):
         self._panel = pn.widgets.Select(
-            name='Value',
+            name="Value",
             options=[""] + data["options"],
         )
         if data["value"]:
@@ -100,7 +104,7 @@ class CustomMetricValue:
 
     def _checkbox_helper(self, data: dict):
         self._panel = pn.widgets.MultiChoice(
-            name='Value',
+            name="Value",
             options=data["options"],
         )
         if data["value"]:
