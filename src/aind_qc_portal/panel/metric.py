@@ -2,7 +2,6 @@ import panel as pn
 from aind_data_schema.core.quality_control import Status, QCMetric, QCStatus
 from datetime import datetime
 import pandas as pd
-from io import BytesIO
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
 from aind_qc_portal.panel.media import Media
