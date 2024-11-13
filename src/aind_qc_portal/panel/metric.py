@@ -35,11 +35,11 @@ class QCMetricPanel:
 
     def _set_value(self, value):
         """Set the value of this metric
-        
+
         Note that this doesn't automatically set_dirty in the parent
         This is because the status_history needs to be updated before a new value can be saved
         """
-        print(f'Updating metric value to: {value}')
+        print(f"Updating metric value to: {value}")
         self._data.value = value
 
     def set_status(self, event):
@@ -58,31 +58,34 @@ class QCMetricPanel:
         ----------
         status : Status or str
         """
-        if pn.state.user == 'guest':
+        if pn.state.user == "guest":
             self.hidden_html.object = f"<script>window.location.href = '/login?next={pn.state.location.href}';</script>"
             return
 
         if not isinstance(status, Status):
             status = Status(status)
-        print(f'Updating metric status to: {status.value}')
+        print(f"Updating metric status to: {status.value}")
 
         if self.state_selector:
             self.state_selector.value = status.value
 
-        self._data.status_history.append(QCStatus(
-            evaluator=f"{pn.state.user_info['given_name']} {pn.state.user_info['family_name']}",
-            status=status,
-            timestamp=datetime.now(),
-        ))
+        self._data.status_history.append(
+            QCStatus(
+                evaluator=f"{pn.state.user_info['given_name']} {pn.state.user_info['family_name']}",
+                status=status,
+                timestamp=datetime.now(),
+            )
+        )
 
         self.parent.set_dirty()
 
     def panel(self):
-        """Build the full panel for this metric with both the metric status and reference media
-        """
+        """Build the full panel for this metric with both the metric status and reference media"""
 
         if self._data.reference:
-            self.reference_img = Media(self._data.reference, self.parent).panel()
+            self.reference_img = Media(
+                self._data.reference, self.parent
+            ).panel()
         else:
             self.reference_img = "No references included"
 
@@ -116,17 +119,24 @@ class QCMetricPanel:
         elif isinstance(value, int):
             value_widget = pn.widgets.IntInput(name=name)
         elif isinstance(value, list):
-            df = pd.DataFrame({'values': value})
+            df = pd.DataFrame({"values": value})
             value_widget = pn.pane.DataFrame(df)
             auto_value = True
         elif isinstance(value, dict):
             # first, check if every key/value pair has the same length, if so coerce to a dataframe
-            if all([isinstance(v, list) for v in value.values()]) and all([len(v) == len(value[list(value.keys())[0]]) for v in value.values()]):
+            if all([isinstance(v, list) for v in value.values()]) and all(
+                [
+                    len(v) == len(value[list(value.keys())[0]])
+                    for v in value.values()
+                ]
+            ):
                 df = pd.DataFrame(value)
                 value_widget = pn.pane.DataFrame(df)
             else:
                 try:
-                    custom_value = CustomMetricValue(value, self._set_value, self._set_status)
+                    custom_value = CustomMetricValue(
+                        value, self._set_value, self._set_status
+                    )
                     auto_value = True
                     auto_state = custom_value.auto_state
                     value_widget = custom_value.panel
@@ -136,21 +146,30 @@ class QCMetricPanel:
         else:
             value_widget = pn.pane(f"Can't deal with type {type(value)}")
 
-        if pn.state.user == 'guest':
+        if pn.state.user == "guest":
             value_widget.disabled = True
 
         if not auto_value:
             value_widget.value = value
-            value_widget.param.watch(self.set_value, 'value')
+            value_widget.param.watch(self.set_value, "value")
 
-        self.state_selector = pn.widgets.Select(value=self._data.status.status.value, options=["Pass", "Fail", "Pending"], name="Metric status")
+        self.state_selector = pn.widgets.Select(
+            value=self._data.status.status.value,
+            options=["Pass", "Fail", "Pending"],
+            name="Metric status",
+        )
         if auto_state:
             self.state_selector.disabled = True
         else:
-            self.state_selector.param.watch(self.set_status, 'value')
+            self.state_selector.param.watch(self.set_status, "value")
 
         header = pn.pane.Markdown(md)
 
-        col = pn.Column(header, pn.WidgetBox(value_widget, self.state_selector), self.hidden_html, width=350)
+        col = pn.Column(
+            header,
+            pn.WidgetBox(value_widget, self.state_selector),
+            self.hidden_html,
+            width=350,
+        )
 
         return col
