@@ -109,7 +109,7 @@ class Media:
         self.object = self.parse_reference(reference)
 
     def parse_reference(self, reference):
-        reference = "http://localhost:5007/images/data.rrd"
+
         if ";" in reference:
             return pn.layout.Swipe(
                 self.parse_reference(reference.split(";")[0]),
