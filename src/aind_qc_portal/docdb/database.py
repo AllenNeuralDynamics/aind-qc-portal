@@ -130,7 +130,7 @@ def get_all():
 
 @pn.cache(ttl=TIMEOUT_1H)
 def get_project(project: str):
-    filter = {"name": {"$regex": project}}
+    filter = {"data_description.project_name": project}
     limit = 10
     paginate_batch_size = 100
     response = client.retrieve_docdb_records(
