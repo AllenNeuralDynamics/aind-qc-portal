@@ -2,6 +2,7 @@ import panel as pn
 from io import BytesIO
 from urllib.parse import urlparse
 import param
+from pathlib import Path
 from panel.reactive import ReactiveHTML
 
 CSS = """
@@ -150,10 +151,12 @@ class Media:
             return _get_s3_asset(self.parent.s3_client, bucket, key)
 
         elif "png" in reference:
+            print(self.parent.s3_bucket)
+            print(Path(self.parent.s3_prefix) / reference)
             return _get_s3_asset(
                 self.parent.s3_client,
                 self.parent.s3_bucket,
-                self.parent.s3_prefix + reference,
+                str(Path(self.parent.s3_prefix) / reference),
             )
 
         elif reference == "ecephys-drift-map":

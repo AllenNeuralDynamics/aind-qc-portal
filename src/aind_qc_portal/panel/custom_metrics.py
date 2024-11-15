@@ -114,4 +114,4 @@ class CustomMetricValue:
         self._panel.param.watch(self._callback_helper, "value")
 
     def _rulebased_helper(self, data: dict):
-        self._panel = pn.widgets.StaticText("Todo")
+        self._panel = pn.widgets.StaticText(value="Todo")

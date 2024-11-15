@@ -70,10 +70,15 @@ class QCPanel(param.Parameterized):
         else:
             return
 
-        if "data_description" in json_data:
+        if "data_description" in json_data and json_data["data_description"] and "modality" in json_data["data_description"]:
             self.modalities = [
                 modality["abbreviation"]
                 for modality in json_data["data_description"]["modality"]
+            ]
+        else:
+            # fallback: pull the modality from the name
+            self.modalities = [
+                json_data["name"].split("_")[0]
             ]
 
         s3_location = json_data.get("location", None)
