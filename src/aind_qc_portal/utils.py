@@ -37,7 +37,7 @@ BACKGROUND_CSS = f"""
 body {{
     background-color: {background_color} !important;
     background-image: url('/images/aind-pattern.svg') !important;
-    background-size: 60%;
+    background-size: 1200px;
 }}
 """
 

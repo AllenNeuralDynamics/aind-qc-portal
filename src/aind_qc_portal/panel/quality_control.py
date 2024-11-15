@@ -262,7 +262,7 @@ class QCPanel(param.Parameterized):
             styles=OUTER_STYLE,
         )
 
-        self.tabs = pn.Tabs(sizing_mode="stretch_width", styles=OUTER_STYLE)
+        self.tabs = pn.Tabs(sizing_mode="stretch_width", styles=OUTER_STYLE, tabs_location="left")
         self.update_objects()
 
         col = pn.Column(
