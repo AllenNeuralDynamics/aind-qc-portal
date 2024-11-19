@@ -69,7 +69,7 @@ class QCEvalPanel:
 
         header_row = pn.Row(header, notes)
 
-        accordion = pn.Accordion(*objects, sizing_mode="stretch_width")
+        accordion = pn.Accordion(*objects)
         accordion.active = [0]
 
         col = pn.Column(header_row, accordion, name=self._data.name)

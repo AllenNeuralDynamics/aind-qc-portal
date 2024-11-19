@@ -35,6 +35,10 @@ class QCPanel(param.Parameterized):
             name="Submit changes" if pn.state.user != "guest" else "Log in",
             button_type="success",
         )
+        self.changes = 0
+        self.change_info = pn.widgets.StaticText(
+            value=""
+        )
         self.submit_info = pn.widgets.StaticText(
             value=(
                 f"Logged in as {pn.state.user}"
@@ -44,7 +48,7 @@ class QCPanel(param.Parameterized):
         )
         self.submit_error = pn.widgets.StaticText(value="")
         self.submit_col = pn.Column(
-            self.submit_button, self.submit_info, self.submit_error
+            self.submit_button, self.change_info, self.submit_info, self.submit_error
         )
         pn.bind(self.submit_changes, self.submit_button, watch=True)
 
@@ -95,17 +99,14 @@ class QCPanel(param.Parameterized):
                 json.dumps(json_data["quality_control"])
             )
 
-            self.stages = []
-            # parse stages from QC data
-            for evaluation in self._data.evaluations:
-                if evaluation.stage not in self.stages:
-                    self.stages.append(evaluation.stage)
-
         except Exception as e:
             self._data = None
             self._has_data = False
             print(f"QC object failed to validate: {e}")
             return
+
+        self.stages = list({evaluation.stage for evaluation in self._data.evaluations})
+        self.tags = list({tag for evaluation in self._data.evaluations if evaluation.tags for tag in evaluation.tags})
 
         self.evaluations = []
         self.evaluation_filters = []
@@ -124,6 +125,8 @@ class QCPanel(param.Parameterized):
         )
 
     def set_dirty(self, *event):
+        self.changes += 1
+        self.change_info.value = f"{self.changes} pending changes"
         self.submit_button.disabled = False
         self.submit_button.param.trigger("disabled")
 
@@ -143,6 +146,8 @@ class QCPanel(param.Parameterized):
             return
         else:
             self.submit_button.disabled = True
+            self.changes = 0
+            self.change_info.value = f"{self.changes} pending changes"
             self.hidden_html.object = (
                 "<script>window.location.reload();</script>"
             )
@@ -179,19 +184,30 @@ class QCPanel(param.Parameterized):
             for stage in self.stages:
                 data.append(
                     {
-                        "Modality": modality,
+                        "Group": modality,
                         "Stage": stage,
                         "Status": status_html(
                             self._data.status(modality=modality, stage=stage)
                         ),
                     }
                 )
+        for tag in self.tags:
+            for stage in self.stages:
+                data.append(
+                    {
+                        "Group": tag,
+                        "Stage": stage,
+                        "Status": status_html(
+                            self._data.status(tag=tag, stage=stage)
+                        ),
+                    }
+                )
 
-        df = pd.DataFrame(data, columns=["Modality", "Stage", "Status"])
+        df = pd.DataFrame(data, columns=["Group", "Stage", "Status"])
 
         # Reshape the DataFrame using pivot_table
         df_squashed = df.pivot_table(
-            index="Stage", columns="Modality", values="Status", aggfunc="first"
+            index="Stage", columns="Group", values="Status", aggfunc="first"
         )
 
         # Optional: Clean up column names by flattening the MultiIndex if needed

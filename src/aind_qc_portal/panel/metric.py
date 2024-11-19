@@ -92,6 +92,7 @@ class QCMetricPanel:
             self.metric_panel(),
             self.reference_img,
             name=self._data.name,
+            sizing_mode="stretch_both",
         )
         return row
 

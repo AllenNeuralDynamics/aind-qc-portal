@@ -17,7 +17,7 @@ CSS = """
     height: 24px;
     z-index: 10000;
     opacity: 1;
-    color: white;
+    color: gray;
     transition-delay: 0.5s;
     transition: 0.5s;
     cursor: pointer;
@@ -26,10 +26,12 @@ CSS = """
 
 .fullscreen-button:hover {
     transition: 0.5s;
+    color: white;
     background-color: black;
 }
 
 .fullscreen-button:focus {
+    color: white;
     background-color: black;
 }
 .pn-container, .object-container {
@@ -40,9 +42,14 @@ CSS = """
 
 
 class Fullscreen(ReactiveHTML):
+    """A Fullscreen component that allows the user to toggle fullscreen mode.
+    """
+    
     object = param.Parameter()
 
     def __init__(self, object, **params):
+        """Build fullscreen object
+        """
         super().__init__(object=object, **params)
 
     _template = """
@@ -102,6 +109,7 @@ toggleFullScreen()
 
 
 class Media:
+    """A Media object that can display images, videos, and other media types."""
 
     def __init__(self, reference, parent):
         """Build Media object"""
@@ -109,7 +117,13 @@ class Media:
         self.parent = parent
         self.object = self.parse_reference(reference)
 
-    def parse_reference(self, reference):
+    def parse_reference(self, reference: str):
+        """Parse the reference string and return the appropriate media object
+
+        Parameters
+        ----------
+        reference : str
+        """
 
         if ";" in reference:
             return pn.layout.Swipe(
@@ -123,13 +137,13 @@ class Media:
                 ".jpg"
             ):
                 return pn.pane.Image(
-                    reference, sizing_mode="scale_width", max_width=1200
+                    reference, sizing_mode="scale_both"
                 )
             elif parsed_url.path.endswith(".mp4"):
                 return pn.pane.Video(
                     reference,
                     controls=True,
-                    sizing_mode="scale_width",
+                    sizing_mode="scale_both",
                     max_width=1200,
                 )
             elif parsed_url.path.endswith(".rrd"):
@@ -151,8 +165,6 @@ class Media:
             return _get_s3_asset(self.parent.s3_client, bucket, key)
 
         elif "png" in reference:
-            print(self.parent.s3_bucket)
-            print(Path(self.parent.s3_prefix) / reference)
             return _get_s3_asset(
                 self.parent.s3_client,
                 self.parent.s3_bucket,
