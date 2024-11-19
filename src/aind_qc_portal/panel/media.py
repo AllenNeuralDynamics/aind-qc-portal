@@ -4,6 +4,9 @@ from urllib.parse import urlparse
 import param
 from pathlib import Path
 from panel.reactive import ReactiveHTML
+import requests
+import time
+import os
 
 CSS = """
 :not(:root):fullscreen::backdrop {
@@ -39,6 +42,8 @@ CSS = """
         width: 100%;
 }
 """
+
+KACHERY_ZONE = os.getenv("KACHERY_ZONE", "default")
 
 
 class Fullscreen(ReactiveHTML):
@@ -125,11 +130,27 @@ class Media:
         reference : str
         """
 
+        # Deal with swipe panels first
         if ";" in reference:
             return pn.layout.Swipe(
                 self.parse_reference(reference.split(";")[0]),
                 self.parse_reference(reference.split(";")[1]),
             )
+        
+        # Step 1: get the data
+        # possible sources are: http, s3, local data asset, figurl
+        if "http" in reference:
+            reference_data = reference
+        elif "s3" in reference:
+            bucket = reference.split("/")[2]
+            key = "/".join(reference.split("/")[3:])
+            reference_data = _get_s3_data(self.parent.s3_client, bucket, key)
+        elif "sha" in reference:
+            pass
+        else:
+            # assume local data asset
+
+        # Step 2: parse the type and return the appropriate object
         if "http" in reference:
             parsed_url = urlparse(reference)
 
@@ -164,15 +185,12 @@ class Media:
             key = "/".join(reference.split("/")[3:])
             return _get_s3_asset(self.parent.s3_client, bucket, key)
 
-        elif "png" in reference:
+        elif any(reference.endswith(ext) for ext in [".png", ".jpg", ".mp4"]):
             return _get_s3_asset(
                 self.parent.s3_client,
                 self.parent.s3_bucket,
                 str(Path(self.parent.s3_prefix) / reference),
             )
-
-        elif reference == "ecephys-drift-map":
-            return ""
 
         else:
             return f"Unable to parse {reference}"
@@ -212,6 +230,57 @@ def _parse_type(reference, data):
         )
     else:
         return pn.widgets.StaticText(value=data)
+    
+
+def _get_s3_data(s3_client, bucket, key):
+    """Get an S3 asset from the given bucket and key
+
+    Parameters
+    ----------
+    s3_client : boto3.client
+                    S3 client object
+    bucket : str
+                    S3 bucket name
+    key : str
+                    S3 key name
+    """
+    try:
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        data = BytesIO(response["Body"].read())
+        return data
+    except Exception as e:
+        return f"[ERROR] Failed to fetch asset {bucket}/{key}: {e}"
+
+
+@pn.cache(ttl=3500)  # cache with slightly less than one hour timeout
+def _get_kachery_cloud_data(hash: str):
+    """Generate a kachery-cloud URL for the given hash
+
+    Parameters
+    ----------
+    hash : str
+        Generated from kcl.store_file()
+    """
+    timestamp = int(time.time() * 1000)
+
+    url = "https://kachery-gateway.figurl.org/api/gateway"
+    headers = {
+        "content-type": "application/json",
+        "user-agent": "AIND-QC-PORTAL (Python; +qc.allenneuraldynamics.org)",
+    }
+    data = {
+        "payload": {
+        "type": "findFile",
+        "timestamp": timestamp,
+        "hashAlg": "sha1",
+        "hash": hash,
+        "zone": KACHERY_ZONE,
+        }
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+
+    return(response.text)
 
 
 def _get_s3_asset(s3_client, bucket, key):
