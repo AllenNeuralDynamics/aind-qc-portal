@@ -57,10 +57,6 @@ class QCMetricPanel:
         ----------
         status : Status or str
         """
-        if pn.state.user == "guest":
-            self.hidden_html.object = f"<script>window.location.href = '/login?next={pn.state.location.href}';</script>"
-            return
-
         if not isinstance(status, Status):
             status = Status(status)
         print(f"Updating metric status to: {status.value}")
