@@ -158,6 +158,9 @@ class Media:
                 str(Path(self.parent.s3_prefix) / reference),
             )
 
+        if not reference_data:
+            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
+
         # Step 2: parse the type and return the appropriate object
         return _parse_type(reference, reference_data)
 
@@ -190,6 +193,7 @@ def _parse_type(reference, data):
             temp_file = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
             temp_file.write(response.content)
             temp_file.close()
+            print(temp_file.name)
 
             # Return the Video pane using the temporary file
             return pn.pane.Video(
@@ -245,9 +249,9 @@ def _get_kachery_cloud_url(hash: str):
     timestamp = int(time.time() * 1000)
 
     print(f"Getting kachery-cloud URL for {hash}")
-    # Simplify hash from sha1://4c2249c2d4a7a9392bb14ea98d7192776f3ce24f?label=vid_bottom_camera_start_0_end_0.1.mp4 to just the hash
-    simplified_hash = hash.split("?")[0].split("sha1://")[1]
-    print(simplified_hash)
+
+    # take the full hash, e.g. sha1://fb558dff5ed3c13751b6345af8a3128b25c4fa70?label=vid_side_camera_right_start_0_end_0.1.mp4 and just get the hash
+    simplified_hash = hash.split("?")[0].split("://")[1]
 
     url = "https://kachery-gateway.figurl.org/api/gateway"
     headers = {
@@ -265,11 +269,16 @@ def _get_kachery_cloud_url(hash: str):
     }
 
     response = requests.post(url, headers=headers, json=data)
-    print((simplified_hash, response.text))
     if response.status_code != 200:
-        return f"[ERROR] Failed to fetch asset {hash}: {response.text}"
-    
-    return response.json()["url"]
+        return f"[ERROR] Failed to fetch asset {simplified_hash}: {response.text}"
+
+    data = response.json()
+
+    if not data["found"]:
+        print (f"File not found in kachery-cloud: {simplified_hash}")
+        return None
+    else:
+        return response.json()["url"]
 
 
 def _get_s3_asset(s3_client, bucket, key):
