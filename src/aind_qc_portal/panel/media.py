@@ -1,3 +1,5 @@
+import io
+import tempfile
 import panel as pn
 from io import BytesIO
 from urllib.parse import urlparse
@@ -129,6 +131,7 @@ class Media:
         ----------
         reference : str
         """
+        print(f"Parsing reference: {reference}")
 
         # Deal with swipe panels first
         if ";" in reference:
@@ -136,7 +139,7 @@ class Media:
                 self.parse_reference(reference.split(";")[0]),
                 self.parse_reference(reference.split(";")[1]),
             )
-        
+
         # Step 1: get the data
         # possible sources are: http, s3, local data asset, figurl
         if "http" in reference:
@@ -146,54 +149,17 @@ class Media:
             key = "/".join(reference.split("/")[3:])
             reference_data = _get_s3_data(self.parent.s3_client, bucket, key)
         elif "sha" in reference:
-            pass
+            reference_data = _get_kachery_cloud_url(reference)
         else:
-            # assume local data asset
-
-        # Step 2: parse the type and return the appropriate object
-        if "http" in reference:
-            parsed_url = urlparse(reference)
-
-            if parsed_url.path.endswith(".png") or parsed_url.path.endswith(
-                ".jpg"
-            ):
-                return pn.pane.Image(
-                    reference, sizing_mode="scale_both"
-                )
-            elif parsed_url.path.endswith(".mp4"):
-                return pn.pane.Video(
-                    reference,
-                    controls=True,
-                    sizing_mode="scale_both",
-                    max_width=1200,
-                )
-            elif parsed_url.path.endswith(".rrd"):
-                src = f"https://app.rerun.io/version/0.9.0/index.html?url={reference}"
-                return pn.pane.HTML(
-                    _iframe_html(src), sizing_mode="stretch_both"
-                )
-            elif "neuroglancer" in reference:
-                return pn.pane.HTML(
-                    _iframe_html(reference), sizing_mode="stretch_both"
-                )
-            else:
-                return pn.widgets.StaticText(
-                    value=f'Reference: <a target="_blank" href="{reference}">link</a>'
-                )
-        elif "s3" in reference:
-            bucket = reference.split("/")[2]
-            key = "/".join(reference.split("/")[3:])
-            return _get_s3_asset(self.parent.s3_client, bucket, key)
-
-        elif any(reference.endswith(ext) for ext in [".png", ".jpg", ".mp4"]):
-            return _get_s3_asset(
+            # assume local data asset_get_s3_asset
+            reference_data = _get_s3_data(
                 self.parent.s3_client,
                 self.parent.s3_bucket,
                 str(Path(self.parent.s3_prefix) / reference),
             )
 
-        else:
-            return f"Unable to parse {reference}"
+        # Step 2: parse the type and return the appropriate object
+        return _parse_type(reference, reference_data)
 
     def panel(self):
         return Fullscreen(self.object, sizing_mode="stretch_both")
@@ -216,9 +182,24 @@ def _parse_type(reference, data):
     if reference.endswith(".png") or reference.endswith(".jpg"):
         return pn.pane.Image(data, sizing_mode="scale_width", max_width=1200)
     elif reference.endswith(".mp4"):
-        return pn.pane.Video(
-            reference, controls=True, sizing_mode="scale_width", max_width=1200
-        )
+        # Fetch the video data via GET request
+        print(f"Fetching video from {reference}")
+        response = requests.get(data)
+        if response.status_code == 200:
+            print("Video fetched successfully.")
+            temp_file = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
+            temp_file.write(response.content)
+            temp_file.close()
+
+            # Return the Video pane using the temporary file
+            return pn.pane.Video(
+                temp_file.name,  # Use the temporary file's path
+                sizing_mode="scale_width",
+                max_width=1200,
+            )
+        else:
+            print(f"Failed to fetch video. Status code: {response.status_code}")
+            return pn.pane.Alert(f"Failed to load video: {response.status_code}", alert_type="danger")
     elif "neuroglancer" in reference:
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
@@ -253,7 +234,7 @@ def _get_s3_data(s3_client, bucket, key):
 
 
 @pn.cache(ttl=3500)  # cache with slightly less than one hour timeout
-def _get_kachery_cloud_data(hash: str):
+def _get_kachery_cloud_url(hash: str):
     """Generate a kachery-cloud URL for the given hash
 
     Parameters
@@ -262,6 +243,11 @@ def _get_kachery_cloud_data(hash: str):
         Generated from kcl.store_file()
     """
     timestamp = int(time.time() * 1000)
+
+    print(f"Getting kachery-cloud URL for {hash}")
+    # Simplify hash from sha1://4c2249c2d4a7a9392bb14ea98d7192776f3ce24f?label=vid_bottom_camera_start_0_end_0.1.mp4 to just the hash
+    simplified_hash = hash.split("?")[0].split("sha1://")[1]
+    print(simplified_hash)
 
     url = "https://kachery-gateway.figurl.org/api/gateway"
     headers = {
@@ -273,14 +259,17 @@ def _get_kachery_cloud_data(hash: str):
         "type": "findFile",
         "timestamp": timestamp,
         "hashAlg": "sha1",
-        "hash": hash,
+        "hash": simplified_hash,
         "zone": KACHERY_ZONE,
         }
     }
 
     response = requests.post(url, headers=headers, json=data)
-
-    return(response.text)
+    print((simplified_hash, response.text))
+    if response.status_code != 200:
+        return f"[ERROR] Failed to fetch asset {hash}: {response.text}"
+    
+    return response.json()["url"]
 
 
 def _get_s3_asset(s3_client, bucket, key):

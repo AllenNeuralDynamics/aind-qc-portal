@@ -110,6 +110,11 @@ class QCMetricPanel:
 
         auto_value = False
         auto_state = False
+
+        # Check if empty, if so set to empty string
+        if value is None or value == "" or value == [] or value == {}:
+            value = ""
+
         if isinstance(value, bool):
             value_widget = pn.widgets.Checkbox(name=name)
         elif isinstance(value, str):
