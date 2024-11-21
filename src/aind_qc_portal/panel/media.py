@@ -172,6 +172,10 @@ def _iframe_html(reference):
     return f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
 
 
+def _is_image(reference):
+    return reference.endswith(".png") or reference.endswith(".jpg") or reference.endswith(".gif") or reference.endswith(".jpeg") or reference.endswith(".svg") or reference.endswith(".pdf")
+
+
 def _parse_type(reference, data):
     """Interpret the media type from the reference string
 
@@ -182,7 +186,7 @@ def _parse_type(reference, data):
     data : _type_
                     _description_
     """
-    if reference.endswith(".png") or reference.endswith(".jpg"):
+    if _is_image(reference):
         return pn.pane.Image(data, sizing_mode="scale_width", max_width=1200)
     elif reference.endswith(".mp4"):
         # Fetch the video data via GET request
