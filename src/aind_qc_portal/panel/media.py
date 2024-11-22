@@ -45,7 +45,7 @@ CSS = """
 }
 """
 
-KACHERY_ZONE = os.getenv("KACHERY_ZONE", "default")
+KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 
 
 class Fullscreen(ReactiveHTML):
@@ -161,6 +161,8 @@ class Media:
         if not reference_data:
             return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
+        print(f"Parsing type: {reference}")
+
         # Step 2: parse the type and return the appropriate object
         return _parse_type(reference, reference_data)
 
@@ -176,6 +178,17 @@ def _is_image(reference):
     return reference.endswith(".png") or reference.endswith(".jpg") or reference.endswith(".gif") or reference.endswith(".jpeg") or reference.endswith(".svg") or reference.endswith(".pdf")
 
 
+def _get_s3_file(url, ext):
+    response = requests.get(url)
+    if response.status_code == 200:
+        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
+            temp_file.write(response.content)
+        return temp_file.name
+    else:
+        print(f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}")
+        return None
+
+
 def _parse_type(reference, data):
     """Interpret the media type from the reference string
 
@@ -186,28 +199,21 @@ def _parse_type(reference, data):
     data : _type_
                     _description_
     """
+    if "s3" in data:
+        data = _get_s3_file(data, os.path.splitext(reference)[1])
+
+        if not data:
+            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
+
     if _is_image(reference):
         return pn.pane.Image(data, sizing_mode="scale_width", max_width=1200)
     elif reference.endswith(".mp4"):
-        # Fetch the video data via GET request
-        print(f"Fetching video from {reference}")
-        response = requests.get(data)
-        if response.status_code == 200:
-            print("Video fetched successfully.")
-            temp_file = tempfile.NamedTemporaryFile(suffix=".mp4", delete=False)
-            temp_file.write(response.content)
-            temp_file.close()
-            print(temp_file.name)
-
-            # Return the Video pane using the temporary file
-            return pn.pane.Video(
-                temp_file.name,  # Use the temporary file's path
-                sizing_mode="scale_width",
-                max_width=1200,
-            )
-        else:
-            print(f"Failed to fetch video. Status code: {response.status_code}")
-            return pn.pane.Alert(f"Failed to load video: {response.status_code}", alert_type="danger")
+        # Return the Video pane using the temporary file
+        return pn.pane.Video(
+            data,  # Use the temporary file's path
+            sizing_mode="scale_width",
+            max_width=1200,
+        )
     elif "neuroglancer" in reference:
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
@@ -254,7 +260,7 @@ def _get_kachery_cloud_url(hash: str):
 
     print(f"Getting kachery-cloud URL for {hash}")
 
-    # take the full hash, e.g. sha1://fb558dff5ed3c13751b6345af8a3128b25c4fa70?label=vid_side_camera_right_start_0_end_0.1.mp4 and just get the hash
+    # take the full hash string, e.g. sha1://fb558dff5ed3c13751b6345af8a3128b25c4fa70?label=vid_side_camera_right_start_0_end_0.1.mp4 and just get the hash
     simplified_hash = hash.split("?")[0].split("://")[1]
 
     url = "https://kachery-gateway.figurl.org/api/gateway"
