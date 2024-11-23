@@ -172,7 +172,6 @@ class QCPanel(param.Parameterized):
                 self.stage_filter != "All" and stage != self.stage_filter
             ):
                 objects.append(evaluation.panel())
-
         self.tabs.objects = objects
 
     def status_panel(self):
