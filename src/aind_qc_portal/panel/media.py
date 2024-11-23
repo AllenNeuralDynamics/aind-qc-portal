@@ -225,8 +225,9 @@ def _parse_type(reference, data):
         )
     else:
         return pn.widgets.StaticText(value=data)
-    
 
+
+@pn.cache()
 def _get_s3_data(s3_client, bucket, key):
     """Get an S3 asset from the given bucket and key
 
@@ -289,23 +290,3 @@ def _get_kachery_cloud_url(hash: str):
         return None
     else:
         return response.json()["url"]
-
-
-def _get_s3_asset(s3_client, bucket, key):
-    """Get an S3 asset from the given bucket and key
-
-    Parameters
-    ----------
-    s3_client : boto3.client
-                    S3 client object
-    bucket : str
-                    S3 bucket name
-    key : str
-                    S3 key name
-    """
-    try:
-        response = s3_client.get_object(Bucket=bucket, Key=key)
-        data = BytesIO(response["Body"].read())
-        return _parse_type(key, data)
-    except Exception as e:
-        return f"[ERROR] Failed to fetch asset {bucket}/{key}: {e}"
