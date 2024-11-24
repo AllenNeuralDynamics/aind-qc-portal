@@ -2,6 +2,8 @@
 
 The QC Portal app makes the `quality_control` metadata (see [aind-data-schema](https://github.com/allenNeuralDynamics/aind-data-schema)) explorable and provides tools for manual annotation of metrics.
 
+For general documentation about the QC metadata, go [here](https://aind-data-schema.readthedocs.io/en/latest/quality_control.html)
+
 ## Uploading data from CO Capsules
 
 ### Preferred workflow
@@ -16,17 +18,76 @@ Done!
 
 ### Alternate workflow
 
-Use the alternate workflow if you are **not** generating a data asset. You need to push your `QCEvaluation` objects to DocDB and you need to push your figures to `kachery-cloud`. 
+Use the alternate workflow if you are **not** generating a data asset and therefore need to push your QC data back to an existing data asset. You need to push your `QCEvaluation` objects to DocDB and you need to push your figures to `kachery-cloud`.
 
-#### Metadata
+You'll need to run `pip install kachery-cloud aind-data-access-api[docdb]` as part of your environment setup.
 
-#### Figures
+Then, in your capsule settings attach the `aind-codeocean-power-user` role. If you don't have access to this role, ask someone in Scientific Computing to attach it for you.
 
-You'll need to `pip install kachery-cloud` as part of your environment setup.
+#### (1) Acquire your DocDB _id using your data asset's name
 
-Then, in your capsule settings attach the `aind-codeocean-power-user` role. If you don't have access to this role, ask someone in Scientific Computing for help.
+To upload directly to DocDB you'll need to know your DocDB `_id`. You can get it by adding this code to your capsule and calling `query_docdb_id(asset_name)`.
 
-In your capsule, pull the Kachery Cloud credentials using this function:
+```{python}
+def query_docdb_id(asset_name: str):
+    """
+    Returns docdb_id for asset_name.
+    Returns empty string if asset is not found.
+    """
+
+    # Resolve DocDB id of data asset
+    API_GATEWAY_HOST = "api.allenneuraldynamics.org"
+    DATABASE = "metadata_index"
+    COLLECTION = "data_assets"
+
+    docdb_api_client = MetadataDbClient(
+    host=API_GATEWAY_HOST,
+    database=DATABASE,
+    collection=COLLECTION,
+    )
+
+    response = docdb_api_client.retrieve_docdb_records(
+    filter_query={"name": asset_name},
+    projection={"_id": 1},
+    )
+
+    if len(response) == 0:
+        return ""
+    docdb_id = response[0]["_id"]
+    return docdb_id
+```
+
+#### (2) Metadata
+
+Generate your `QCEvaluation` objects. Then run the following code snippet. You can pass all your evaluations as a list or pass them one at a time:
+
+```{python}
+session = boto3.Session()
+credentials = session.get_credentials()
+host = "api.allenneuraldynamics.org"
+
+auth = AWSRequestsAuth(
+aws_access_key=credentials.access_key,
+aws_secret_access_key=credentials.secret_key,
+aws_token=credentials.token,
+aws_host="api.allenneuraldynamics.org",
+aws_region='us-west-2',
+aws_service='execute-api'
+)
+url = f"https://{host}/v1/add_qc_evaluation"
+post_request_content = {"data_asset_id": docdb_id,
+                        "qc_evaluation": qc_eval.model_dump(mode='json')}
+response = requests.post(url=url, auth=auth, 
+                        json=post_request_content)
+
+if response.status_code != 200:
+    print(response.status_code)
+    print(response.text)
+```
+
+#### (3) Figures
+
+Your figures should already exist in folders in your `results/`. Then, in your capsule code, pull the Kachery Cloud credentials using this function:
 
 ```
 def get_kachery_secrets():
@@ -59,18 +120,16 @@ def get_kachery_secrets():
     os.environ['KACHERY_CLOUD_PRIVATE_KEY'] = kachery_secrets['KACHERY_CLOUD_PRIVATE_KEY']
 ```
 
-Each of your figures should be uploaded as a stored file:
+Each of your figures should then be uploaded as a stored file:
 
 ```
 import kachery_cloud as kcl
 
 file_path = "your_file_path.ext"
 uri = kcl.store_file(file_path, label=file_path)
-
-QCMetric.reference = uri
 ```
 
-The URI is a unique hash code that will allow the portal to recover your file. Make sure to include the `label` parameter or we won't be able to identify your filetype in the portal.
+Finally, set the reference field of each metric to the returned uri `QCMetric.reference = uri`. Each URI is a unique hashed string that will allow the portal to recover your file. Make sure to include the `label` parameter or we won't be able to identify your filetype in the portal.
 
 ### Reference/Figure recommendations
 
