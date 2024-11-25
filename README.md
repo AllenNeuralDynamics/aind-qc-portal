@@ -192,30 +192,6 @@ if response.status_code != 200:
 
 If you get errors, contact Dan for help debugging.
 
-### Reference/Figure recommendations
-
-In general, the portal works best with figures that are in landscape view, i.e. shaped like your monitor.
-
-#### Images
-
-We recommend you store rasterized files as PNG and vector files as SVG or PDF.
-
-#### Videos
-
-You can use gifs (<10 MB) or mp4 files (<100 MB). Make sure your mp4 files are *browser-compatible* or they will not work in the portal.
-
-#### Neuroglancer
-
-You can set the reference directly to a neuroglancer link, they will open embedded in the portal and can be easily switched to fullscreen mode.
-
-#### Rerun
-
-Rerun files (.rrd) can be linked in the reference, they will open in the rerun app embedded in the portal and can be easily switched to fullscreen mode.
-
-#### Other
-
-We're prepared to support basically any kind of browser-displayable object. Reach out with ideas.
-
 ## Development
 
 ### Launch
