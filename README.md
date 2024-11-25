@@ -20,6 +20,7 @@ Each metric is associated with a reference figure. We support:
 
 - Vector files (svg, pdf)
 - Images (png, jpg, etc)
+- Interactive figures (e.g. altair)
 - Videos (mp4)
 - Neuroglancer links (url)
 - Rerun files (rrd)
