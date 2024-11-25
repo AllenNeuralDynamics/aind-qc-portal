@@ -207,7 +207,7 @@ def _parse_type(reference, data):
     data : _type_
                     _description_
     """
-    if "s3://" in data:
+    if "https://s3" in data:
         data = _get_s3_file(data, os.path.splitext(reference)[1])
 
         if not data:
