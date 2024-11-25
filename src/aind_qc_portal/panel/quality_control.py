@@ -1,7 +1,6 @@
 """Build the Quality Control Panel object"""
 
 import json
-import boto3
 
 import panel as pn
 import pandas as pd
@@ -28,7 +27,6 @@ class QCPanel(param.Parameterized):
         super().__init__(**params)
 
         self.id = id
-        self.s3_client = boto3.client("s3")
 
         # Set up the submission area
         self.submit_button = pn.widgets.Button(

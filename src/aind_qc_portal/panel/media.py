@@ -1,14 +1,15 @@
-import io
 import tempfile
 import panel as pn
 from io import BytesIO
-from urllib.parse import urlparse
 import param
+import boto3
 from pathlib import Path
 from panel.reactive import ReactiveHTML
 import requests
 import time
 import os
+
+s3_client = boto3.client("s3")
 
 CSS = """
 :not(:root):fullscreen::backdrop {
@@ -147,13 +148,16 @@ class Media:
         elif "s3" in reference:
             bucket = reference.split("/")[2]
             key = "/".join(reference.split("/")[3:])
-            reference_data = _get_s3_data(self.parent.s3_client, bucket, key)
+            reference_data = _get_s3_data(bucket, key)
         elif "sha" in reference:
             reference_data = _get_kachery_cloud_url(reference)
         else:
             # assume local data asset_get_s3_asset
+            
+            # if a user appends extra things up to results/, strip that
+            if "results/" in reference:
+                reference = reference.split("results/")[1]
             reference_data = _get_s3_data(
-                self.parent.s3_client,
                 self.parent.s3_bucket,
                 str(Path(self.parent.s3_prefix) / reference),
             )
@@ -179,13 +183,17 @@ def _is_image(reference):
 
 
 def _get_s3_file(url, ext):
-    response = requests.get(url)
-    if response.status_code == 200:
-        with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
-            temp_file.write(response.content)
-        return temp_file.name
-    else:
-        print(f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}")
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
+                temp_file.write(response.content)
+            return temp_file.name
+        else:
+            print(f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}")
+            return None
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch asset {url}, error: {e}")
         return None
 
 
@@ -199,7 +207,7 @@ def _parse_type(reference, data):
     data : _type_
                     _description_
     """
-    if "s3" in data:
+    if "s3://" in data:
         data = _get_s3_file(data, os.path.splitext(reference)[1])
 
         if not data:
@@ -228,18 +236,18 @@ def _parse_type(reference, data):
 
 
 @pn.cache()
-def _get_s3_data(s3_client, bucket, key):
+def _get_s3_data(bucket, key):
     """Get an S3 asset from the given bucket and key
 
     Parameters
     ----------
-    s3_client : boto3.client
-                    S3 client object
     bucket : str
                     S3 bucket name
     key : str
                     S3 key name
     """
+
+    print((f"Getting S3 data for {bucket}/{key}"))
     try:
         response = s3_client.get_object(Bucket=bucket, Key=key)
         data = BytesIO(response["Body"].read())
