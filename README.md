@@ -32,7 +32,7 @@ You can link to your references in one of four ways:
 - Provide a relative path to a file in the data asset's S3 bucket, i.e. "figures/my_figure.png". The mount/asset name should not be included.
 - Provide a url to a publicly accessible file, i.e. "https://mywebsite.com/myfile.png"
 - Provide a path to any public S3 bucket, i.e. "s3://bucket/myfile.png"
-- Provide a kachery-cloud hash, i.e. "sha1://uuid.ext", note that only for FigURL hashes you **must append the filetype**. The easiest way to do this is to set the `label` field to the filename, see below.
+- Provide a kachery-cloud hash, i.e. "sha1://uuid.ext", note that you **must append the filetype**. The easiest way to do this is to set the `label` field to the filename, see below.
 
 **Q: I saw fancy things like dropdowns in the QC Portal, how do I do that?**
 
