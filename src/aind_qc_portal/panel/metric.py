@@ -131,7 +131,12 @@ class QCMetricPanel:
                     for v in value.values()
                 ]
             ):
+                auto_value = True
                 df = pd.DataFrame(value)
+                value_widget = pn.pane.DataFrame(df)
+            elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in value.values()]):
+                auto_value = True
+                df = pd.DataFrame([value])
                 value_widget = pn.pane.DataFrame(df)
             else:
                 try:
@@ -159,10 +164,14 @@ class QCMetricPanel:
             options=["Pass", "Fail", "Pending"],
             name="Metric status",
         )
-        if auto_state:
+        
+        if pn.state.user == "guest":
             self.state_selector.disabled = True
         else:
-            self.state_selector.param.watch(self.set_status, "value")
+            if auto_state:
+                self.state_selector.disabled = True
+            else:
+                self.state_selector.param.watch(self.set_status, "value")
 
         header = pn.pane.Markdown(md)
 
