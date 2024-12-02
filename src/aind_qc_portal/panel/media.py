@@ -141,6 +141,10 @@ class Media:
                 self.parse_reference(reference.split(";")[1]),
             )
 
+        # Strip slashes at the start of the reference
+        if reference.startswith("/"):
+            reference = reference[1:]
+
         # Step 1: get the data
         # possible sources are: http, s3, local data asset, figurl
         if "http" in reference:
@@ -165,13 +169,11 @@ class Media:
         if not reference_data:
             return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
-        print(f"Parsing type: {reference}")
-
         # Step 2: parse the type and return the appropriate object
         return _parse_type(reference, reference_data)
 
     def panel(self):
-        return Fullscreen(self.object, sizing_mode="stretch_both")
+        return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
 
 
 def _iframe_html(reference):
@@ -207,6 +209,8 @@ def _parse_type(reference, data):
     data : _type_
                     _description_
     """
+    print(f"Parsing type: {reference}")
+
     if "https://s3" in data:
         data = _get_s3_file(data, os.path.splitext(reference)[1])
 

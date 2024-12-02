@@ -67,9 +67,9 @@ class QCEvalPanel:
         else:
             notes.param.watch(self.set_notes, "value")
 
-        header_row = pn.Row(header, notes)
+        header_row = pn.Row(header, notes, max_height=1200)
 
-        accordion = pn.Accordion(*objects)
+        accordion = pn.Accordion(*objects, sizing_mode="stretch_width", max_height=1200)
         accordion.active = [0]
 
         col = pn.Column(header_row, accordion, name=self._data.name)

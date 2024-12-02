@@ -88,7 +88,8 @@ class QCMetricPanel:
             self.metric_panel(),
             self.reference_img,
             name=self._data.name,
-            sizing_mode="stretch_both",
+            sizing_mode="stretch_width",
+            max_height=1200,
         )
         return row
 
@@ -179,7 +180,7 @@ class QCMetricPanel:
             header,
             pn.WidgetBox(value_widget, self.state_selector),
             self.hidden_html,
-            width=350,
+            width=350, max_height=1200,
         )
 
         return col
