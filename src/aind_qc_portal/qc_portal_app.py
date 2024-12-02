@@ -68,7 +68,7 @@ class SearchOptions(param.Parameterized):
 
                 r = {
                     "name": record["name"],
-                    "modality": record_split[0],
+                    "platform": record_split[0],
                     "subject_id": record_split[1],
                     "date": record_split[2],
                     "status": status,
@@ -87,7 +87,7 @@ class SearchOptions(param.Parameterized):
             data,
             columns=[
                 "name",
-                "modality",
+                "platform",
                 "subject_id",
                 "date",
                 "status",
@@ -100,7 +100,7 @@ class SearchOptions(param.Parameterized):
 
         self._subject_ids = list(sorted(set(self.df["subject_id"].values)))
         self._subject_ids.insert(0, "")
-        self._modalities = list(sorted(set(self.df["modality"].values)))
+        self._modalities = list(sorted(set(self.df["platform"].values)))
         self._modalities.insert(0, "")
         self._dates = list(sorted(set(self.df["date"].values)))
         self._dates.insert(0, "")
@@ -123,7 +123,7 @@ class SearchOptions(param.Parameterized):
         df = self.df.copy()
 
         if modality_filter != "":
-            df = df[df["modality"] == modality_filter]
+            df = df[df["platform"] == modality_filter]
 
         if subject_filter != "":
             df = df[df["subject_id"] == subject_filter]
@@ -138,7 +138,7 @@ class SearchOptions(param.Parameterized):
 
         df = df.rename(
             columns={
-                "modality": "Modality",
+                "platform": "Platform",
                 "subject_id": "Subject ID",
                 "date": "Date",
                 "status": "Status",
@@ -196,7 +196,7 @@ searchview = SearchView()
 
 text_input = pn.widgets.AutocompleteInput(
     name="Search:",
-    placeholder="Name/Subject/Modality/Date",
+    placeholder="Name/Subject/Platform/Date",
     options=options.active_names(),
     search_strategy="includes",
     min_characters=0,
