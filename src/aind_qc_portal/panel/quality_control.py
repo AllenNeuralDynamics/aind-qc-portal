@@ -11,7 +11,6 @@ from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id
 from aind_qc_portal.panel.evaluation import QCEvalPanel
 from aind_qc_portal.utils import (
     status_html,
-    update_schema_version,
     OUTER_STYLE,
 )
 
@@ -88,8 +87,6 @@ class QCPanel(param.Parameterized):
             s3_location = s3_location.replace("s3://", "")
             self.s3_bucket = s3_location.split("/")[0]
             self.s3_prefix = s3_location.split("/")[1]
-
-        update_schema_version(json_data)
 
         self.asset_name = json_data["name"]
         try:

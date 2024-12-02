@@ -66,7 +66,7 @@ class QCMetricPanel:
 
         self._data.status_history.append(
             QCStatus(
-                evaluator=f"{pn.state.user_info['given_name']} {pn.state.user_info['family_name']}",
+                evaluator=f"{pn.state.user_info.get("given_name", "")} {pn.state.user_info.get("family_name", "")}",
                 status=status,
                 timestamp=datetime.now(),
             )

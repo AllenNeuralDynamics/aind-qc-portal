@@ -52,7 +52,7 @@ KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 class Fullscreen(ReactiveHTML):
     """A Fullscreen component that allows the user to toggle fullscreen mode.
     """
-    
+
     object = param.Parameter()
 
     def __init__(self, object, **params):
@@ -176,9 +176,6 @@ class Media:
         return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
 
 
-def _iframe_html(reference):
-    return f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
-
 
 def _is_image(reference):
     return reference.endswith(".png") or reference.endswith(".jpg") or reference.endswith(".gif") or reference.endswith(".jpeg") or reference.endswith(".svg") or reference.endswith(".pdf")
@@ -229,7 +226,7 @@ def _parse_type(reference, data):
     elif "neuroglancer" in reference:
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
-            iframe_html, sizing_mode="stretch_both"
+            iframe_html, sizing_mode="stretch_width", min_height=1000, max_height=1200
         )
     elif "http" in reference:
         return pn.widgets.StaticText(

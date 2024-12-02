@@ -17,7 +17,6 @@ from aind_qc_portal.utils import (
     ASSET_LINK_PREFIX,
     QC_LINK_PREFIX,
     qc_color,
-    update_schema_version,
     OUTER_STYLE,
     AIND_COLORS,
     set_background,
@@ -47,7 +46,6 @@ class SearchOptions(param.Parameterized):
 
                 if "quality_control" in record and record["quality_control"]:
                     # try to validate the QC object
-                    record = update_schema_version(record)
 
                     try:
                         qc = QualityControl.model_validate_json(
