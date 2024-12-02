@@ -21,7 +21,6 @@ from aind_qc_portal.utils import (
     set_background,
 )
 
-alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
 
 set_background()

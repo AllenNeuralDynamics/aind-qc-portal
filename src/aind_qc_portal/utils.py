@@ -60,11 +60,12 @@ def set_background():
 
 
 def status_html(status: Status):
-    if status.value == "Pass":
+    print(status)
+    if status == Status.PASS:
         color = AIND_COLORS["green"]
-    elif status.value == "Pending":
+    elif status == Status.PENDING:
         color = AIND_COLORS["light_blue"]
-    elif status.value == "Fail":
+    elif status == Status.FAIL:
         color = AIND_COLORS["red"]
     else:
         color = "#756575"

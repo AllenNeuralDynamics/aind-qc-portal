@@ -8,6 +8,7 @@ import param
 from aind_data_schema.core.quality_control import QualityControl
 
 from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id
+from aind_data_schema_models.modalities import Modality
 from aind_qc_portal.panel.evaluation import QCEvalPanel
 from aind_qc_portal.utils import (
     status_html,
@@ -73,14 +74,11 @@ class QCPanel(param.Parameterized):
 
         if "data_description" in json_data and json_data["data_description"] and "modality" in json_data["data_description"]:
             self.modalities = [
-                modality["abbreviation"]
+                Modality.from_abbreviation(modality["abbreviation"])
                 for modality in json_data["data_description"]["modality"]
             ]
         else:
-            # fallback: pull the modality from the name
-            self.modalities = [
-                json_data["name"].split("_")[0]
-            ]
+            self.modalities = []
 
         s3_location = json_data.get("location", None)
         if s3_location:
@@ -198,6 +196,7 @@ class QCPanel(param.Parameterized):
                 )
 
         df = pd.DataFrame(data, columns=["Group", "Stage", "Status"])
+        print(df)
 
         # Reshape the DataFrame using pivot_table
         df_squashed = df.pivot_table(
@@ -257,7 +256,7 @@ class QCPanel(param.Parameterized):
         # filters for modality and stage
         self.modality_selector = pn.widgets.Select(
             name="Modality",
-            options=["All"] + self.modalities,
+            options=["All"] + [mod.abbreviation for mod in self.modalities],
         )
         self.stage_selector = pn.widgets.Select(
             name="Stage",

@@ -1,11 +1,10 @@
-# QC TEST APP
+"""QC View main entrypoint"""
 
 import altair as alt
 import panel as pn
 import param
 
-alt.data_transformers.disable_max_rows()
-# from aind_qc_portal.search import search_bar
+# Setup Panel and Altair
 from aind_qc_portal.panel.quality_control import QCPanel
 from aind_qc_portal.utils import set_background
 

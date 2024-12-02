@@ -8,6 +8,8 @@ The portal allows users to annotate `PENDING` metrics. Logged in users can modif
 
 For general documentation about the QC metadata, go [here](https://aind-data-schema.readthedocs.io/en/latest/quality_control.html).
 
+**IMPORTANT:** The QC Portal relies on certain fields in the metadata being set correctly. These include the `data_description.modality` and `data_description.project_name` fields, as well as any fields related to generating *derived* assets. You *must* set these properly or the QC portal will mangle displaying your data assets.
+
 ## Defining metrics for the QC portal
 
 For AIND users, we expect your metrics to have actionable `value` fields. Either the value should be a number that a rule can be applied to (e.g. a threshold) or it should refer to the state of the reference (e.g. "high drift" when linked to a drift map, or "acceptable contrast" when linked to a video).
