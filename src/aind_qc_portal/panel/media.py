@@ -225,7 +225,7 @@ def _parse_type(reference, data):
     elif "neuroglancer" in reference:
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
-            iframe_html, sizing_mode="stretch_both", height=1000
+            iframe_html, sizing_mode="stretch_both"
         )
     elif "http" in reference:
         return pn.widgets.StaticText(
