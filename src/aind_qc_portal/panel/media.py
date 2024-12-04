@@ -224,7 +224,7 @@ def _parse_type(reference, data):
             max_width=1200,
         )
     elif "rrd" in reference:
-        src = f"https://app.rerun.io/version/0.9.0/index.html?url={data}"
+        src = f"https://app.rerun.io/version/0.19.1/index.html?url={data}"
         iframe_html = f'<iframe src="{src}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
             iframe_html, sizing_mode="stretch_width", height=1000,
