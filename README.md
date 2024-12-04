@@ -16,9 +16,20 @@ For AIND users, we expect your metrics to have actionable `value` fields. Either
 
 All metrics should have a `reference` figure attached. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers.
 
+**Q: The Metric `value` has type `Any`, what types are acceptable?**
+
+We expect the value to refer to a quantitative or qualitative assessment of some property of the data. When compared to a rule or threshold, the value establishes where that metric passes or fails quality control. So in general, the `value` field should be a number, string, or list of numbers/strings. Below is a table describing how different types are displayed in the portal:
+
+| Type      | Display format | Notes |
+|---------------|---------------|---------------|
+| Number | Editable number field [IntInput](https://panel.holoviz.org/reference/widgets/IntInput.html) or [FloatInput](https://panel.holoviz.org/reference/widgets/FloatInput.html) | |
+| String | Editable text field [TextInput](https://panel.holoviz.org/reference/widgets/TextInput.html) | |
+| Dictionary | Table [Dataframe](https://panel.holoviz.org/reference/panes/DataFrame.html) | Values must have the same length |
+| Custom metric type | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) | |
+
 **Q: How do references get pulled into the QC Portal?**
 
-There are two aspects to refrences: (1) the type of the reference data, and (2) where the data is stored. These two aspects are independent.
+There are two aspects to references: (1) the type of the reference data, and (2) where the data is stored. These are independent.
 
 *Reference data types*
 
