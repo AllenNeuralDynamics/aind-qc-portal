@@ -14,20 +14,21 @@ For general documentation about the QC metadata, go [here](https://aind-data-sch
 
 For AIND users, we expect your metrics to have actionable `value` fields. Either the value should be a number that a rule can be applied to (e.g. a threshold) or it should refer to the state of the reference (e.g. "high drift" when linked to a drift map, or "acceptable contrast" when linked to a video).
 
-All metrics should have a `reference` figure attached. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers.
+All metrics should have a `reference` image, figure, or video attached. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers. References can also point to Neuroglancer, FigURL, or Rerun.
 
-**Q: The Metric `value` has type `Any`, what types are acceptable?**
+**Q: `QCMetric.value` has type `Any`, what types are acceptable?**
 
 We expect the value to refer to a quantitative or qualitative assessment of some property of the data. When compared to a rule or threshold, the value establishes where that metric passes or fails quality control. So in general, the `value` field should be a number, string, or list of numbers/strings. Below is a table describing how different types are displayed in the portal:
 
-| Type      | Display format | Notes |
-|---------------|---------------|---------------|
-| Number | Editable number field [IntInput](https://panel.holoviz.org/reference/widgets/IntInput.html) or [FloatInput](https://panel.holoviz.org/reference/widgets/FloatInput.html) | |
-| String | Editable text field [TextInput](https://panel.holoviz.org/reference/widgets/TextInput.html) | |
-| Dictionary | Table [Dataframe](https://panel.holoviz.org/reference/panes/DataFrame.html) | Values must have the same length |
-| Custom metric type | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) | |
+| Type      | Display format | Panel type | Notes |
+|---------------|---------------|---------------|---------------|
+| Number | Editable number field | [IntInput](https://panel.holoviz.org/reference/widgets/IntInput.html) or [FloatInput](https://panel.holoviz.org/reference/widgets/FloatInput.html) | |
+| String | Editable text field | [TextInput](https://panel.holoviz.org/reference/widgets/TextInput.html) | |
+| Dictionary | Table | [Dataframe](https://panel.holoviz.org/reference/panes/DataFrame.html) | Values must have the same length |
+| DropdownMetric | Dropdown | [Dropdown](https://panel.holoviz.org/reference/widgets/Select.html) | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) |
+| CheckboxMetric | Checkboxes | [Checkbox](https://panel.holoviz.org/reference/widgets/Checkbox.html) | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) |
 
-**Q: How do references get pulled into the QC Portal?**
+**Q: How does the `QCMetric.reference` get pulled into the QC Portal?**
 
 There are two aspects to references: (1) the type of the reference data, and (2) where the data is stored. These are independent.
 
@@ -53,17 +54,19 @@ Neuroglancer and Figurl links should point to the exact URL that opens the view 
 
 **Q: I saw fancy things like dropdowns in the QC Portal, how do I do that?**
 
+*Custom value fields*
+
 The portal supports a few special cases to allow a bit more flexibility or to constrain the actions that manual annotators can take. Install the [`aind-qcportal-schema`](https://github.com/AllenNeuralDynamics/aind-qcportal-schema/blob/dev/src/aind_qcportal_schema/metric_value.py) package and set the `value` field to the corresponding pydantic object to use these. Current options include:
 
 - Dropdowns (optionally the options can auto-set the value)
 - Checkboxes (again options can auto-set the value)
 - Rule-based metrics (the rule is automatically run to set the value)
 - Multi-asset metrics where each asset is assigned it's own value
-
-There are also some custom rules for the value field. If you provide:
-
-- Two strings separated by a semicolon `;` they will be displayed in a "Swipe" pane that lets you swipe back and forth between the two things. Mostly useful for overlay images.
 - A dictionary where every value is a list of equal length, it will be displayed as a table where the keys are column headers and the values are rows. If a key "index" is included the values will be used to name the rows.
+
+*Special reference conditions*
+
+- If you put two reference strings separated by a semicolon `;` they will be displayed in a [Swipe](https://panel.holoviz.org/reference/layouts/Swipe.html) pane that lets you swipe back and forth between the two things. Mostly useful for overlay images.
 
 ## How to upload data from CO Capsules
 
