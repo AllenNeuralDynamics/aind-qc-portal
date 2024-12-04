@@ -5,6 +5,8 @@ import json
 import panel as pn
 import pandas as pd
 import param
+from datetime import datetime, timezone
+
 from aind_data_schema.core.quality_control import QualityControl
 
 from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id
@@ -179,7 +181,7 @@ class QCPanel(param.Parameterized):
                         "Group": modality.abbreviation,
                         "Stage": stage,
                         "Status": status_html(
-                            self._data.status(modality=modality, stage=stage)
+                            self._data.status(date=datetime.now(tz=timezone.utc), modality=modality, stage=stage)
                         ),
                     }
                 )
@@ -190,7 +192,7 @@ class QCPanel(param.Parameterized):
                         "Group": tag,
                         "Stage": stage,
                         "Status": status_html(
-                            self._data.status(tag=tag, stage=stage)
+                            self._data.status(date=datetime.now(tz=timezone.utc), tag=tag, stage=stage)
                         ),
                     }
                 )
@@ -227,7 +229,7 @@ class QCPanel(param.Parameterized):
         def state_panel():
             state_md = f"""
     <span style="font-size:12pt">Current state:</span>
-    <span style="font-size:10pt">Status: **{status_html((self._data.status()))}**</span>
+    <span style="font-size:10pt">Status: **{status_html((self._data.status(date=datetime.now(tz=timezone.utc))))}**</span>
     <span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
     """
             return pn.pane.Markdown(state_md)
