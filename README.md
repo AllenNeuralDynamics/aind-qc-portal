@@ -16,25 +16,29 @@ For AIND users, we expect your metrics to have actionable `value` fields. Either
 
 All metrics should have a `reference` figure attached. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers.
 
-**Q: How do reference URLs get pulled into the QC Portal?**
+**Q: How do references get pulled into the QC Portal?**
 
-Each metric is associated with a reference figure. We support:
+There are two aspects to refrences: (1) the type of the reference data, and (2) where the data is stored. These two aspects are independent.
+
+*Reference data types*
 
 - Vector files (svg, pdf)
 - Images (png, jpg, etc)
 - Interactive figures (e.g. altair)
 - Videos (mp4)
-- Neuroglancer links (url)
+- Embedded Neuroglancer and Figurl views (url, will be embedded in an *iframe*)
 - Rerun files (rrd - version number must be embedded in the filename in the format `filename_vX.Y.Z.rrd`)
 
-Figures, images, and videos can be any size, but they will fit best on the screen if they are landscape and shaped roughly like a computer screen (for example, 640×480, 1280×800 or 1900×1200 px).
+*Data storage*
 
-For images, figures, and videos, you can link to your references in several ways:
+You have a few options for where to store files. In general we *prefer* that you store files in either the same data asset where the `quality_control.json` is located. The options below are in order of preference:
 
-- Provide a relative path to a file in the data asset's S3 bucket, i.e. "figures/my_figure.png". The mount/asset name should not be included.
-- Provide a url to a publicly accessible file, i.e. "https://mywebsite.com/myfile.png"
-- Provide a path to any public S3 bucket, i.e. "s3://bucket/myfile.png"
-- Provide a kachery-cloud hash, i.e. "sha1://uuid.ext", note that you **must append the filetype**. The easiest way to do this is to set the `label` field to the filename, see below.
+1. Provide the path to a file *relative to the `quality_control.json` file*, i.e. "figures/my_figure.png". Do not include the mount, asset name, or s3:// prefix.
+2. Provide a kachery-cloud hash, i.e. "sha1://uuid.ext", note that you **must append the filetype**. The easiest way to do this is to set the `label` field to the filename, see below.
+3. Provide a url to a publicly accessible file, i.e. "https://mywebsite.com/myfile.png"
+4. Provide a path to any public S3 bucket, i.e. "s3://bucket/myfile.png"
+
+Neuroglancer and Figurl links should point to the exact URL that opens the view you want.
 
 **Q: I saw fancy things like dropdowns in the QC Portal, how do I do that?**
 
