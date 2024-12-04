@@ -25,11 +25,11 @@ Each metric is associated with a reference figure. We support:
 - Interactive figures (e.g. altair)
 - Videos (mp4)
 - Neuroglancer links (url)
-- Rerun files (rrd)
+- Rerun files (rrd - version number must be embedded in the filename in the format `filename_vX.Y.Z.rrd`)
 
-Figures, images, and videos can be any size, but they will fit best on the screen if they are landscape and shaped roughly like a computer screen (for example, 1280×800 or 1900×1200 px).
+Figures, images, and videos can be any size, but they will fit best on the screen if they are landscape and shaped roughly like a computer screen (for example, 640×480, 1280×800 or 1900×1200 px).
 
-You can link to your references in one of four ways:
+For images, figures, and videos, you can link to your references in several ways:
 
 - Provide a relative path to a file in the data asset's S3 bucket, i.e. "figures/my_figure.png". The mount/asset name should not be included.
 - Provide a url to a publicly accessible file, i.e. "https://mywebsite.com/myfile.png"
