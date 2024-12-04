@@ -10,6 +10,7 @@ import time
 import os
 
 s3_client = boto3.client("s3")
+MEDIA_TTL = 3600  # 1 hour
 
 CSS = """
 :not(:root):fullscreen::backdrop {
@@ -152,7 +153,7 @@ class Media:
         elif "s3" in reference:
             bucket = reference.split("/")[2]
             key = "/".join(reference.split("/")[3:])
-            reference_data = _get_s3_data(bucket, key)
+            reference_data = _get_s3_url(bucket, key)
         elif "sha" in reference:
             reference_data = _get_kachery_cloud_url(reference)
         else:
@@ -161,7 +162,7 @@ class Media:
             # if a user appends extra things up to results/, strip that
             if "results/" in reference:
                 reference = reference.split("results/")[1]
-            reference_data = _get_s3_data(
+            reference_data = _get_s3_url(
                 self.parent.s3_bucket,
                 str(Path(self.parent.s3_prefix) / reference),
             )
@@ -174,7 +175,6 @@ class Media:
 
     def panel(self):
         return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
-
 
 
 def _is_image(reference):
@@ -206,7 +206,7 @@ def _parse_type(reference, data):
     data : _type_
                     _description_
     """
-    print(f"Parsing type: {reference}")
+    print(f"Parsing type: {reference} with data: {data}")
 
     if "https://s3" in data:
         data = _get_s3_file(data, os.path.splitext(reference)[1])
@@ -223,10 +223,16 @@ def _parse_type(reference, data):
             sizing_mode="scale_width",
             max_width=1200,
         )
+    elif "rrd" in reference:
+        src = f"https://app.rerun.io/version/0.9.0/index.html?url={data}"
+        iframe_html = f'<iframe src="{src}" style="height:100%; width:100%" frameborder="0"></iframe>'
+        return pn.pane.HTML(
+            iframe_html, sizing_mode="stretch_width", height=1000,
+        )
     elif "neuroglancer" in reference:
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
-            iframe_html, sizing_mode="stretch_width", min_height=1000, max_height=1200
+            iframe_html, sizing_mode="stretch_width", height=1000,
         )
     elif "http" in reference:
         return pn.widgets.StaticText(
@@ -236,6 +242,24 @@ def _parse_type(reference, data):
         return pn.widgets.StaticText(value=data)
 
 
+@pn.cache(ttl=MEDIA_TTL)
+def _get_s3_url(bucket, key):
+    """Get a presigned URL to an S3 asset
+
+    Parameters
+    ----------
+    bucket : str
+        S3 bucket name
+    key : str
+        S3 key name
+    """      
+    return s3_client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': bucket, 'Key': key},
+            ExpiresIn=MEDIA_TTL,
+        )
+
+
 @pn.cache()
 def _get_s3_data(bucket, key):
     """Get an S3 asset from the given bucket and key
@@ -243,9 +267,9 @@ def _get_s3_data(bucket, key):
     Parameters
     ----------
     bucket : str
-                    S3 bucket name
+        S3 bucket name
     key : str
-                    S3 key name
+        S3 key name
     """
 
     print((f"Getting S3 data for {bucket}/{key}"))
