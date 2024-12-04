@@ -176,7 +176,7 @@ class QCPanel(param.Parameterized):
             for stage in self.stages:
                 data.append(
                     {
-                        "Group": modality,
+                        "Group": modality.abbreviation,
                         "Stage": stage,
                         "Status": status_html(
                             self._data.status(modality=modality, stage=stage)
