@@ -225,7 +225,10 @@ def _parse_type(reference, data):
         )
     elif "rrd" in reference:
         # files should be in the format name_vX.Y.Z.rrd
-        full_version = reference.split("_v")[1].split(".rrd")[0]
+        if "_v" in reference:
+            full_version = reference.split("_v")[1].split(".rrd")[0]
+        else:
+            full_version = "0.19.1"
         src = f"https://app.rerun.io/version/{full_version}/index.html?url={data}"
         iframe_html = f'<iframe src="{src}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
