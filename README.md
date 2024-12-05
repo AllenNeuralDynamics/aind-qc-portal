@@ -14,7 +14,7 @@ For general documentation about the QC metadata, go [here](https://aind-data-sch
 
 For AIND users, we expect your metrics to have actionable `value` fields. Either the value should be a number that a rule can be applied to (e.g. a threshold) or it should refer to the state of the reference (e.g. "high drift" when linked to a drift map, or "acceptable contrast" when linked to a video).
 
-All metrics should have a `reference` image, figure, or video attached. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers. References can also point to Neuroglancer, FigURL, or Rerun.
+Almost all metrics should have a `reference` image, figure, or video attached. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers. References can also point to Neuroglancer, FigURL, or Rerun.
 
 **Q: `QCMetric.value` has type `Any`, what types are acceptable?**
 
