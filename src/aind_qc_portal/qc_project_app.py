@@ -41,20 +41,22 @@ class ProjectView():
                 groups[raw_name] = len(groups)
 
             record_data = {
-                '_id': record['_id'],
-                'raw': record['data_description']['data_level'] == 'raw',
-                'project_name': record['data_description']['project_name'],
-                'location': record['location'],
-                'name': record['name'],
-                'session_start_time': record['session']['session_start_time'],
-                'session_type': record['session']['session_type'],
-                'subject_id': record['subject']['subject_id'],
-                'genotype': record['subject']['genotype'],
-                'group': groups[raw_name],
+                '_id': record.get('_id'),
+                'raw': record.get('data_description', {}).get('data_level') == 'raw',
+                'project_name': record.get('data_description', {}).get('project_name'),
+                'location': record.get('location'),
+                'name': record.get('name'),
+                'session_start_time': record.get('session', {}).get('session_start_time'),
+                'session_type': record.get('session', {}).get('session_type'),
+                'subject_id': record.get('subject', {}).get('subject_id'),
+                'genotype': record.get('subject', {}).get('genotype'),
+                'group': groups.get(raw_name),
             }
             data.append(record_data)
 
-            # Parse the asset history
+        if len(data) == 0:
+            self.data = None
+            return
 
         self.data = pd.DataFrame(data)
         self.data["timestamp"] = pd.to_datetime(self.data["session_start_time"])
@@ -74,10 +76,16 @@ class ProjectView():
         self.data.sort_values(by="group", ascending=True, inplace=True)
 
     def get_data(self):
+        if self.data is None:
+            return None
         return self.data[["subject_id", "Date", "S3 link", "Subject view", "QC view", "genotype", "session_type", "raw"]]
 
     def history_panel(self):
         """Create a plot showing the history of this asset, showing how assets were derived from each other"""
+        if self.data is None:
+            return pn.widgets.StaticText(
+                value=f"No data found for project: {settings.project_name}"
+            )
 
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(
@@ -107,6 +115,7 @@ class ProjectView():
         )
 
         return pn.pane.Vega(chart, sizing_mode="stretch_width", styles=OUTER_STYLE)
+
 
 md = f"""
 <h1 style="color:{AIND_COLORS["dark_blue"]};">
