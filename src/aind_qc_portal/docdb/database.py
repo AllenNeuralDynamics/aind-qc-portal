@@ -131,10 +131,21 @@ def get_all():
 @pn.cache(ttl=TIMEOUT_1H)
 def get_project(project: str):
     filter = {"data_description.project_name": project}
-    limit = 10
-    paginate_batch_size = 100
+    limit = 0
+    paginate_batch_size = 500
     response = client.retrieve_docdb_records(
         filter_query=filter,
+        projection={
+            "_id": 1,
+            "name": 1,
+            "location": 1,
+            "subject.subject_id": 1,
+            "subject.genotype": 1,
+            "session.session_type": 1,
+            "session.session_start_time": 1,
+            "data_description.data_level": 1,
+            "data_description.project_name": 1,
+        },
         limit=limit,
         paginate_batch_size=paginate_batch_size,
     )

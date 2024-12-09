@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import numpy as np
 import panel as pn
-from aind_data_schema.core.quality_control import QualityControl, Status
+from aind_data_schema.core.quality_control import Status
 
 ASSET_LINK_PREFIX = "/qc_asset_app?id="
 QC_LINK_PREFIX = "/qc_app?id="
