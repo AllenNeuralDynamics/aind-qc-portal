@@ -1,11 +1,10 @@
-# QC TEST APP
+"""QC View main entrypoint"""
 
 import altair as alt
 import panel as pn
 import param
 
-alt.data_transformers.disable_max_rows()
-# from aind_qc_portal.search import search_bar
+# Setup Panel and Altair
 from aind_qc_portal.panel.quality_control import QCPanel
 from aind_qc_portal.utils import set_background
 
@@ -17,7 +16,7 @@ set_background()
 
 # State sync
 class Settings(param.Parameterized):
-    id = param.String(default="a61f285e-c79b-46cd-b554-991d711b6e53")
+    id = param.String(default="0ff3a040-b590-495a-825b-d2424b6ecacc")
 
 
 settings = Settings()

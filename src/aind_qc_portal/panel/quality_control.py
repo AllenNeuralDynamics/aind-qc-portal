@@ -1,18 +1,19 @@
 """Build the Quality Control Panel object"""
 
 import json
-import boto3
 
 import panel as pn
 import pandas as pd
 import param
+from datetime import datetime, timezone
+
 from aind_data_schema.core.quality_control import QualityControl
 
 from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id
+from aind_data_schema_models.modalities import Modality
 from aind_qc_portal.panel.evaluation import QCEvalPanel
 from aind_qc_portal.utils import (
     status_html,
-    update_schema_version,
     OUTER_STYLE,
 )
 
@@ -28,12 +29,15 @@ class QCPanel(param.Parameterized):
         super().__init__(**params)
 
         self.id = id
-        self.s3_client = boto3.client("s3")
 
         # Set up the submission area
         self.submit_button = pn.widgets.Button(
             name="Submit changes" if pn.state.user != "guest" else "Log in",
             button_type="success",
+        )
+        self.changes = 0
+        self.change_info = pn.widgets.StaticText(
+            value=""
         )
         self.submit_info = pn.widgets.StaticText(
             value=(
@@ -44,7 +48,7 @@ class QCPanel(param.Parameterized):
         )
         self.submit_error = pn.widgets.StaticText(value="")
         self.submit_col = pn.Column(
-            self.submit_button, self.submit_info, self.submit_error
+            self.submit_button, self.change_info, self.submit_info, self.submit_error
         )
         pn.bind(self.submit_changes, self.submit_button, watch=True)
 
@@ -70,11 +74,13 @@ class QCPanel(param.Parameterized):
         else:
             return
 
-        if "data_description" in json_data:
+        if "data_description" in json_data and json_data["data_description"] and "modality" in json_data["data_description"]:
             self.modalities = [
-                modality["abbreviation"]
+                Modality.from_abbreviation(modality["abbreviation"])
                 for modality in json_data["data_description"]["modality"]
             ]
+        else:
+            self.modalities = []
 
         s3_location = json_data.get("location", None)
         if s3_location:
@@ -82,25 +88,20 @@ class QCPanel(param.Parameterized):
             self.s3_bucket = s3_location.split("/")[0]
             self.s3_prefix = s3_location.split("/")[1]
 
-        update_schema_version(json_data)
-
         self.asset_name = json_data["name"]
         try:
             self._data = QualityControl.model_validate_json(
                 json.dumps(json_data["quality_control"])
             )
 
-            self.stages = []
-            # parse stages from QC data
-            for evaluation in self._data.evaluations:
-                if evaluation.stage not in self.stages:
-                    self.stages.append(evaluation.stage)
-
         except Exception as e:
             self._data = None
             self._has_data = False
             print(f"QC object failed to validate: {e}")
             return
+
+        self.stages = list({evaluation.stage for evaluation in self._data.evaluations})
+        self.tags = list({tag for evaluation in self._data.evaluations if evaluation.tags for tag in evaluation.tags})
 
         self.evaluations = []
         self.evaluation_filters = []
@@ -119,6 +120,8 @@ class QCPanel(param.Parameterized):
         )
 
     def set_dirty(self, *event):
+        self.changes += 1
+        self.change_info.value = f"{self.changes} pending changes"
         self.submit_button.disabled = False
         self.submit_button.param.trigger("disabled")
 
@@ -138,6 +141,8 @@ class QCPanel(param.Parameterized):
             return
         else:
             self.submit_button.disabled = True
+            self.changes = 0
+            self.change_info.value = f"{self.changes} pending changes"
             self.hidden_html.object = (
                 "<script>window.location.reload();</script>"
             )
@@ -162,7 +167,6 @@ class QCPanel(param.Parameterized):
                 self.stage_filter != "All" and stage != self.stage_filter
             ):
                 objects.append(evaluation.panel())
-
         self.tabs.objects = objects
 
     def status_panel(self):
@@ -174,19 +178,31 @@ class QCPanel(param.Parameterized):
             for stage in self.stages:
                 data.append(
                     {
-                        "Modality": modality,
+                        "Group": modality.abbreviation,
                         "Stage": stage,
                         "Status": status_html(
-                            self._data.status(modality=modality, stage=stage)
+                            self._data.status(date=datetime.now(tz=timezone.utc), modality=modality, stage=stage)
+                        ),
+                    }
+                )
+        for tag in self.tags:
+            for stage in self.stages:
+                data.append(
+                    {
+                        "Group": tag,
+                        "Stage": stage,
+                        "Status": status_html(
+                            self._data.status(date=datetime.now(tz=timezone.utc), tag=tag, stage=stage)
                         ),
                     }
                 )
 
-        df = pd.DataFrame(data, columns=["Modality", "Stage", "Status"])
+        df = pd.DataFrame(data, columns=["Group", "Stage", "Status"])
+        print(df)
 
         # Reshape the DataFrame using pivot_table
         df_squashed = df.pivot_table(
-            index="Stage", columns="Modality", values="Status", aggfunc="first"
+            index="Stage", columns="Group", values="Status", aggfunc="first"
         )
 
         # Optional: Clean up column names by flattening the MultiIndex if needed
@@ -210,12 +226,15 @@ class QCPanel(param.Parameterized):
         # if any evaluations are failing, we'll show a warning
         failing_eval_str = ""
 
-        state_md = f"""
-<span style="font-size:12pt">Current state:</span>
-<span style="font-size:10pt">Status: **{status_html((self._data.status()))}**</span>
-<span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
-"""
-        state_pane = pn.pane.Markdown(state_md)
+        def state_panel():
+            state_md = f"""
+    <span style="font-size:12pt">Current state:</span>
+    <span style="font-size:10pt">Status: **{status_html((self._data.status(date=datetime.now(tz=timezone.utc))))}**</span>
+    <span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
+    """
+            return pn.pane.Markdown(state_md)
+
+        state_pane = pn.bind(lambda: state_panel())
 
         notes_box = pn.widgets.TextAreaInput(
             name="Notes:",
@@ -239,7 +258,7 @@ class QCPanel(param.Parameterized):
         # filters for modality and stage
         self.modality_selector = pn.widgets.Select(
             name="Modality",
-            options=["All"] + self.modalities,
+            options=["All"] + [mod.abbreviation for mod in self.modalities],
         )
         self.stage_selector = pn.widgets.Select(
             name="Stage",
@@ -257,7 +276,7 @@ class QCPanel(param.Parameterized):
             styles=OUTER_STYLE,
         )
 
-        self.tabs = pn.Tabs(sizing_mode="stretch_width", styles=OUTER_STYLE)
+        self.tabs = pn.Tabs(sizing_mode="stretch_width", styles=OUTER_STYLE, tabs_location="left")
         self.update_objects()
 
         col = pn.Column(

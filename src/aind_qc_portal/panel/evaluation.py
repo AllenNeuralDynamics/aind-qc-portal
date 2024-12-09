@@ -1,4 +1,6 @@
 import panel as pn
+from datetime import datetime, timezone
+
 from aind_data_schema.core.quality_control import QCEvaluation
 
 from aind_qc_portal.panel.metric import QCMetricPanel
@@ -50,7 +52,7 @@ class QCEvalPanel:
 
         md = f"""
 {md_style(12, self._data.description if self._data.description else "*no description provided*")}
-{md_style(8, f"Current state: **{status_html(self._data.status())}**")}
+{md_style(8, f"Current state: **{status_html(self._data.status(date=datetime.now(tz=timezone.utc)))}**")}
 {md_style(8, f"Contains **{len(self._data.metrics)}** metrics. {allow_failing_str}")}
 """
 
@@ -67,9 +69,9 @@ class QCEvalPanel:
         else:
             notes.param.watch(self.set_notes, "value")
 
-        header_row = pn.Row(header, notes)
+        header_row = pn.Row(header, notes, max_height=1200)
 
-        accordion = pn.Accordion(*objects, sizing_mode="stretch_width")
+        accordion = pn.Accordion(*objects, sizing_mode="stretch_width", max_height=1200)
         accordion.active = [0]
 
         col = pn.Column(header_row, accordion, name=self._data.name)

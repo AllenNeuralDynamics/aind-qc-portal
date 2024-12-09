@@ -16,13 +16,11 @@ from aind_qc_portal.utils import (
     QC_LINK_PREFIX,
     df_timestamp_range,
     qc_color,
-    update_schema_version,
     AIND_COLORS,
     OUTER_STYLE,
     set_background,
 )
 
-alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
 
 set_background()
@@ -67,7 +65,6 @@ class AssetHistory(param.Parameterized):
 
         # [TODO] this is designed as-is because the current metadata records are all missing the input_data_name field, unfortunately
         for record in self._records:
-            record = update_schema_version(record)
 
             name_split = record["name"].split("_")
 

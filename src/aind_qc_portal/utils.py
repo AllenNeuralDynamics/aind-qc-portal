@@ -26,21 +26,6 @@ OUTER_STYLE = {
     "margin": "5px",
 }
 
-background_color = AIND_COLORS[
-    (
-        pn.state.location.query_params["background"]
-        if "background" in pn.state.location.query_params
-        else "dark_blue"
-    )
-]
-BACKGROUND_CSS = f"""
-body {{
-    background-color: {background_color} !important;
-    background-image: url('/images/aind-pattern.svg') !important;
-    background-size: 60%;
-}}
-"""
-
 
 def format_link(link: str, text: str = "link"):
     """Format link as an HTML anchor tag
@@ -57,25 +42,30 @@ def format_link(link: str, text: str = "link"):
 def set_background():
     """Set the background color of the Panel app"""
     # Add the custom CSS
+    background_color = AIND_COLORS[
+        (
+            pn.state.location.query_params["background"]
+            if "background" in pn.state.location.query_params
+            else "dark_blue"
+        )
+    ]
+    BACKGROUND_CSS = f"""
+    body {{
+        background-color: {background_color} !important;
+        background-image: url('/images/aind-pattern.svg') !important;
+        background-size: 1200px;
+    }}
+    """
     pn.config.raw_css.append(BACKGROUND_CSS)
 
 
-def update_schema_version(record: dict):
-    """Update the schema version in the quality control field"""
-    if record.get("quality_control") and record.get("schema_version"):
-        record["quality_control"][
-            "schema_version"
-        ] = QualityControl.model_construct().schema_version
-
-    return record
-
-
 def status_html(status: Status):
-    if status.value == "Pass":
+    print(status)
+    if status == Status.PASS:
         color = AIND_COLORS["green"]
-    elif status.value == "Pending":
+    elif status == Status.PENDING:
         color = AIND_COLORS["light_blue"]
-    elif status.value == "Fail":
+    elif status == Status.FAIL:
         color = AIND_COLORS["red"]
     else:
         color = "#756575"

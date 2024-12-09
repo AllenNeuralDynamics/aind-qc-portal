@@ -57,20 +57,19 @@ class QCMetricPanel:
         ----------
         status : Status or str
         """
-        if pn.state.user == "guest":
-            self.hidden_html.object = f"<script>window.location.href = '/login?next={pn.state.location.href}';</script>"
-            return
-
         if not isinstance(status, Status):
             status = Status(status)
         print(f"Updating metric status to: {status.value}")
 
         if self.state_selector:
             self.state_selector.value = status.value
+            
+        given_name = pn.state.user_info.get("given_name", "")
+        family_name = pn.state.user_info.get("family_name", "")
 
         self._data.status_history.append(
             QCStatus(
-                evaluator=f"{pn.state.user_info['given_name']} {pn.state.user_info['family_name']}",
+                evaluator=f"{given_name} {family_name}",
                 status=status,
                 timestamp=datetime.now(),
             )
@@ -92,6 +91,8 @@ class QCMetricPanel:
             self.metric_panel(),
             self.reference_img,
             name=self._data.name,
+            sizing_mode="stretch_width",
+            max_height=1200,
         )
         return row
 
@@ -109,6 +110,11 @@ class QCMetricPanel:
 
         auto_value = False
         auto_state = False
+
+        # Check if empty, if so set to empty string
+        if value is None or value == "" or value == [] or value == {}:
+            value = ""
+
         if isinstance(value, bool):
             value_widget = pn.widgets.Checkbox(name=name)
         elif isinstance(value, str):
@@ -129,7 +135,12 @@ class QCMetricPanel:
                     for v in value.values()
                 ]
             ):
+                auto_value = True
                 df = pd.DataFrame(value)
+                value_widget = pn.pane.DataFrame(df)
+            elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in value.values()]):
+                auto_value = True
+                df = pd.DataFrame([value])
                 value_widget = pn.pane.DataFrame(df)
             else:
                 try:
@@ -157,10 +168,14 @@ class QCMetricPanel:
             options=["Pass", "Fail", "Pending"],
             name="Metric status",
         )
-        if auto_state:
+        
+        if pn.state.user == "guest":
             self.state_selector.disabled = True
         else:
-            self.state_selector.param.watch(self.set_status, "value")
+            if auto_state:
+                self.state_selector.disabled = True
+            else:
+                self.state_selector.param.watch(self.set_status, "value")
 
         header = pn.pane.Markdown(md)
 
@@ -168,7 +183,7 @@ class QCMetricPanel:
             header,
             pn.WidgetBox(value_widget, self.state_selector),
             self.hidden_html,
-            width=350,
+            width=350, max_height=1200,
         )
 
         return col

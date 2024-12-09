@@ -107,11 +107,14 @@ class CustomMetricValue:
             name="Value",
             options=data["options"],
         )
-        if data["value"]:
-            self._panel.value = data["value"]
+        if data["value"] and isinstance(data["value"], list) and all(value in data["options"] for value in data["value"]):
+            self._panel.value = [data["value"]]
+        else:
+            print("Checkbox value not in options")
+            self._panel.value = []
 
         # watch the selector and pass event updates back through the callback
         self._panel.param.watch(self._callback_helper, "value")
 
     def _rulebased_helper(self, data: dict):
-        self._panel = pn.widgets.StaticText("Todo")
+        self._panel = pn.widgets.StaticText(value="Todo")
