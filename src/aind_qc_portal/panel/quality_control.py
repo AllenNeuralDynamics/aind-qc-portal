@@ -213,14 +213,19 @@ class QCPanel(param.Parameterized):
 
     def panel(self):
         """Build a Panel object representing this QC action"""
-        if not self._has_data or not self._data:
-            return pn.widgets.StaticText(value="No QC object available")
 
         # build the header
         md = f"""
 <span style="font-size:14pt">Quality control for {self.asset_name}</span>
 """
         header = pn.pane.Markdown(md)
+
+        if not self._has_data or not self._data:
+            return pn.Row(
+                pn.HSpacer(),
+                pn.Column(header,
+                          pn.widgets.StaticText(value="No QC object available", styles={"font-size": "22pt"}), styles=OUTER_STYLE),
+                pn.HSpacer())
 
         # build the display box: this shows the current state in DocDB of this asset
         # if any evaluations are failing, we'll show a warning

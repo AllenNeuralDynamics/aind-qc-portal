@@ -129,8 +129,8 @@ def get_all():
 
 
 @pn.cache(ttl=TIMEOUT_1H)
-def get_project(project: str):
-    filter = {"data_description.project_name": project}
+def get_project(project_name: str):
+    filter = {"data_description.project_name": project_name}
     limit = 0
     paginate_batch_size = 500
     response = client.retrieve_docdb_records(
@@ -145,7 +145,40 @@ def get_project(project: str):
             "session.session_start_time": 1,
             "data_description.data_level": 1,
             "data_description.project_name": 1,
+            "rig.rig_id": 1,
+            "session.experimenter_full_name": 1,
+            "quality_control": 1,
         },
+        limit=limit,
+        paginate_batch_size=paginate_batch_size,
+    )
+
+    return response
+
+
+@pn.cache(ttl=TIMEOUT_1H)
+def get_project_custom(project_name: str, fields: list):
+    """Get all records that match a project name, with custom fields
+
+    Parameters
+    ----------
+    project_name : str
+    fields : list
+        List of fields to retain from DocDB record
+
+    Returns
+    -------
+    list
+        List of dictionaries containing the fields requested
+    """
+    filter = {"data_description.project_name": project_name}
+    limit = 0
+    paginate_batch_size = 500
+    response = client.retrieve_docdb_records(
+        filter_query=filter,
+        projection={
+            "_id": 1,
+        } | {field: 1 for field in fields},
         limit=limit,
         paginate_batch_size=paginate_batch_size,
     )

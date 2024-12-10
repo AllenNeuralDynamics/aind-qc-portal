@@ -59,8 +59,7 @@ def set_background():
     pn.config.raw_css.append(BACKGROUND_CSS)
 
 
-def status_html(status: Status):
-    print(status)
+def status_color(status: Status):
     if status == Status.PASS:
         color = AIND_COLORS["green"]
     elif status == Status.PENDING:
@@ -69,8 +68,11 @@ def status_html(status: Status):
         color = AIND_COLORS["red"]
     else:
         color = "#756575"
+    return color
 
-    return f'<span style="color:{color};">{status.value}</span>'
+
+def status_html(status: Status, text: str = ""):
+    return f'<span style="color:{status_color(status)};">{text if text else status.value}</span>'
 
 
 def df_timestamp_range(df, column="timestamp"):

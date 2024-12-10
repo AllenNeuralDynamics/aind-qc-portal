@@ -168,7 +168,7 @@ class QCMetricPanel:
             options=["Pass", "Fail", "Pending"],
             name="Metric status",
         )
-        
+
         if pn.state.user == "guest":
             self.state_selector.disabled = True
         else:
