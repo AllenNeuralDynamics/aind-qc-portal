@@ -22,7 +22,8 @@ settings = Settings()
 pn.state.location.sync(settings, {"project_name": "project_name"})
 
 
-class ProjectView():
+class ProjectView(param.Parameterized):
+    subject_filter = param.String(default="")
 
     def __init__(self):
         self._get_assets()
@@ -33,12 +34,9 @@ class ProjectView():
         records = get_project(settings.project_name)
 
         data = []
-        groups = {}
         for record in records:
             raw_name = _raw_name_from_derived(record['name'])
-
-            if raw_name not in groups:
-                groups[raw_name] = len(groups)
+            subject_id = record.get('subject', {}).get('subject_id')
 
             record_data = {
                 '_id': record.get('_id'),
@@ -48,9 +46,8 @@ class ProjectView():
                 'name': record.get('name'),
                 'session_start_time': record.get('session', {}).get('session_start_time'),
                 'session_type': record.get('session', {}).get('session_type'),
-                'subject_id': record.get('subject', {}).get('subject_id'),
+                'subject_id': subject_id,
                 'genotype': record.get('subject', {}).get('genotype'),
-                'group': groups.get(raw_name),
             }
             data.append(record_data)
 
@@ -59,26 +56,31 @@ class ProjectView():
             return
 
         self.data = pd.DataFrame(data)
-        self.data["timestamp"] = pd.to_datetime(self.data["session_start_time"])
+        self.data["timestamp"] = pd.to_datetime(self.data["session_start_time"], format='mixed', utc=True)
         self.data["Date"] = self.data["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
         self.data["S3 link"] = self.data["location"].apply(lambda x: format_link(x, text="S3 link"))
         self.data["Subject view"] = self.data["_id"].apply(lambda x: format_link(f"/qc_asset_app?id={x}"))
         self.data["QC view"] = self.data["_id"].apply(lambda x: format_link(f"/qc_app?id={x}"))
 
         self.data.sort_values(by="timestamp", ascending=True, inplace=True)
-        unique_groups = self.data["group"].unique()
-        group_mapping = {
-            group: new_group for new_group, group in enumerate(unique_groups)
-        }
+        self.data.sort_values(by="subject_id", ascending=True, inplace=True)
 
-        # Replace the 'group' column with the new group values
-        self.data["group"] = self.data["group"].map(group_mapping)
-        self.data.sort_values(by="group", ascending=True, inplace=True)
+    def get_subjects(self):
+        if self.data is None:
+            return []
+
+        return self.data["subject_id"].unique()
 
     def get_data(self):
         if self.data is None:
             return None
-        return self.data[["subject_id", "Date", "S3 link", "Subject view", "QC view", "genotype", "session_type", "raw"]]
+        
+        if self.subject_filter:
+            filtered_df = self.data[self.data["subject_id"].str.contains(self.subject_filter, case=False, na=False)]
+        else:
+            filtered_df = self.data
+
+        return filtered_df[["subject_id", "Date", "S3 link", "Subject view", "QC view", "genotype", "session_type", "raw"]]
 
     def history_panel(self):
         """Create a plot showing the history of this asset, showing how assets were derived from each other"""
@@ -102,7 +104,7 @@ class ProjectView():
                     scale=alt.Scale(domain=[min_range, max_range]),
                     axis=alt.Axis(format=format, tickCount=range_unit),
                 ),
-                y=alt.Y("group:N", title="Raw asset"),
+                y=alt.Y("subject_id:N", title="Subject ID"),
                 tooltip=[
                     "name",
                     "session_type",
@@ -112,26 +114,39 @@ class ProjectView():
                 ],
                 color=alt.Color("subject_id:N"),
             )
+            .properties(width=900)
         )
 
         return pn.pane.Vega(chart, sizing_mode="stretch_width", styles=OUTER_STYLE)
 
+project_view = ProjectView()
 
 md = f"""
 <h1 style="color:{AIND_COLORS["dark_blue"]};">
-    QC Portal - Project View
+    {settings.project_name}
 </h1>
-Main entrypoint for projects. Shows all assets flagged for each project and links to the QC pages.
+<b>{len(project_view.data)}</b> data assets are associated with this project.
 """
 
 header = pn.pane.Markdown(md, width=1000, styles=OUTER_STYLE)
 
 
-project_view = ProjectView()
 chart_pane = project_view.history_panel()
-df_pane = pn.pane.DataFrame(project_view.get_data(), width=1000, escape=False, index=False, styles=OUTER_STYLE)
 
-col = pn.Column(header, chart_pane, df_pane)
+df_pane = pn.pane.DataFrame(project_view.get_data(), width=950, escape=False, index=False)
+
+
+def update_subject_filter(event):
+    project_view.subject_filter = event.new
+    df_pane.object = project_view.get_data()
+
+
+subject_filter = pn.widgets.Select(name="Subject filter", options=list(project_view.get_subjects()))
+subject_filter.param.watch(update_subject_filter, "value")
+
+df_col = pn.Column(subject_filter, df_pane, styles=OUTER_STYLE)
+
+col = pn.Column(header, chart_pane, df_col)
 row = pn.Row(pn.HSpacer(), col, pn.HSpacer())
 
 row.servable(title="AIND QC - Project")

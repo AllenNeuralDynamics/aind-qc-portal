@@ -98,6 +98,8 @@ def df_timestamp_range(df, column="timestamp"):
     one_month = timedelta(days=30)
     three_months = timedelta(days=90)
     one_year = timedelta(days=365)
+    two_year = timedelta(days=730)
+    five_year = timedelta(days=1825)
 
     # Determine the minimum range
     if time_range < one_week:
@@ -115,11 +117,23 @@ def df_timestamp_range(df, column="timestamp"):
         max_range = max_date + (three_months - time_range) / 2
         unit = "week"
         format = "%b %d"
-    else:
+    elif time_range < one_year:
         min_range = min_date - (one_year - time_range) / 2
         max_range = max_date + (one_year - time_range) / 2
         unit = "month"
         format = "%b"
+    elif time_range < two_year:
+        min_range = min_date - (two_year - time_range) / 2
+        max_range = max_date + (two_year - time_range) / 2
+        unit = "year"
+        format = "%b"
+    elif time_range < five_year:
+        min_range = min_date - (five_year - time_range) / 2
+        max_range = max_date + (five_year - time_range) / 2
+        unit = "year"
+        format = "%Y"
+    else:
+        raise ValueError("Time range is too large")
 
     return (min_range, max_range, unit, format)
 
