@@ -40,13 +40,13 @@ class CustomMetricValue:
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
             else:
-                self._data = data  # just a dictionary
+                raise ValueError("Unknown type for custom metric value")
         elif "rule" in data:
             self._data = RulebasedMetric.model_validate_json(json.dumps(data))
             self._auto_state = True
             self._rulebased_helper(data)
         else:
-            raise ValueError("Unknown type for custom metric value")
+            raise ValueError("Unknown custom metric value")
 
     @property
     def panel(self):
@@ -71,23 +71,26 @@ class CustomMetricValue:
             self._value_callback(updated_data.model_dump())
 
         if self._auto_state:
-            if (
-                hasattr(updated_data, "type")
-                and updated_data.type == "checkbox"
-            ):
-                pass
-                # parse the value
-                print(event.new)
-            else:
-                try:
-                    if updated_data.value == "":
-                        self._status_callback(Status.PENDING)
+            try:
+                if not updated_data.value:
+                    self._status_callback(Status.PENDING)
+                else:
+                    if isinstance(updated_data.value, list):
+                        values = [updated_data.status[updated_data.options.index(value)] for value in updated_data.value]
+                        if any(values == Status.FAIL for value in values):
+                            self._status_callback(Status.FAIL)
+                        elif any(values == Status.PENDING for value in values):
+                            self._status_callback(Status.PENDING)
+                        else:
+                            self._status_callback(Status.PASS)
                     else:
                         idx = updated_data.options.index(updated_data.value)
                         self._status_callback(updated_data.status[idx])
-                except Exception as e:
-                    print(e)
-                    self._status_callback(Status.PENDING)
+            except Exception as e:
+                print(e)
+                self._status_callback(Status.PENDING)
+        
+        self._data = updated_data
 
     def _dropdown_helper(self, data: dict):
         self._panel = pn.widgets.Select(
