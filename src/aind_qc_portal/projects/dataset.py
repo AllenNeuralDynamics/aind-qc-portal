@@ -64,7 +64,7 @@ class ProjectDataset(param.Parameterized):
         self._df["QC view"] = self._df.apply(lambda row: format_link(row["qc_link"]), axis=1)
         self._df["Operator"] = self._df["operator"].apply(lambda x: ", ".join(x))
         self._df.sort_values(by="timestamp", ascending=True, inplace=True)
-        self._df.sort_values(by="subject_id", ascending=True, inplace=True)
+        self._df.sort_values(by="subject_id", ascending=False, inplace=True)
 
     def filtered_data(self):
         if self.subject_filter:
