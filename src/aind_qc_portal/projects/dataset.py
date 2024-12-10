@@ -15,7 +15,7 @@ class ProjectDataset(param.Parameterized):
         self.project_name = project_name
         self._df = None
         self.exposed_columns = [
-            "subject_id", "Date", "name", "Operator", "S3 link", "Status", "Subject view", "QC view", "session_type", "raw"
+            "subject_id", "Date", "name", "Researcher", "S3 link", "Status", "Subject view", "QC view", "session_type", "raw"
         ]
         self._get_assets()
 
@@ -37,6 +37,10 @@ class ProjectDataset(param.Parameterized):
             else:
                 qc = None
 
+            operator_list = record.get('session', {}).get('experimenter_full_name')
+            if operator_list:
+                operator_list = list(operator_list)
+
             record_data = {
                 '_id': record.get('_id'),
                 'raw': record.get('data_description', {}).get('data_level') == 'raw',
@@ -46,7 +50,7 @@ class ProjectDataset(param.Parameterized):
                 'session_start_time': record.get('session', {}).get('session_start_time'),
                 'session_type': record.get('session', {}).get('session_type'),
                 'subject_id': subject_id,
-                'operator': list(record.get('session', {}).get('experimenter_full_name')),
+                'operator': operator_list,
                 'Status': qc.status().value if qc else "No QC",
             }
             data.append(record_data)
@@ -62,7 +66,7 @@ class ProjectDataset(param.Parameterized):
         self._df["Subject view"] = self._df["_id"].apply(lambda x: format_link(f"/qc_asset_app?id={x}"))
         self._df["qc_link"] = self._df["_id"].apply(lambda x: f"/qc_app?id={x}")
         self._df["QC view"] = self._df.apply(lambda row: format_link(row["qc_link"]), axis=1)
-        self._df["Operator"] = self._df["operator"].apply(lambda x: ", ".join(x))
+        self._df["Researcher"] = self._df["operator"].apply(lambda x: ", ".join(x) if x else None)
         self._df.sort_values(by="timestamp", ascending=True, inplace=True)
         self._df.sort_values(by="subject_id", ascending=False, inplace=True)
 
