@@ -6,7 +6,7 @@ Intended to be the main entry point for a project's data
 """
 import panel as pn
 import param
-from aind_qc_portal.utils import OUTER_STYLE, set_background, AIND_COLORS
+from aind_qc_portal.utils import set_background
 from aind_qc_portal.projects.project_view import ProjectView
 
 pn.extension("vega")

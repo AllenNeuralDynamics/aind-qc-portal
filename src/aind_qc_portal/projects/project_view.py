@@ -4,8 +4,7 @@ import panel as pn
 import altair as alt
 
 from aind_qc_portal.projects.dataset import mapping, ProjectDataset
-from aind_qc_portal.utils import df_timestamp_range, OUTER_STYLE
-from aind_qc_portal.utils import OUTER_STYLE, AIND_COLORS
+from aind_qc_portal.utils import df_timestamp_range, OUTER_STYLE, AIND_COLORS
 
 
 class ProjectView():
@@ -93,7 +92,7 @@ class ProjectView():
             self.dataset.subject_filter = event.new
             df_pane.object = self.get_data()
 
-        subject_filter = pn.widgets.Select(name="Subject filter", options=list(self.get_subjects()))
+        subject_filter = pn.widgets.Select(name="Subject filter", options=[""] + list(self.get_subjects()))
         subject_filter.param.watch(update_subject_filter, "value")
 
         df_col = pn.Column(subject_filter, df_pane, styles=OUTER_STYLE)
