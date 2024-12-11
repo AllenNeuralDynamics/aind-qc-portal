@@ -103,7 +103,6 @@ class QCMetricPanel:
         md = f"""
 {md_style(10, f"Current state: {self._data.status.status.value}")}
 {md_style(8, self._data.description if self._data.description else "*no description provided*")}
-{md_style(8, f"Value: {self._data.value}")}
 """
         name = self._data.name
         value = self._data.value
