@@ -178,8 +178,10 @@ class Media:
 
 
 def _is_image(reference):
-    return reference.endswith(".png") or reference.endswith(".jpg") or reference.endswith(".gif") or reference.endswith(".jpeg") or reference.endswith(".svg") or reference.endswith(".pdf")
+    return reference.endswith(".png") or reference.endswith(".jpg") or reference.endswith(".gif") or reference.endswith(".jpeg") or reference.endswith(".svg")
 
+def _is_pdf(reference):
+    return reference.endswith(".pdf")
 
 def _get_s3_file(url, ext):
     try:
@@ -216,6 +218,8 @@ def _parse_type(reference, data):
 
     if _is_image(reference):
         return pn.pane.Image(data, sizing_mode="scale_width", max_width=1200)
+    elif _is_pdf(reference):
+        return pn.pane.PDF(data, sizing_mode="scale_width", max_width=1200, height=1000)
     elif reference.endswith(".mp4"):
         # Return the Video pane using the temporary file
         return pn.pane.Video(
