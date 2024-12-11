@@ -23,6 +23,7 @@ class QCPanel(param.Parameterized):
 
     modality_filter = param.String(default="All")
     stage_filter = param.String(default="All")
+    tag_filter = param.String(default="All")
 
     def __init__(self, id, **params):
         """Construct the QCPanel object"""
@@ -107,7 +108,7 @@ class QCPanel(param.Parameterized):
         self.evaluation_filters = []
         for evaluation in self._data.evaluations:
             self.evaluation_filters.append(
-                (evaluation.stage, evaluation.modality.abbreviation)
+                (evaluation.stage, evaluation.modality.abbreviation, evaluation.tags)
             )
             self.evaluations.append(
                 QCEvalPanel(parent=self, qc_evaluation=evaluation)
@@ -152,19 +153,24 @@ class QCPanel(param.Parameterized):
 
     def _update_stage_filter(self, event):
         self.stage_filter = event.new
+        
+    def _update_tag_filter(self, event):
+        self.tag_filter = event.new
 
-    @param.depends("modality_filter", "stage_filter", watch=True)
+    @param.depends("modality_filter", "stage_filter", "tag_filter", watch=True)
     def update_objects(self):
         objects = []
         for evaluation, filters in zip(
             self.evaluations, self.evaluation_filters
         ):
-            (stage, modality) = filters
-            if not (
-                self.modality_filter != "All"
-                and modality != self.modality_filter
-            ) and not (
-                self.stage_filter != "All" and stage != self.stage_filter
+            (stage, modality, tags) = filters
+            if (
+                self.modality_filter == "All"
+                or modality == self.modality_filter
+            ) and (
+                self.stage_filter == "All" or stage == self.stage_filter
+            ) and (
+                not tags or self.tag_filter == "All" or any([self.tag_filter == tag for tag in tags])
             ):
                 objects.append(evaluation.panel())
         self.tabs.objects = objects
@@ -264,20 +270,28 @@ class QCPanel(param.Parameterized):
         self.modality_selector = pn.widgets.Select(
             name="Modality",
             options=["All"] + [mod.abbreviation for mod in self.modalities],
+            width=250,
         )
         self.stage_selector = pn.widgets.Select(
             name="Stage",
             options=["All"] + self.stages,
+            width=250,
+        )
+        self.tag_selector = pn.widgets.Select(
+            name="Tag",
+            options=["All"] + self.tags,
+            width=250,
         )
 
         self.modality_selector.param.watch(
             self._update_modality_filter, "value"
         )
         self.stage_selector.param.watch(self._update_stage_filter, "value")
+        self.tag_selector.param.watch(self._update_tag_filter, "value")
 
         header_col = pn.Column(
             header_row,
-            pn.Row(self.modality_selector, self.stage_selector),
+            pn.Row(self.modality_selector, self.stage_selector, self.tag_selector),
             styles=OUTER_STYLE,
         )
 
