@@ -76,7 +76,8 @@ Use the preferred workflow if you are **generating a data asset**, e.g. when upl
 
 1. Develop your QC pipeline, generating metrics and reference figures as needed. Place references in the `results/` folder.
 2. Populate your `QCEvaluation` objects with metrics. The `reference` field should contain the path *relative to the results* folder. I.e. the file `results/figures/my_figure.png` should be included as `QCMetric.reference = "figures/my_figure.png"`. 
-3. Write the standard QC file: `QualityControl.write_standard_file()`
+3. If your input data asset already has a `quality_control.json` file, then load the previous QC file by using `qc = QualityControl(**json.loads(your_file))` and append your evaluations to `qc.evaluations`. If your input data file has no QC, or this will be a raw data asset, generate the QC object now `qc = QualityControl(evaluations)`
+4. Write the standard QC file to the results folder: `qc.write_standard_file()`
 
 Make sure to follow the standard instructions for building derived assets: copy all metadata files, upgrade the data_description to derived, and name your asset according to the expected conventions. Make sure to tag your data asset as `derived` so that it will be picked up by the indexer.
 
