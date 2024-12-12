@@ -7,7 +7,16 @@ from aind_qc_portal.projects.dataset import mapping, ProjectDataset
 from aind_qc_portal.utils import df_timestamp_range, OUTER_STYLE, AIND_COLORS
 
 
+class AssetView():
+    """Panel view of a single raw asset and its derived assets
+    """
+
+    def __init__(self, asset_id: str):
+        pass
+
+
 class ProjectView():
+    """Panel view of an entire project's assets"""
 
     def __init__(self, project_name: str):
         cls = mapping.get(project_name, ProjectDataset)
