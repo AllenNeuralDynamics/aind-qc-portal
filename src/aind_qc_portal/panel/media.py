@@ -208,7 +208,7 @@ def _parse_type(reference, data):
     data : _type_
                     _description_
     """
-    print(f"Parsing type: {reference} with data: {data}")
+    # print(f"Parsing type: {reference} with data: {data}")
 
     if "https://s3" in data:
         data = _get_s3_file(data, os.path.splitext(reference)[1])
@@ -281,7 +281,7 @@ def _get_s3_data(bucket, key):
         S3 key name
     """
 
-    print((f"Getting S3 data for {bucket}/{key}"))
+    # print((f"Getting S3 data for {bucket}/{key}"))
     try:
         response = s3_client.get_object(Bucket=bucket, Key=key)
         data = BytesIO(response["Body"].read())
@@ -301,7 +301,7 @@ def _get_kachery_cloud_url(hash: str):
     """
     timestamp = int(time.time() * 1000)
 
-    print(f"Getting kachery-cloud URL for {hash}")
+    # print(f"Getting kachery-cloud URL for {hash}")
 
     # take the full hash string, e.g. sha1://fb558dff5ed3c13751b6345af8a3128b25c4fa70?label=vid_side_camera_right_start_0_end_0.1.mp4 and just get the hash
     simplified_hash = hash.split("?")[0].split("://")[1]

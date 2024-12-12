@@ -180,8 +180,8 @@ class QCPanel(param.Parameterized):
         # We'll loop over stage and modality to build a table
 
         data = []
-        for modality in self.modalities:
-            for stage in self.stages:
+        for stage in self.stages:
+            for modality in self.modalities:
                 data.append(
                     {
                         "Group": modality.abbreviation,
@@ -191,8 +191,7 @@ class QCPanel(param.Parameterized):
                         ),
                     }
                 )
-        for tag in self.tags:
-            for stage in self.stages:
+            for tag in self.tags:
                 data.append(
                     {
                         "Group": tag,
@@ -204,7 +203,6 @@ class QCPanel(param.Parameterized):
                 )
 
         df = pd.DataFrame(data, columns=["Group", "Stage", "Status"])
-        print(df)
 
         # Reshape the DataFrame using pivot_table
         df_squashed = df.pivot_table(
