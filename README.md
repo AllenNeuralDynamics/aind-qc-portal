@@ -53,6 +53,10 @@ You have a few options for where to store files. In general we *prefer* that you
 
 Neuroglancer and Figurl links should point to the exact URL that opens the view you want.
 
+**Q: Can I put links into the `description` field to other resources?**
+
+The description field gets parsed as markdown, you can either put a full link enclosed in brackets `<link>` or format a text link `[text](link)`.
+
 **Q: I saw fancy things like dropdowns in the QC Portal, how do I do that?**
 
 *Custom value fields*
