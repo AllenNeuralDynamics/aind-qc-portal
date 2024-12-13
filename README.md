@@ -24,6 +24,7 @@ We expect the value to refer to a quantitative or qualitative assessment of some
 |---------------|---------------|---------------|---------------|
 | Number | Editable number field | [IntInput](https://panel.holoviz.org/reference/widgets/IntInput.html) or [FloatInput](https://panel.holoviz.org/reference/widgets/FloatInput.html) | |
 | String | Editable text field | [TextInput](https://panel.holoviz.org/reference/widgets/TextInput.html) | |
+| Boolean | Checkbox | [Checkbox](https://panel.holoviz.org/reference/widgets/Checkbox.html) | |
 | Dictionary | Table | [Dataframe](https://panel.holoviz.org/reference/panes/DataFrame.html) | Values must have the same length |
 | DropdownMetric | Dropdown | [Dropdown](https://panel.holoviz.org/reference/widgets/Select.html) | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) |
 | CheckboxMetric | Checkboxes | [Checkbox](https://panel.holoviz.org/reference/widgets/Checkbox.html) | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) |
