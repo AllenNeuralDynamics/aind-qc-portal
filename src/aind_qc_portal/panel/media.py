@@ -11,6 +11,7 @@ import os
 
 s3_client = boto3.client("s3")
 MEDIA_TTL = 3600  # 1 hour
+KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 
 CSS = """
 :not(:root):fullscreen::backdrop {
@@ -46,8 +47,6 @@ CSS = """
         width: 100%;
 }
 """
-
-KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 
 
 class Fullscreen(ReactiveHTML):
