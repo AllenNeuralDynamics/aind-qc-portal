@@ -20,7 +20,7 @@ dependencies = [
     'pydantic',
     'aind-data-schema',
     'aind-data-access-api[docdb]',
-    'panel>=1.5.3',
+    'panel>=1.5.5',
     'altair',
     'matplotlib',
     'boto3',
