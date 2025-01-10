@@ -29,6 +29,15 @@ OUTER_STYLE = {
 }
 
 
+# Define minimum ranges based on your criteria
+ONE_WEEK = timedelta(weeks=1)
+ONE_MONTH = timedelta(days=30)
+THREE_MONTHS = timedelta(days=90)
+ONE_YEAR = timedelta(days=365)
+TWO_YEARS = timedelta(days=730)
+FIVE_YEARS = timedelta(days=1825)
+
+
 def format_link(link: str, text: str = "link"):
     """Format link as an HTML anchor tag
 
@@ -77,6 +86,75 @@ def status_html(status: Status, text: str = ""):
     return f'<span style="color:{status_color(status)};">{text if text else status.value}</span>'
 
 
+def range_unit_format(time_range):
+    """Compute the unit and format for displaying a time range
+
+    """
+    if time_range < ONE_WEEK:
+        unit = "day"
+        format = "%b %d"
+    elif time_range < ONE_MONTH:
+        unit = "week"
+        format = "%b %d"
+    elif time_range < THREE_MONTHS:
+        unit = "week"
+        format = "%b %d"
+    elif time_range < ONE_YEAR:
+        unit = "month"
+        format = "%b"
+    elif time_range < TWO_YEARS:
+        unit = "year"
+        format = "%b"
+    elif time_range < FIVE_YEARS:
+        unit = "year"
+        format = "%Y"
+    else:
+        raise ValueError("Time range is too large")
+
+    return unit, format
+
+
+def timestamp_range(min_date, max_date):
+    """Compute the min/max range of a set of timestamps
+
+    Parameters
+    ----------
+    min : datetime.timestamp
+        _description_
+    max : datetime.timestamp
+        _description_
+    """
+
+    # Compute the time difference
+    time_range = max_date - min_date
+
+    # Determine the minimum range
+    if time_range < ONE_WEEK:
+        min_range = min_date - (ONE_WEEK - time_range) / 2
+        max_range = max_date + (ONE_WEEK - time_range) / 2
+    elif time_range < ONE_MONTH:
+        min_range = min_date - (ONE_MONTH - time_range) / 2
+        max_range = max_date + (ONE_MONTH - time_range) / 2
+    elif time_range < THREE_MONTHS:
+        min_range = min_date - (THREE_MONTHS - time_range) / 2
+        max_range = max_date + (THREE_MONTHS - time_range) / 2
+    elif time_range < ONE_YEAR:
+        min_range = min_date - (ONE_YEAR - time_range) / 2
+        max_range = max_date + (ONE_YEAR - time_range) / 2
+    elif time_range < TWO_YEARS:
+        min_range = min_date - (TWO_YEARS - time_range) / 2
+        max_range = max_date + (TWO_YEARS - time_range) / 2
+    elif time_range < FIVE_YEARS:
+        min_range = min_date - (FIVE_YEARS - time_range) / 2
+        max_range = max_date + (FIVE_YEARS - time_range) / 2
+    else:
+        raise ValueError("Time range is too large")
+
+    unit, format = range_unit_format(time_range)
+
+    return min_range, max_range, unit, format
+
+
 def df_timestamp_range(df, column="timestamp"):
     """Compute the min/max range of a timestamp column in a DataFrame
 
@@ -94,52 +172,7 @@ def df_timestamp_range(df, column="timestamp"):
     min_date = df[column].min()
     max_date = df[column].max()
 
-    # Compute the time difference
-    time_range = max_date - min_date
-
-    # Define minimum ranges based on your criteria
-    one_week = timedelta(weeks=1)
-    one_month = timedelta(days=30)
-    three_months = timedelta(days=90)
-    one_year = timedelta(days=365)
-    two_year = timedelta(days=730)
-    five_year = timedelta(days=1825)
-
-    # Determine the minimum range
-    if time_range < one_week:
-        min_range = min_date - (one_week - time_range) / 2
-        max_range = max_date + (one_week - time_range) / 2
-        unit = "day"
-        format = "%b %d"
-    elif time_range < one_month:
-        min_range = min_date - (one_month - time_range) / 2
-        max_range = max_date + (one_month - time_range) / 2
-        unit = "week"
-        format = "%b %d"
-    elif time_range < three_months:
-        min_range = min_date - (three_months - time_range) / 2
-        max_range = max_date + (three_months - time_range) / 2
-        unit = "week"
-        format = "%b %d"
-    elif time_range < one_year:
-        min_range = min_date - (one_year - time_range) / 2
-        max_range = max_date + (one_year - time_range) / 2
-        unit = "month"
-        format = "%b"
-    elif time_range < two_year:
-        min_range = min_date - (two_year - time_range) / 2
-        max_range = max_date + (two_year - time_range) / 2
-        unit = "year"
-        format = "%b"
-    elif time_range < five_year:
-        min_range = min_date - (five_year - time_range) / 2
-        max_range = max_date + (five_year - time_range) / 2
-        unit = "year"
-        format = "%Y"
-    else:
-        raise ValueError("Time range is too large")
-
-    return (min_range, max_range, unit, format)
+    return timestamp_range(min_date, max_date)
 
 
 def md_style(font_size: int = 12, inner_str: str = ""):

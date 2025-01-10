@@ -1,27 +1,27 @@
 import pandas as pd
 import param
 
-from aind_qc_portal.docdb.database import get_project, get_project_custom
+from aind_qc_portal.docdb.database import get_project
 from aind_qc_portal.utils import format_link, qc_color
-from aind_data_schema.core.quality_control import QualityControl, Status
+from aind_data_schema.core.quality_control import QualityControl
+
 
 class ProjectDataset(param.Parameterized):
     """Generic dataset class, loads default data for all projects"""
-    subject_filter = param.String(default="")
+    subject_filter = param.List(default=[])
 
     def __init__(self, project_name: str):
         """Create a ProjectDataset object"""
 
         self.project_name = project_name
-        self._df = None
+        self._df = pd.DataFrame(columns=["_id", "timestamp"])
         self.exposed_columns = [
-            "subject_id", "Date", "name", "Researcher", "S3 link", "Status", "Subject view", "QC view", "session_type", "raw"
+            "subject_id", "Date", "name", "Researcher", "S3 link", "Status", "Subject view", "QC view", "session_type", "raw", "qc_link", "timestamp"
         ]
         self._get_assets()
 
     def _get_assets(self):
         """Get all assets with this project name"""
-        print(self.project_name)
         records = get_project(self.project_name)
 
         data = []
@@ -33,7 +33,7 @@ class ProjectDataset(param.Parameterized):
 
             # reconstruct the QC object, if possible
             if record.get('quality_control'):
-                qc = QualityControl(**record.get('quality_control'))
+                qc = QualityControl.model_validate(record.get('quality_control'))
             else:
                 qc = None
 
@@ -56,9 +56,9 @@ class ProjectDataset(param.Parameterized):
             data.append(record_data)
 
         if len(data) == 0:
-            self._df = None
             return
 
+        # Rename some columns and add some additional helper columns
         self._df = pd.DataFrame(data)
         self._df["timestamp"] = pd.to_datetime(self._df["session_start_time"], format='mixed', utc=True)
         self._df["Date"] = self._df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -67,52 +67,63 @@ class ProjectDataset(param.Parameterized):
         self._df["qc_link"] = self._df["_id"].apply(lambda x: f"/qc_app?id={x}")
         self._df["QC view"] = self._df.apply(lambda row: format_link(row["qc_link"]), axis=1)
         self._df["Researcher"] = self._df["operator"].apply(lambda x: ", ".join(x) if x else None)
+
+        # Sort dataframe by time and then by subject ID
         self._df.sort_values(by="timestamp", ascending=True, inplace=True)
         self._df.sort_values(by="subject_id", ascending=False, inplace=True)
 
-    def filtered_data(self):
-        if self.subject_filter:
-            filtered_df = self._df[self._df["subject_id"].str.contains(self.subject_filter, case=False, na=False)]
+    @property
+    def _data_filtered(self) -> pd.DataFrame:
+        """Internal access method to get the full filtered dataframe
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+        if len(self.subject_filter) > 0:
+            filtered_df = self._df[self._df["subject_id"].isin(self.subject_filter)]
         else:
             filtered_df = self._df
 
-        return filtered_df[self.exposed_columns]
+        return filtered_df
 
     @property
-    def data(self):
+    def data_filtered(self):
+        """Return a filtered dataframe based on the subject filter
 
-        return self.filtered_data()[self.exposed_columns].style.map(qc_color, subset=["Status"])
+        Returns
+        -------
+        pd.DataFrame
+        """
+        filtered_df = self._data_filtered
 
-
-    @property
-    def timestamp_data(self):
-        if self.subject_filter:
-            filtered_df = self._df[self._df["subject_id"].str.contains(self.subject_filter, case=False, na=False)]
+        if filtered_df is not None:
+            return filtered_df[self.exposed_columns]
         else:
-            filtered_df = self._df
+            return pd.DataFrame(columns=self.exposed_columns)
+
+    @property
+    def data_styled(self):
+        """Return a styled dataframe with color coding for QC status
+
+        Returns
+        -------
+        pd.DataFrame
+        """
+
+        return self.data_filtered.style.map(qc_color, subset=["Status"])
+
+    @property
+    def data(self) -> pd.DataFrame:
+        """Return the raw data
+        """
+        if self._df is not None:
+            return self._df
+        else:
+            raise ValueError("No data found")
+
+    @property
+    def timestamps(self):
+        filtered_df = self._data_filtered
 
         return filtered_df[["timestamp"]]
-
-
-class LearningmFishDataset(ProjectDataset):
-
-    def __init__(self, project_name: str):
-        if project_name != "Learning mFISH-V1omFISH":
-            raise ValueError("This class is only for Learning mFISH-V1omFISH")
-
-        super().__init__(project_name=project_name)
-
-        self._get_mfish_assets()
-
-    def _get_mfish_assets(self):
-        """Load additional information needed for the Learning mFISH-V1omFISH project
-
-        Extra data should be appended to the self._df dataframe and then needs to be added to the
-        list of exposed columns.
-        """
-        data = get_project_custom(self.project_name, [""])
-
-
-mapping = {
-    "Learning mFISH-V1omFISH": LearningmFishDataset,
-}

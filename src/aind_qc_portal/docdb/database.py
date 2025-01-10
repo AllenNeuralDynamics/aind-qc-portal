@@ -153,36 +153,7 @@ def get_project(project_name: str):
         paginate_batch_size=paginate_batch_size,
     )
 
-    return response
-
-
-@pn.cache(ttl=TIMEOUT_1H)
-def get_project_custom(project_name: str, fields: list):
-    """Get all records that match a project name, with custom fields
-
-    Parameters
-    ----------
-    project_name : str
-    fields : list
-        List of fields to retain from DocDB record
-
-    Returns
-    -------
-    list
-        List of dictionaries containing the fields requested
-    """
-    filter = {"data_description.project_name": project_name}
-    limit = 0
-    paginate_batch_size = 500
-    response = client.retrieve_docdb_records(
-        filter_query=filter,
-        projection={
-            "_id": 1,
-        } | {field: 1 for field in fields},
-        limit=limit,
-        paginate_batch_size=paginate_batch_size,
-    )
-
+    print(f"Found {len(response)} records for project {project_name}")
     return response
 
 
