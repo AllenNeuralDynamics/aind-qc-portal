@@ -5,7 +5,7 @@ import pandas as pd
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
 from aind_qc_portal.panel.media import Media
-from aind_qc_portal.utils import md_style
+from aind_qc_portal.utils import md_style, sanitize_markdown_urls
 
 
 class QCMetricPanel:

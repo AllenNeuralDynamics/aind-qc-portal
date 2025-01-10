@@ -1,8 +1,10 @@
 from datetime import timedelta
+import re
 
 import numpy as np
 import panel as pn
 from aind_data_schema.core.quality_control import Status
+import urllib.parse
 
 ASSET_LINK_PREFIX = "/qc_asset_app?id="
 QC_LINK_PREFIX = "/qc_app?id="
@@ -141,6 +143,17 @@ def df_timestamp_range(df, column="timestamp"):
 
 
 def md_style(font_size: int = 12, inner_str: str = ""):
+    """Apply a font size to a Markdown string
+    while also wrapping links in <a href></a> tags"""
+    # Find all links in the inner string
+    link_pattern = re.compile(r"\[(.*?)\]\((.*?)\)")
+    links = link_pattern.findall(inner_str)
+    # Replace each link with an HTML anchor tag
+    for link in links:
+        inner_str = inner_str.replace(
+            f"[{link[0]}]({link[1]})",
+            f'<a href="{link[1]}" target="_blank">{link[0]}</a>',
+        )
     return f'<span style="font-size:{font_size}pt">{inner_str}</span>'
 
 
