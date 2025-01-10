@@ -102,6 +102,8 @@ Two things need to be setup in your capsule:
 To upload directly to DocDB you'll need to know your asset's `_id`. You can get it by adding this code to your capsule and calling `query_docdb_id(asset_name)`. Note that this *is not the data asset id in Code Ocean*!
 
 ```{python}
+from aind_data_access_api.document_db import MetadataDbClient
+
 def query_docdb_id(asset_name: str):
     """
     Returns docdb_id for asset_name.
@@ -139,6 +141,8 @@ Generate your metrics and reference figures. Put your figures in folders in the 
 Your figures should already exist in folders in your `results/`. Then, in your capsule code, pull the Kachery Cloud credentials using this function:
 
 ```
+import boto3
+
 def get_kachery_secrets():
     """Obtains the three kachery-cloud environment keys/secrets```
     secret_name = "/aind/prod/kachery/credentials"
