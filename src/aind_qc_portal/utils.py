@@ -4,7 +4,6 @@ import re
 import numpy as np
 import panel as pn
 from aind_data_schema.core.quality_control import Status
-import urllib.parse
 
 ASSET_LINK_PREFIX = "/qc_asset_app?id="
 QC_LINK_PREFIX = "/qc_app?id="
@@ -50,8 +49,8 @@ def format_link(link: str, text: str = "link"):
     return f'<a href="{link}" target="_blank">{text}</a>'
 
 
-def set_background():
-    """Set the background color of the Panel app"""
+def format_css_background():
+    """Add the custom CSS for the background to the panel configuration"""
     # Add the custom CSS
     background_color = AIND_COLORS[
         (
@@ -67,27 +66,89 @@ def set_background():
         background-size: 1200px;
     }}
     """
-    pn.config.raw_css.append(BACKGROUND_CSS)
+    pn.config.raw_css.append(BACKGROUND_CSS)  # type: ignore
 
 
-def status_color(status: Status):
-    if status == Status.PASS:
+def _qc_status_color(status: str):
+    """Helper function to return the color for a given QC status
+
+    Parameters
+    ----------
+    status : Status
+        QC status
+
+    Returns
+    -------
+    str
+        Hex color code "#RRGGBB"
+    """
+    if status == "No QC":
+        color = AIND_COLORS["yellow"]
+    elif status == "Pass":
         color = AIND_COLORS["green"]
-    elif status == Status.PENDING:
-        color = AIND_COLORS["light_blue"]
-    elif status == Status.FAIL:
+    elif status == "Fail":
         color = AIND_COLORS["red"]
+    elif status == "Pending":
+        color = AIND_COLORS["light_blue"]
     else:
-        color = "#756575"
+        color = AIND_COLORS["grey"]
     return color
 
 
-def status_html(status: Status, text: str = ""):
-    return f'<span style="color:{status_color(status)};">{text if text else status.value}</span>'
+def qc_status_color(status: Status):
+    """Return the color for a given QC status
+
+    Parameters
+    ----------
+    status : Status
+        QC status
+
+    Returns
+    -------
+    str
+        Hex color code "#RRGGBB"
+    """
+    return _qc_status_color(status.value)
+
+
+def qc_status_color_css(status):
+    """Return the CSS style string for a given QC status
+
+    This function needs to take a string because it's used to style DataFrame columns
+
+    Parameters
+    ----------
+    status : str
+        QC status value
+
+    Returns
+    -------
+    str
+        CSS style string
+    """
+    return f"background-color: {_qc_status_color(status)}"
+
+
+def qc_status_html(status: Status, text: str = ""):
+    """Return a formatted <span> tag with the color of the QC status
+
+    Parameters
+    ----------
+    status : Status
+        QC status
+    text : str, optional
+        Text to display, by default uses status.value
+
+    Returns
+    -------
+    str
+        HTML formatted string
+    """
+    return f'<span style="color:{qc_status_color(status)};">{text if text else status.value}</span>'
 
 
 def range_unit_format(time_range):
-    """Compute the unit and format for displaying a time range
+    """Compute the altair plot axis unit and format for displaying a time range
 
     """
     if time_range < ONE_WEEK:
@@ -175,9 +236,8 @@ def df_timestamp_range(df, column="timestamp"):
     return timestamp_range(min_date, max_date)
 
 
-def md_style(font_size: int = 12, inner_str: str = ""):
-    """Apply a font size to a Markdown string
-    while also wrapping links in <a href></a> tags"""
+def replace_markdown_with_html(font_size: int = 12, inner_str: str = ""):
+    """Replace markdown links with HTML anchor tags and set a font size"""
     # Find all links in the inner string
     link_pattern = re.compile(r"\[(.*?)\]\((.*?)\)")
     links = link_pattern.findall(inner_str)
@@ -187,33 +247,8 @@ def md_style(font_size: int = 12, inner_str: str = ""):
             f"[{link[0]}]({link[1]})",
             f'<a href="{link[1]}" target="_blank">{link[0]}</a>',
         )
+    # Apply the font size as a span element
     return f'<span style="font-size:{font_size}pt">{inner_str}</span>'
-
-
-def qc_color(v):
-    """Re-color the QC field background
-
-    Parameters
-    ----------
-    v : str
-        QC status value
-
-    Returns
-    -------
-    str
-        CSS style string
-    """
-    if v == "No QC":
-        color = AIND_COLORS["yellow"]
-    elif v == "Pass":
-        color = AIND_COLORS["green"]
-    elif v == "Fail":
-        color = AIND_COLORS["red"]
-    elif v == "Pending":
-        color = AIND_COLORS["light_blue"]
-    else:
-        color = AIND_COLORS["grey"]
-    return f"background-color: {color}"
 
 
 def bincount2D(x, y, xbin=0, ybin=0, xlim=None, ylim=None, weights=None):

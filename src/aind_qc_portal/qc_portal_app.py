@@ -16,17 +16,17 @@ from aind_qc_portal.docdb.database import (
 from aind_qc_portal.utils import (
     ASSET_LINK_PREFIX,
     QC_LINK_PREFIX,
-    qc_color,
+    qc_status_color_css,
     OUTER_STYLE,
     AIND_COLORS,
-    set_background,
+    format_css_background,
     format_link,
 )
 from aind_data_schema.core.quality_control import QualityControl
 
 pn.extension()
 
-set_background()
+format_css_background()
 
 
 class SearchOptions(param.Parameterized):
@@ -180,7 +180,7 @@ class SearchView(param.Parameterized):
         df_filtered = options.active(
             self.modality_filter, self.subject_filter, self.date_filter
         )
-        return df_filtered.style.map(qc_color, subset=["Status"])
+        return df_filtered.style.map(qc_status_color_css, subset=["Status"])
 
     def df_textinput(self, value):
         print(value)

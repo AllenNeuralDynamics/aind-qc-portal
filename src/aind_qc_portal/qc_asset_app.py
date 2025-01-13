@@ -15,15 +15,15 @@ from aind_qc_portal.docdb.database import (
 from aind_qc_portal.utils import (
     QC_LINK_PREFIX,
     df_timestamp_range,
-    qc_color,
+    qc_status_color_css,
     AIND_COLORS,
     OUTER_STYLE,
-    set_background,
+    format_css_background,
 )
 
 pn.extension("vega", "ace", "jsoneditor")
 
-set_background()
+format_css_background()
 
 
 class AssetHistory(param.Parameterized):
@@ -199,7 +199,7 @@ class AssetHistory(param.Parameterized):
             }
         )
 
-        return df.style.map(qc_color, subset=["Status"])
+        return df.style.map(qc_status_color_css, subset=["Status"])
 
     def panel(self):
         if self.df is not None:

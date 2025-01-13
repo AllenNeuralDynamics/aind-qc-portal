@@ -124,6 +124,7 @@ class ProjectView():
                     "Date",
                 ],
                 color=alt.Color("subject_id:N"),
+                href=alt.Href("qc_link:N"),
             )
             .properties(width=900)
         )

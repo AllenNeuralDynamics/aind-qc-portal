@@ -6,12 +6,12 @@ import param
 
 # Setup Panel and Altair
 from aind_qc_portal.panel.quality_control import QCPanel
-from aind_qc_portal.utils import set_background
+from aind_qc_portal.utils import format_css_background
 
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
 
-set_background()
+format_css_background()
 
 
 # State sync

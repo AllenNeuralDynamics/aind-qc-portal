@@ -4,6 +4,7 @@ import numpy as np
 import panel as pn
 from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_schema.core.quality_control import QualityControl
+from aind_data_access_api.helpers.docdb import get_projection_by_id
 
 API_GATEWAY_HOST = os.getenv(
     "API_GATEWAY_HOST", "api.allenneuraldynamics-test.org"
@@ -58,15 +59,10 @@ def get_name_from_id(id: str):
 
 @pn.cache()
 def get_subj_from_id(id: str):
-    response = client.aggregate_docdb_records(
-        pipeline=[
-            {"$match": {"_id": id}},
-            {"$project": {"subject": 1, "_id": 0}},
-        ]
-    )
-    if len(response) == 0:
-        return None
-    return response[0]["subject"]["subject_id"]
+    response = get_projection_by_id(client=client, _id=id, projection={"subject.subject_id": 1})
+    if response is not None:
+        return response["subject"]["subject_id"]
+    return None
 
 
 @pn.cache()

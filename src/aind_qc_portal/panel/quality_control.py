@@ -13,7 +13,7 @@ from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id
 from aind_data_schema_models.modalities import Modality
 from aind_qc_portal.panel.evaluation import QCEvalPanel
 from aind_qc_portal.utils import (
-    status_html,
+    qc_status_html,
     OUTER_STYLE,
 )
 
@@ -186,7 +186,7 @@ class QCPanel(param.Parameterized):
                     {
                         "Group": modality.abbreviation,
                         "Stage": stage,
-                        "Status": status_html(
+                        "Status": qc_status_html(
                             self._data.status(date=datetime.now(tz=timezone.utc), modality=modality, stage=stage)
                         ),
                     }
@@ -196,7 +196,7 @@ class QCPanel(param.Parameterized):
                     {
                         "Group": tag,
                         "Stage": stage,
-                        "Status": status_html(
+                        "Status": qc_status_html(
                             self._data.status(date=datetime.now(tz=timezone.utc), tag=tag, stage=stage)
                         ),
                     }
@@ -238,7 +238,7 @@ class QCPanel(param.Parameterized):
         def state_panel():
             state_md = f"""
     <span style="font-size:12pt">Current state:</span>
-    <span style="font-size:10pt">Status: **{status_html((self._data.status(date=datetime.now(tz=timezone.utc))))}**</span>
+    <span style="font-size:10pt">Status: **{qc_status_html((self._data.status(date=datetime.now(tz=timezone.utc))))}**</span>
     <span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
     """
             return pn.pane.Markdown(state_md)

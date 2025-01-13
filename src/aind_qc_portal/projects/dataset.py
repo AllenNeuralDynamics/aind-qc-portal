@@ -2,7 +2,7 @@ import pandas as pd
 import param
 
 from aind_qc_portal.docdb.database import get_project
-from aind_qc_portal.utils import format_link, qc_color
+from aind_qc_portal.utils import format_link, qc_status_color_css
 from aind_data_schema.core.quality_control import QualityControl
 
 
@@ -111,7 +111,7 @@ class ProjectDataset(param.Parameterized):
         pd.DataFrame
         """
 
-        return self.data_filtered.style.map(qc_color, subset=["Status"])
+        return self.data_filtered.style.map(qc_status_color_css, subset=["Status"])
 
     @property
     def data(self) -> pd.DataFrame:

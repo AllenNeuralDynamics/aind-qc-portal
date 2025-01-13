@@ -5,7 +5,7 @@ import pandas as pd
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
 from aind_qc_portal.panel.media import Media
-from aind_qc_portal.utils import md_style
+from aind_qc_portal.utils import replace_markdown_with_html
 
 
 class QCMetricPanel:
@@ -101,8 +101,8 @@ class QCMetricPanel:
 
         # Markdown header to display current state
         md = f"""
-{md_style(10, f"Current state: {self._data.status.status.value}")}
-{md_style(8, self._data.description if self._data.description else "*no description provided*")}
+{replace_markdown_with_html(10, f"Current state: {self._data.status.status.value}")}
+{replace_markdown_with_html(8, self._data.description if self._data.description else "*no description provided*")}
 """
         name = self._data.name
         value = self._data.value
