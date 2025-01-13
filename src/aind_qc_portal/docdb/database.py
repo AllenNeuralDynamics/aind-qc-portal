@@ -23,6 +23,19 @@ client = MetadataDbClient(
 )
 
 
+@pn.cache()
+def get_project_names():
+    """Get all unique project names"""
+    response = client.aggregate_docdb_records(
+        pipeline=[
+            {"$group": {"_id": "$data_description.project_name"}},
+            {"$group": {"_id": None, "unique_project_names": {"$push": "$_id"}}},
+            {"$project": {"_id": 0, "unique_project_names": 1}},
+        ]
+    )
+    return response[0]["unique_project_names"]
+
+
 def record_from_id(id: str) -> dict | None:
     """Get the QC object from the database for a given ID
 

@@ -72,9 +72,6 @@ class SearchOptions(param.Parameterized):
                     "subject_id": record_split[1],
                     "date": record_split[2],
                     "status": status,
-                    "subject_view": format_link(
-                        ASSET_LINK_PREFIX + record["_id"], "link"
-                    ),
                     "qc_view": format_link(
                         QC_LINK_PREFIX + record["_id"], "link"
                     ),
@@ -91,7 +88,6 @@ class SearchOptions(param.Parameterized):
                 "subject_id",
                 "date",
                 "status",
-                "subject_view",
                 "qc_view",
             ],
         )
@@ -142,7 +138,6 @@ class SearchOptions(param.Parameterized):
                 "subject_id": "Subject ID",
                 "date": "Date",
                 "status": "Status",
-                "subject_view": "Subject View",
                 "qc_view": "QC View",
             }
         )

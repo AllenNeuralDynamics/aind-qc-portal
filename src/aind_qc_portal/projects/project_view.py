@@ -18,10 +18,20 @@ class ProjectView():
     """Panel view of an entire project's assets"""
 
     def __init__(self, project_name: str):
-        self.dataset = ProjectDataset(project_name)
-        self.project_name = project_name
-        self.subject_filter = pn.widgets.MultiChoice(name="Subject filter", options=list(self.get_subjects()))
+        """Create a new ProjectView object
 
+        Parameters
+        ----------
+        project_name : str
+            _description_
+        """
+        self.subject_filter = pn.widgets.MultiChoice(name="Subject filter")
+        self.update(project_name)
+
+    def update(self, new_project_name: str):
+        self.dataset = ProjectDataset(new_project_name)
+        self.project_name = new_project_name
+        self.subject_filter.options = list(self.get_subjects())
 
     @property
     def has_data(self):
@@ -32,6 +42,12 @@ class ProjectView():
             return []
 
         return self.dataset.data["subject_id"].unique()
+
+    def get_asset_count(self):
+        if not self.has_data:
+            return 0
+
+        return len(self.dataset.data)
 
     def get_data_styled(self):
         if not self.has_data:
@@ -134,15 +150,6 @@ class ProjectView():
     def panel(self) -> pn.Column:
         """Return panel object"""
 
-        md = f"""
-        <h1 style="color:{AIND_COLORS["dark_blue"]};">
-            {self.project_name}
-        </h1>
-        <b>{len(self.dataset.data_filtered)}</b> data assets are associated with this project.
-        """
-
-        header = pn.pane.Markdown(md, width=1000, styles=OUTER_STYLE)
-
         history_chart = self.history_panel()
 
         chart_pane = pn.Column(history_chart, pn.bind(self.selection_history_panel, history_chart.selection.param.brush), styles=OUTER_STYLE)
@@ -157,6 +164,6 @@ class ProjectView():
 
         df_col = pn.Column(self.subject_filter, df_pane, styles=OUTER_STYLE)
 
-        col = pn.Column(header, chart_pane, df_col)
+        col = pn.Column(chart_pane, df_col)
 
         return col

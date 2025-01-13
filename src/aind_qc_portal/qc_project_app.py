@@ -6,7 +6,8 @@ Intended to be the main entry point for a project's data
 """
 import panel as pn
 import param
-from aind_qc_portal.utils import format_css_background
+from aind_qc_portal.docdb.database import get_project_names
+from aind_qc_portal.utils import format_css_background, AIND_COLORS, OUTER_STYLE
 from aind_qc_portal.projects.project_view import ProjectView
 
 pn.extension("vega")
@@ -14,15 +15,56 @@ pn.extension("vega")
 format_css_background()
 
 
+# Set up project name settings and sync to URL
 class Settings(param.Parameterized):
     project_name = param.String(default="Learning mFISH-V1omFISH")
 
+    def __init__(self, **params):
+        super().__init__(**params)
+        self.project_name_selector = pn.widgets.Select(name='Project Name', options=get_project_names(), value=self.project_name)
+        self.project_name_selector.link(self, value='project_name')
+
+    def panel(self):
+        return self.project_name_selector
+
 
 settings = Settings()
-pn.state.location.sync(settings, {"project_name": "project_name"})
+pn.state.location.sync(settings, {"project_name": "project_name"})  # sync to URL
+settings.panel().value = settings.project_name  # also sync to dropdown value
 
-project_view = ProjectView(settings.project_name)
+# Build the project view
+project_view = ProjectView(project_name=settings.project_name)
 
-row = pn.Row(pn.HSpacer(), project_view.panel(), pn.HSpacer())
+
+def update_header(project_name):
+    # Build the header (depends on some project view data)
+    md = f"""
+    <h1 style="color:{AIND_COLORS["dark_blue"]};">
+        {project_name}
+    </h1>
+    Project has {project_view.get_asset_count()} data assets.
+    """
+
+    header_md_pane = pn.pane.Markdown(md)
+    return header_md_pane
+
+
+def update_project_view(project_name):
+    """Helper to update project view and return the new panel object
+    """
+    project_view.update(project_name)
+
+    return project_view.panel()
+
+
+# Add the header project dropdown list
+project_names = get_project_names()
+
+interactive_header = pn.bind(update_header, settings.panel())
+header = pn.Row(interactive_header, pn.HSpacer(), settings.panel(), width=1000, styles=OUTER_STYLE)
+ 
+interactive_project_view = pn.bind(update_project_view, settings.panel())
+main_col = pn.Column(header, interactive_project_view, width=1000)
+row = pn.Row(pn.HSpacer(), main_col, pn.HSpacer())
 
 row.servable(title="AIND QC - Project")

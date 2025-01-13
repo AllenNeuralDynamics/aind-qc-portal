@@ -35,6 +35,7 @@ THREE_MONTHS = timedelta(days=90)
 ONE_YEAR = timedelta(days=365)
 TWO_YEARS = timedelta(days=730)
 FIVE_YEARS = timedelta(days=1825)
+TEN_YEARS = timedelta(days=3650)
 
 
 def format_link(link: str, text: str = "link"):
@@ -169,8 +170,11 @@ def range_unit_format(time_range):
     elif time_range < FIVE_YEARS:
         unit = "year"
         format = "%Y"
+    elif time_range < TEN_YEARS:
+        unit = "year"
+        format = "%Y"
     else:
-        raise ValueError("Time range is too large")
+        raise ValueError(f"Time range: {time_range} is too large")
 
     return unit, format
 
@@ -208,8 +212,11 @@ def timestamp_range(min_date, max_date):
     elif time_range < FIVE_YEARS:
         min_range = min_date - (FIVE_YEARS - time_range) / 2
         max_range = max_date + (FIVE_YEARS - time_range) / 2
+    elif time_range < TEN_YEARS:
+        min_range = min_date - (TEN_YEARS - time_range) / 2
+        max_range = max_date + (TEN_YEARS - time_range) / 2
     else:
-        raise ValueError("Time range is too large")
+        raise ValueError(f"Time range: {time_range} is too large")
 
     unit, format = range_unit_format(time_range)
 
