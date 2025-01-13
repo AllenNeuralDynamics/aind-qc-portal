@@ -15,8 +15,11 @@ class ProjectDataset(param.Parameterized):
 
         self.project_name = project_name
         self._df = pd.DataFrame(columns=["_id", "timestamp"])
+        self.standard_columns = [
+            "subject_id", "Date", "Researcher", "S3 link", "Status", "QC view", "session_type", "raw", 
+        ]
         self.exposed_columns = [
-            "subject_id", "Date", "name", "Researcher", "S3 link", "Status", "Subject view", "QC view", "session_type", "raw", "qc_link", "timestamp"
+            "subject_id", "Date", "name", "Researcher", "S3 link", "Status", "QC view", "session_type", "raw", "qc_link", "timestamp"
         ]
         self._get_assets()
 
@@ -63,7 +66,6 @@ class ProjectDataset(param.Parameterized):
         self._df["timestamp"] = pd.to_datetime(self._df["session_start_time"], format='mixed', utc=True)
         self._df["Date"] = self._df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
         self._df["S3 link"] = self._df["location"].apply(lambda x: format_link(x, text="S3 link"))
-        self._df["Subject view"] = self._df["_id"].apply(lambda x: format_link(f"/qc_asset_app?id={x}"))
         self._df["qc_link"] = self._df["_id"].apply(lambda x: f"/qc_app?id={x}")
         self._df["QC view"] = self._df.apply(lambda row: format_link(row["qc_link"]), axis=1)
         self._df["Researcher"] = self._df["operator"].apply(lambda x: ", ".join(x) if x else None)
@@ -87,8 +89,7 @@ class ProjectDataset(param.Parameterized):
 
         return filtered_df
 
-    @property
-    def data_filtered(self):
+    def data_filtered(self, standard_columns=False) -> pd.DataFrame:
         """Return a filtered dataframe based on the subject filter
 
         Returns
@@ -97,10 +98,12 @@ class ProjectDataset(param.Parameterized):
         """
         filtered_df = self._data_filtered
 
+        columns = self.standard_columns if standard_columns else self.exposed_columns
+
         if filtered_df is not None:
-            return filtered_df[self.exposed_columns]
+            return filtered_df[columns]
         else:
-            return pd.DataFrame(columns=self.exposed_columns)
+            return pd.DataFrame(columns=columns)
 
     @property
     def data_styled(self):
@@ -111,7 +114,7 @@ class ProjectDataset(param.Parameterized):
         pd.DataFrame
         """
 
-        return self.data_filtered.style.map(qc_status_color_css, subset=["Status"])
+        return self.data_filtered(standard_columns=True).style.map(qc_status_color_css, subset=["Status"])
 
     @property
     def data(self) -> pd.DataFrame:

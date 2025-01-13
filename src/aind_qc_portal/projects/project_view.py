@@ -70,7 +70,7 @@ class ProjectView():
         )
 
         chart = (
-            alt.Chart(self.dataset.data_filtered)
+            alt.Chart(self.dataset.data_filtered())
             .mark_bar()
             .encode(
                 x=alt.X(
@@ -101,7 +101,7 @@ class ProjectView():
                 value=f"No data found for project: {self.project_name}"
             )
 
-        data = self.dataset.data_filtered
+        data = self.dataset.data_filtered()
 
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(
@@ -158,7 +158,7 @@ class ProjectView():
 
         def update_subject_filter(event):
             self.dataset.subject_filter = event.new
-            df_pane.object = self.dataset.data_filtered
+            df_pane.object = self.get_data_styled()
 
         self.subject_filter.param.watch(update_subject_filter, "value")
 
