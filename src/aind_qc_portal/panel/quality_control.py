@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from aind_data_schema.core.quality_control import QualityControl
 
-from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id
+from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id, project_name_from_id
 from aind_data_schema_models.modalities import Modality
 from aind_qc_portal.panel.evaluation import QCEvalPanel
 from aind_qc_portal.utils import (
@@ -30,6 +30,8 @@ class QCPanel(param.Parameterized):
         super().__init__(**params)
 
         self.id = id
+
+        self.project_name = project_name_from_id(self.id)
 
         # Set up the submission area
         self.submit_button = pn.widgets.Button(
@@ -221,6 +223,7 @@ class QCPanel(param.Parameterized):
         # build the header
         md = f"""
 <span style="font-size:14pt">Quality control for {self.asset_name}</span>
+<span style="font-size:10pt">Return to <a href="/qc_project_app?project_name={self.project_name}">{self.project_name} project</a></span>
 """
         header = pn.pane.Markdown(md)
 

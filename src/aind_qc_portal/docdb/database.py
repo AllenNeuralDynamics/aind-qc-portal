@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import numpy as np
 import panel as pn
@@ -51,6 +52,19 @@ def record_from_id(id: str) -> dict | None:
     if len(response) == 0:
         return None
     return response[0]
+
+
+def project_name_from_id(id: str) -> Optional[str]:
+    """Get the project name from the database for a given ID"""
+
+    response = client.retrieve_docdb_records(
+        filter_query={"_id": id},
+        projection={"data_description.project_name": 1},
+        limit=1,
+    )
+    if len(response) == 0:
+        return None
+    return response[0]["data_description"]["project_name"]
 
 
 def qc_update_to_id(id: str, qc: QualityControl):
