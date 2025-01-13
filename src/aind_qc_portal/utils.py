@@ -174,7 +174,9 @@ def range_unit_format(time_range):
         unit = "year"
         format = "%Y"
     else:
-        raise ValueError(f"Time range: {time_range} is too large")
+        # Default to five years
+        unit = "year"
+        format = "%Y"
 
     return unit, format
 
@@ -216,7 +218,9 @@ def timestamp_range(min_date, max_date):
         min_range = min_date - (TEN_YEARS - time_range) / 2
         max_range = max_date + (TEN_YEARS - time_range) / 2
     else:
-        raise ValueError(f"Time range: {time_range} is too large")
+        # Default to five years
+        min_range = min_date - (FIVE_YEARS - time_range) / 2
+        max_range = max_date + (FIVE_YEARS - time_range) / 2
 
     unit, format = range_unit_format(time_range)
 

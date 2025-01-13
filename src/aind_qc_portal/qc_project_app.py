@@ -76,9 +76,11 @@ def update_header(project_name):
 def update_project_view(project_name):
     """Helper to update project view and return the new panel object
     """
-    project_view.update(project_name)
-
-    return project_view.panel()
+    try:
+        project_view.update(project_name)
+        return project_view.panel()
+    except Exception as e:
+        return pn.pane.Alert(f"Error loading project data: {e}.\n\nThis error likely indicates your metadata is invalid, the QC portal *requires* valid metadata in every data asset to function. Please reach out to Scientific Computing for help repairing your assets, you can use the metadata portal at metadata-portal.allenneuraldynamics.org to help find errors in your metadata.", alert_type="danger")
 
 
 # Add the header project dropdown list
