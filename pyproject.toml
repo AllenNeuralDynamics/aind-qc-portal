@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "aind-qc-portal"
 description = "Generated from aind-library-template"
 license = {text = "MIT"}
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 authors = [
     {name = "Allen Institute for Neural Dynamics"}
 ]
