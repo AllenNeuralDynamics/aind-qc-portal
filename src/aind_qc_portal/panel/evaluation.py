@@ -22,10 +22,18 @@ class QCEvalPanel:
 
     def update(self, evaluation_data: QCEvaluation):
         self._data = evaluation_data
-
         self.metrics = []
-        for qc_metric in self._data.metrics:
-            self.metrics.append(QCMetricPanel(self.parent, qc_metric))
+
+        # First check whether any metrics share an identical reference
+        reference_groups = {}
+        for metric in self._data.metrics:
+            if metric.reference in reference_groups:
+                reference_groups[metric.reference].append(metric)
+            else:
+                reference_groups[metric.reference] = [metric]
+
+        for reference, metrics in reference_groups.items():
+            self.metrics.append(QCMetricPanel(self.parent, metrics))
 
     @property
     def data(self):

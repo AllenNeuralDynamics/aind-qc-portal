@@ -2,6 +2,7 @@ import panel as pn
 from aind_data_schema.core.quality_control import Status, QCMetric, QCStatus
 from datetime import datetime
 import pandas as pd
+from typing import List, Union
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
 from aind_qc_portal.panel.media import Media
@@ -9,8 +10,9 @@ from aind_qc_portal.utils import replace_markdown_with_html
 
 
 class QCMetricPanel:
+    """Object which combines the metric value and reference media panels"""
 
-    def __init__(self, parent, qc_metric: QCMetric):
+    def __init__(self, parent, qc_metrics: Union[QCMetric, List[QCMetric]]):
         """Build a Metric object, should only be called by Evaluation()
 
         Parameters
@@ -18,9 +20,41 @@ class QCMetricPanel:
         evaluation_data : dict
             See aind_data_schema.core.quality_control Evaluation
         """
-        self._data = qc_metric
+        if isinstance(qc_metrics, QCMetric):
+            qc_metrics = [qc_metrics]
+        self.metrics = [QCMetricValuePanel(metric, parent) for metric in qc_metrics]
         self.parent = parent
         self.reference_img = None
+
+    def panel(self):
+        """Build the full panel for this metric with both the metric status and reference media"""
+
+        if self.metrics[0]._data.reference:
+            self.reference_img = Media(
+                self.metrics[0]._data.reference, self.parent
+            ).panel()
+        else:
+            self.reference_img = "No references included"
+
+        metric_col = pn.Column(*[metric.panel() for metric in self.metrics])
+
+        row = pn.Row(
+            metric_col,
+            self.reference_img,
+            name=f"Metric group: {self.metrics[0]._data.reference}" if len(self.metrics) > 1 else self.metrics[0]._data.name,
+            sizing_mode="stretch_width",
+            max_height=1200,
+        )
+        return row
+
+
+class QCMetricValuePanel:
+    """Object to generate just the value panel for a metric"""
+
+    def __init__(self, qc_metric: QCMetric, parent):
+        """Create a Metric object"""
+        self._data = qc_metric
+        self.parent = parent
         self.hidden_html = pn.pane.HTML("")
         self.hidden_html.visible = False
 
@@ -78,30 +112,11 @@ class QCMetricPanel:
         self.parent.set_dirty()
 
     def panel(self):
-        """Build the full panel for this metric with both the metric status and reference media"""
-
-        if self._data.reference:
-            self.reference_img = Media(
-                self._data.reference, self.parent
-            ).panel()
-        else:
-            self.reference_img = "No references included"
-
-        row = pn.Row(
-            self.metric_panel(),
-            self.reference_img,
-            name=self._data.name,
-            sizing_mode="stretch_width",
-            max_height=1200,
-        )
-        return row
-
-    def metric_panel(self):
         """Build the left column with the metric status and value, plus any custom controls"""
 
         # Markdown header to display current state
         md = f"""
-{replace_markdown_with_html(10, f"Current state: {self._data.status.status.value}")}
+{replace_markdown_with_html(10, f"{self._data.name}")}
 {replace_markdown_with_html(8, self._data.description if self._data.description else "*no description provided*")}
 """
         name = self._data.name
