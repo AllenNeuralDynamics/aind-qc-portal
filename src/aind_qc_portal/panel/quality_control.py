@@ -59,6 +59,7 @@ class QCPanel(param.Parameterized):
         self.hidden_html.visible = False
 
         self._has_data = False
+        self.asset_name = ""
 
         self.update()
 

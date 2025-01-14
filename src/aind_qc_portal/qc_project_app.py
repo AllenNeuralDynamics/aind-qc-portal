@@ -10,7 +10,7 @@ from aind_qc_portal.docdb.database import get_project_names
 from aind_qc_portal.utils import format_css_background, AIND_COLORS, OUTER_STYLE
 from aind_qc_portal.projects.project_view import ProjectView
 
-pn.extension("vega")
+pn.extension("vega", "tabulator")
 
 format_css_background()
 

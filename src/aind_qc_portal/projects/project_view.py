@@ -155,7 +155,10 @@ class ProjectView():
 
         chart_pane = pn.Column(history_chart, pn.bind(self.selection_history_panel, history_chart.selection.param.brush), styles=OUTER_STYLE)
 
-        df_pane = pn.pane.DataFrame(self.get_data_styled(), width=950, escape=False, index=False)
+        df_pane = pn.widgets.Tabulator(self.get_data_styled(), width=950, show_index=False, disabled=True, formatters={
+            'QC view': {'type': 'html'},
+            'S3 link': {'type': 'html'}
+        })
 
         def update_subject_filter(event):
             self.dataset.subject_filter = event.new
