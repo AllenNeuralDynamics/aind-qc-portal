@@ -166,6 +166,8 @@ def get_project(project_name: str):
             "subject.genotype": 1,
             "session.session_type": 1,
             "session.session_start_time": 1,
+            "acquisition.session_type": 1,
+            "acquisition.session_start_time": 1,
             "data_description.data_level": 1,
             "data_description.project_name": 1,
             "rig.rig_id": 1,
