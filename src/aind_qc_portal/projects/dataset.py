@@ -44,14 +44,28 @@ class ProjectDataset(param.Parameterized):
             if operator_list:
                 operator_list = list(operator_list)
 
+            if record.get('session', {}):
+                start_time = record.get('session', {}).get('session_start_time')
+            elif record.get('acquisition', {}):
+                start_time = record.get('acquisition', {}).get('session_start_time')
+            else:
+                start_time = None
+
+            if record.get('session', {}):
+                session_type = record.get('session', {}).get('session_type')
+            elif record.get('acquisition', {}):
+                session_type = record.get('acquisition', {}).get('session_type')
+            else:
+                session_type = None
+
             record_data = {
                 '_id': record.get('_id'),
                 'raw': record.get('data_description', {}).get('data_level') == 'raw',
                 'project_name': record.get('data_description', {}).get('project_name'),
                 'location': record.get('location'),
                 'name': record.get('name'),
-                'session_start_time': record.get('session', {}).get('session_start_time'),
-                'session_type': record.get('session', {}).get('session_type'),
+                'session_start_time': start_time,
+                'session_type': session_type,
                 'subject_id': subject_id,
                 'operator': operator_list,
                 'Status': qc.status().value if qc else "No QC",
@@ -73,6 +87,8 @@ class ProjectDataset(param.Parameterized):
         # Sort dataframe by time and then by subject ID
         self._df.sort_values(by="timestamp", ascending=True, inplace=True)
         self._df.sort_values(by="subject_id", ascending=False, inplace=True)
+
+        self._df.to_csv('data.csv')
 
     @property
     def _data_filtered(self) -> pd.DataFrame:
