@@ -8,13 +8,13 @@ The portal allows users to annotate `PENDING` metrics. Logged in users can modif
 
 For general documentation about the QC metadata, go [here](https://aind-data-schema.readthedocs.io/en/latest/quality_control.html).
 
-**IMPORTANT:** The QC Portal relies on certain fields in the metadata being set correctly. These include the `data_description.modality` and `data_description.project_name` fields, as well as any fields related to generating *derived* assets. You *must* set these properly or the QC portal will mangle displaying your data assets.
+**IMPORTANT:** The QC Portal relies on certain fields in the metadata being set correctly. These include all files in the `data_description` file. You *must* generate valid metadata or the QC portal will mangle displaying your data assets.
 
 ## Defining metrics for the QC portal
 
-For AIND users, we expect your metrics to have actionable `value` fields. Either the value should be a number that a rule can be applied to (e.g. a threshold) or it should refer to the state of the reference (e.g. "high drift" when linked to a drift map, or "acceptable contrast" when linked to a video).
+Metrics should have actionable `value` fields. Either the value should be a number that a rule can be applied to (e.g. a threshold) or it should refer to the state of the reference (e.g. "high drift" when linked to a drift map, or "acceptable contrast" when linked to a video).
 
-Almost all metrics should have a `reference` image, figure, or video attached. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers. References can also point to Neuroglancer, FigURL, or Rerun.
+Almost all metrics should have a `reference` image, figure, or video attached. The `reference` can be shared across multiple metrics in the same evaluation if you want these to be grouped together on the QC portal page. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers, keep in mind that the portal is a public-facing resource! References can also embed linked pages in an iframe. You can currently point to Neuroglancer, FigURL, Rerun, and SortingView.
 
 **Q: `QCMetric.value` has type `Any`, what types are acceptable?**
 
@@ -44,18 +44,18 @@ There are two aspects to references: (1) the type of the reference data, and (2)
 
 *Data storage*
 
-You have a few options for where to store files. In general we *prefer* that you store files in either the same data asset where the `quality_control.json` is located. The options below are in order of preference:
+You have a few options for where to store files. In general we *prefer* that you store files in the same data asset where the `quality_control.json` is located. The options below are in order of preference:
 
 1. Provide the path to a file *relative to the `quality_control.json` file*, i.e. "figures/my_figure.png". Do not include the mount, asset name, or s3:// prefix.
 2. Provide a kachery-cloud hash, i.e. "sha1://uuid.ext", note that you **must append the filetype**. The easiest way to do this is to set the `label` field to the filename, see below.
 3. Provide a url to a publicly accessible file, i.e. "https://mywebsite.com/myfile.png"
 4. Provide a path to any public S3 bucket, i.e. "s3://bucket/myfile.png"
 
-Neuroglancer and Figurl links should point to the exact URL that opens the view you want.
+Neuroglancer, Figurl, and SortingView links should point to the exact URL that opens the view you want.
 
 **Q: Can I put links into the `description` field to other resources?**
 
-The description field gets parsed as markdown, you can either put a full link enclosed in brackets `<link>` or format a text link `[text](link)`.
+The description field gets parsed as markdown, use the format `[text](url)`.
 
 **Q: I saw fancy things like dropdowns in the QC Portal, how do I do that?**
 
@@ -72,25 +72,26 @@ The portal supports a few special cases to allow a bit more flexibility or to co
 *Special reference conditions*
 
 - If you put two reference strings separated by a semicolon `;` they will be displayed in a [Swipe](https://panel.holoviz.org/reference/layouts/Swipe.html) pane that lets you swipe back and forth between the two things. Mostly useful for overlay images.
+- If you re-use the same reference in multiple metrics, all of the metrics will be stacked in a single "Metric group".
 
 ## How to upload data from CO Capsules
 
 ### Preferred workflow
 
-Use the preferred workflow if you are **generating a data asset**, e.g. when uploading raw data or generating a new derived data asset. Your `quality_control.json` will go in the top level and your figures will go in a folder. Follow the steps below:
+Use the preferred workflow if you are **generating a data asset**, e.g. when uploading raw data or generating a new derived data asset. Your `quality_control.json` will go in the top level folder alongside other metadata and your figures will go in a subfolder. Follow the steps below:
 
-1. Develop your QC pipeline, generating metrics and reference figures as needed. Place references in the `results/` folder.
-2. Populate your `QCEvaluation` objects with metrics. The `reference` field should contain the path *relative to the results* folder. I.e. the file `results/figures/my_figure.png` should be included as `QCMetric.reference = "figures/my_figure.png"`. 
-3. If your input data asset already has a `quality_control.json` file, then load the previous QC file by using `qc = QualityControl(**json.loads(your_file))` and append your evaluations to `qc.evaluations`. If your input data file has no QC, or this will be a raw data asset, generate the QC object now `qc = QualityControl(evaluations)`
+1. Develop your QC pipeline, generating metrics and reference figures as needed. Place reference files in the `results/` folder.
+2. Populate `QCEvaluation` objects with metrics. The `reference` field should contain the path *relative to the results* folder. I.e. the file `results/figures/my_figure.png` should be included as `QCMetric.reference = "figures/my_figure.png"`. 
+3. If your input data asset already has a `quality_control.json` file, then load the previous QC file by using `qc = QualityControl(**json.loads(your_file))` and append your evaluations to `qc.evaluations`. If your input data asset has no QC, or this will be a new raw data asset, generate the QC object now `qc = QualityControl(evaluations)`
 4. Write the standard QC file to the results folder: `qc.write_standard_file()`
 
-Make sure to follow the standard instructions for building derived assets: copy all metadata files, upgrade the data_description to derived, and name your asset according to the expected conventions. Make sure to tag your data asset as `derived` so that it will be picked up by the indexer.
+Make sure to follow the standard instructions for [creating derived assets](https://docs.allenneuraldynamics.org/en/latest/data_analysis.html#creating-derived-assets).
 
-Done! In the preferred workflow no additional permissions are required. Your QC data will appear in the portal within four hours of creation.
+Done! In the preferred workflow no additional permissions are required. Your QC data will appear in the portal once they are picked up by the indexer.
 
 ### Alternate workflow
 
-Use the alternate workflow if you are **not generating a data asset** and therefore need to push your QC data back to an already existing data asset. You will push your `QCEvaluation` objects directly to DocDB and you will need to push your figures to `kachery-cloud`, an external repository that generates permanent links to uploaded files.
+Use the alternate workflow only if you are **not generating a data asset** and therefore need to push your QC metadata back to an already existing data asset. You will push your `QCEvaluation` objects directly to DocDB and you will need to push your figures to `kachery-cloud`, an external repository that generates permanent links to uploaded files. Before using the alternate workflow, please consult with the Scientific Computing team.
 
 Two things need to be setup in your capsule:
 
