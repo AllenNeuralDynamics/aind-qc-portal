@@ -29,6 +29,7 @@ class ProjectView():
         self.update(project_name)
 
     def update(self, new_project_name: str):
+        print(f"Updating project view for {new_project_name}")
         self.dataset = ProjectDataset(new_project_name)
         self.project_name = new_project_name
         self.subject_filter.options = list(self.get_subjects())
@@ -47,7 +48,7 @@ class ProjectView():
         if not self.has_data:
             return 0
 
-        return len(self.dataset.data)
+        return len(self.dataset.data_filtered())
 
     def get_data_styled(self):
         if not self.has_data:

@@ -88,8 +88,6 @@ class ProjectDataset(param.Parameterized):
         self._df.sort_values(by="timestamp", ascending=True, inplace=True)
         self._df.sort_values(by="subject_id", ascending=False, inplace=True)
 
-        self._df.to_csv('data.csv')
-
     @property
     def _data_filtered(self) -> pd.DataFrame:
         """Internal access method to get the full filtered dataframe

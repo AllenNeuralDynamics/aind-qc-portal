@@ -54,7 +54,7 @@ class Settings(param.Parameterized):
 
 settings = Settings()
 pn.state.location.sync(settings, {"project_name": "project_name"})  # sync to URL
-settings.panel().value = settings.project_name  # also sync to dropdown value
+settings.project_selector.value = settings.project_name  # also sync to dropdown value
 
 # Build the project view
 project_view = ProjectView(project_name=settings.project_name)
