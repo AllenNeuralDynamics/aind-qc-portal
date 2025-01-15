@@ -109,7 +109,7 @@ class QCMetricValuePanel:
             )
         )
 
-        self.parent.set_dirty()
+        self.parent.set_submit_dirty()
 
     def panel(self):
         """Build the left column with the metric status and value, plus any custom controls"""

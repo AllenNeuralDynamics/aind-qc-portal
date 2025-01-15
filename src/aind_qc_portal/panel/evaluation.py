@@ -44,7 +44,7 @@ class QCEvalPanel:
 
     def set_notes(self, event):
         self._data.notes = event.new
-        self.parent.set_dirty()
+        self.parent.set_submit_dirty()
 
     def panel(self):
         """Build a Panel object representing this Evaluation"""

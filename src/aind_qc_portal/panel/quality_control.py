@@ -21,6 +21,7 @@ from aind_qc_portal.utils import (
 class QCPanel(param.Parameterized):
     """QualityControl Panel object"""
 
+    # Set up top-level filters
     modality_filter = param.String(default="All")
     stage_filter = param.String(default="All")
     tag_filter = param.String(default="All")
@@ -29,11 +30,34 @@ class QCPanel(param.Parameterized):
         """Construct the QCPanel object"""
         super().__init__(**params)
 
+        # Setup minimal record information from DocDB
         self.id = id
-
         self.project_name = project_name_from_id(self.id)
+        self.asset_name = ""
 
         # Set up the submission area
+        self._init_submission()
+
+        # Set up a hidden HTML object, in case we need to inject JS
+        self.hidden_html = pn.pane.HTML("")
+        self.hidden_html.visible = False
+
+        # Get the actual data for this record
+        self._has_data = False
+        self.update()
+
+    def _update_modality_filter(self, event):
+        self.modality_filter = event.new
+
+    def _update_stage_filter(self, event):
+        self.stage_filter = event.new
+
+    def _update_tag_filter(self, event):
+        self.tag_filter = event.new
+
+    def _init_submission(self):
+        """Set up the submission area for this QC object
+        """
         self.submit_button = pn.widgets.Button(
             name="Submit changes" if pn.state.user != "guest" else "Log in",
             button_type="success",
@@ -55,29 +79,31 @@ class QCPanel(param.Parameterized):
         )
         pn.bind(self.submit_changes, self.submit_button, watch=True)
 
-        self.hidden_html = pn.pane.HTML("")
-        self.hidden_html.visible = False
-
-        self._has_data = False
-        self.asset_name = ""
-
-        self.update()
-
-    def update(self):
-        self.get_data()
-        self.submit_button.disabled = pn.state.user != "guest"
-
-    def get_data(self):
+    def _get_data(self):
+        """Get the data for this record from DocDB and validate as a QualityControl object
+        """
         json_data = record_from_id(self.id)
-
+        
+        # Basic checks
         if not json_data:
             return
-
         if "quality_control" in json_data:
             self._has_data = True
         else:
             return
 
+        # Attempt to validate
+        try:
+            self._data = QualityControl.model_validate_json(
+                json.dumps(json_data["quality_control"])
+            )
+        except Exception as e:
+            self._data = None
+            self._has_data = False
+            print(f"QC object failed to validate: {e}")
+            return
+
+        # Pull modality information
         if "data_description" in json_data and json_data["data_description"] and "modality" in json_data["data_description"]:
             self.modalities = [
                 Modality.from_abbreviation(modality["abbreviation"])
@@ -86,24 +112,19 @@ class QCPanel(param.Parameterized):
         else:
             self.modalities = []
 
+        # Pull S3 location
         s3_location = json_data.get("location", None)
         if s3_location:
             s3_location = s3_location.replace("s3://", "")
             self.s3_bucket = s3_location.split("/")[0]
             self.s3_prefix = s3_location.split("/")[1]
 
+        # Pull asset name
         self.asset_name = json_data["name"]
-        try:
-            self._data = QualityControl.model_validate_json(
-                json.dumps(json_data["quality_control"])
-            )
 
-        except Exception as e:
-            self._data = None
-            self._has_data = False
-            print(f"QC object failed to validate: {e}")
-            return
-
+    def _proc_data(self):
+        """Pull out the evaluations and build the evaluation panels
+        """
         self.stages = list({evaluation.stage for evaluation in self._data.evaluations})
         self.tags = list({tag for evaluation in self._data.evaluations if evaluation.tags for tag in evaluation.tags})
 
@@ -117,13 +138,37 @@ class QCPanel(param.Parameterized):
                 QCEvalPanel(parent=self, qc_evaluation=evaluation)
             )
 
+    def _redirect_to_login(self):
+        """Redirect users to the login page"""
+        self.hidden_html.object = f"<script>window.location.href = '/login?next={pn.state.location.href}';</script>"
+
+    def _refresh(self):
+        """Refresh the page"""
+        self.hidden_html.object = (
+            "<script>window.location.reload();</script>"
+        )
+
+    def update(self):
+        """Update the data for this QC object and set the submission area state
+        """
+        self._get_data()
+        self._proc_data()
+
+        self.submit_button.disabled = pn.state.user != "guest"
+
     @property
     def data(self):
+        """Return the current state of this QC object as a QualityControl object
+
+        Note that this isn't the same as the data in DocDB!
+        This is the current state of the object in the app.
+        """
         return QualityControl(
             evaluations=[eval.data for eval in self.evaluations],
         )
 
-    def set_dirty(self, *event):
+    def set_submit_dirty(self, *event):
+        """Set the submit button to enabled and update the change count"""
         self.changes += 1
         self.change_info.value = f"{self.changes} pending changes"
         self.submit_button.disabled = False
@@ -132,13 +177,15 @@ class QCPanel(param.Parameterized):
     def submit_changes(self, *event):
         """Submit the current state to DocDB"""
 
-        # redirect users to login
+        # Re-direct users to login if they aren't already
         if pn.state.user == "guest":
-            self.hidden_html.object = f"<script>window.location.href = '/login?next={pn.state.location.href}';</script>"
+            self._redirect_to_login()
             return
 
+        # Push the changes to DocDB
         response = qc_update_to_id(self.id, self.data)
 
+        # Deal with errors, on success refresh page to pull new data
         if response.status_code != 200:
             self.submit_error.value = f"Error ({response.status_code}) submitting changes: {response.text}"
             self.submit_button.button_type = "danger"
@@ -147,21 +194,10 @@ class QCPanel(param.Parameterized):
             self.submit_button.disabled = True
             self.changes = 0
             self.change_info.value = f"{self.changes} pending changes"
-            self.hidden_html.object = (
-                "<script>window.location.reload();</script>"
-            )
-
-    def _update_modality_filter(self, event):
-        self.modality_filter = event.new
-
-    def _update_stage_filter(self, event):
-        self.stage_filter = event.new
-        
-    def _update_tag_filter(self, event):
-        self.tag_filter = event.new
+            self._refresh()
 
     @param.depends("modality_filter", "stage_filter", "tag_filter", watch=True)
-    def update_objects(self):
+    def update_tabs_from_filters(self):
         objects = []
         for evaluation, filters in zip(
             self.evaluations, self.evaluation_filters
@@ -178,10 +214,10 @@ class QCPanel(param.Parameterized):
                 objects.append(evaluation.panel())
         self.tabs.objects = objects
 
-    def status_panel(self):
+    def panel_status_table(self):
         """Build a Panel table that shows the current status of all evaluations"""
-        # We'll loop over stage and modality to build a table
 
+        # We'll loop over stage/modality/tabs to build a table
         data = []
         for stage in self.stages:
             for modality in self.modalities:
@@ -217,10 +253,9 @@ class QCPanel(param.Parameterized):
         df_squashed.reset_index(inplace=True)
 
         return pn.pane.DataFrame(df_squashed, index=False, escape=False)
-
-    def panel(self):
-        """Build a Panel object representing this QC action"""
-
+    
+    def panel_header(self):
+        """Build a Panel header for this QC object"""
         # build the header
         md = f"""
 <span style="font-size:14pt">Quality control for {self.asset_name}</span>
@@ -228,10 +263,15 @@ class QCPanel(param.Parameterized):
 """
         header = pn.pane.Markdown(md)
 
+        return header
+
+    def panel(self):
+        """Build a Panel pane representing this QC object"""
+
         if not self._has_data or not self._data:
             return pn.Row(
                 pn.HSpacer(),
-                pn.Column(header,
+                pn.Column(self.panel_header(),
                           pn.widgets.StaticText(value="No QC object available", styles={"font-size": "22pt"}), styles=OUTER_STYLE),
                 pn.HSpacer())
 
@@ -257,10 +297,10 @@ class QCPanel(param.Parameterized):
         if pn.state.user == "guest":
             notes_box.disabled = True
         else:
-            notes_box.param.watch(self.set_dirty, "value")
+            notes_box.param.watch(self.set_submit_dirty, "value")
 
         # state row
-        state_row = pn.Row(state_pane, notes_box, self.status_panel())
+        state_row = pn.Row(state_pane, notes_box, self.panel_status_table())
         quality_control_pane = pn.Column(header, state_row)
 
         # button
@@ -298,13 +338,10 @@ class QCPanel(param.Parameterized):
         )
 
         self.tabs = pn.Tabs(sizing_mode="stretch_width", styles=OUTER_STYLE, tabs_location="left")
-        self.update_objects()
+        self.update_tabs_from_filters()
 
         col = pn.Column(
             header_col, self.tabs, self.hidden_html
         )
 
         return col
-
-    def dump(self):
-        """Return this quality_control.json object back to it's JSON format"""
