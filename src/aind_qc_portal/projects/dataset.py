@@ -3,7 +3,7 @@ import panel as pn
 import param
 
 from aind_qc_portal.docdb.database import get_project
-from aind_qc_portal.utils import format_link, qc_status_color_css
+from aind_qc_portal.utils import format_link, qc_status_color_css, qc_status_link_html
 from aind_data_schema.core.quality_control import QualityControl, Status
 
 ALWAYS_COLUMNS = ["Subject ID", "Date"]
@@ -101,7 +101,7 @@ class ProjectDataset(param.Parameterized):
 
             record_data = {
                 "_id": record.get("_id"),
-                "raw": record.get("data_description", {}).get("data_level")
+                "Raw Data": record.get("data_description", {}).get("data_level")
                 == "raw",
                 "project_name": record.get("data_description", {}).get(
                     "project_name"
@@ -139,6 +139,12 @@ class ProjectDataset(param.Parameterized):
         self._df["Researcher"] = self._df["operator"].apply(
             lambda x: ", ".join(x) if x else None
         )
+        self._df["QC Status"] = self._df.apply(
+            lambda row: qc_status_link_html(row["QC Status"], row["qc_link"], row["QC Status"]), axis=1
+        )
+        print(self._df["QC Status"].values[0])
+
+        self._df.drop(columns=["qc_link", "operator", "session_start_time", "location"])
 
         # Sort dataframe by time and then by subject ID
         self._df.sort_values(by="timestamp", ascending=True, inplace=True)
@@ -161,7 +167,7 @@ class ProjectDataset(param.Parameterized):
 
         if self.derived_filter != "All":
             filtered_df = filtered_df[
-                filtered_df["raw"] == (True if self.derived_filter == "Raw" else False)
+                filtered_df["Raw Data"] == (True if self.derived_filter == "Raw" else False)
             ]
 
         if self.type_filter != "All":
@@ -173,7 +179,7 @@ class ProjectDataset(param.Parameterized):
             filtered_df = filtered_df[
                 filtered_df["QC Status"] == self.status_filter
             ]
-        
+
         return filtered_df
 
     def data_filtered(self) -> pd.DataFrame:
@@ -201,7 +207,7 @@ class ProjectDataset(param.Parameterized):
         pd.DataFrame
         """
 
-        return self.data_filtered(standard_columns=True).style.map(
+        return self.data_filtered().style.map(
             qc_status_color_css, subset=["Status"]
         )
 

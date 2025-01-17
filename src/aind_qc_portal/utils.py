@@ -130,7 +130,7 @@ def qc_status_color_css(status):
     return f"background-color: {_qc_status_color(status)}"
 
 
-def qc_status_html(status: Status, text: str = ""):
+def qc_status_html(status: Status | str, text: str = ""):
     """Return a formatted <span> tag with the color of the QC status
 
     Parameters
@@ -145,7 +145,14 @@ def qc_status_html(status: Status, text: str = ""):
     str
         HTML formatted string
     """
-    return f'<span style="color:{qc_status_color(status)};">{text if text else status.value}</span>'
+    if isinstance(status, Status):
+        status = status.value
+
+    return f'<span style="color:{_qc_status_color(status)};">{text if text else status}</span>'
+
+
+def qc_status_link_html(status: str, link: str, text: str = ""):
+    return f'<span style="background-color:{_qc_status_color(status)};">{format_link(link, text)}</span>'
 
 
 def range_unit_format(time_range):
