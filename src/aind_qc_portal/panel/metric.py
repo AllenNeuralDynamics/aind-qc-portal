@@ -22,7 +22,9 @@ class QCMetricPanel:
         """
         if isinstance(qc_metrics, QCMetric):
             qc_metrics = [qc_metrics]
-        self.metrics = [QCMetricValuePanel(metric, parent) for metric in qc_metrics]
+        self.metrics = [
+            QCMetricValuePanel(metric, parent) for metric in qc_metrics
+        ]
         self.parent = parent
         self.reference_img = None
 
@@ -41,7 +43,11 @@ class QCMetricPanel:
         row = pn.Row(
             metric_col,
             self.reference_img,
-            name=f"Metric group: {self.metrics[0]._data.reference}" if len(self.metrics) > 1 else self.metrics[0]._data.name,
+            name=(
+                f"Metric group: {self.metrics[0]._data.reference}"
+                if len(self.metrics) > 1
+                else self.metrics[0]._data.name
+            ),
             sizing_mode="stretch_width",
             max_height=1200,
         )
@@ -97,7 +103,7 @@ class QCMetricValuePanel:
 
         if self.state_selector:
             self.state_selector.value = status.value
-            
+
         given_name = pn.state.user_info.get("given_name", "")
         family_name = pn.state.user_info.get("family_name", "")
 
@@ -152,7 +158,14 @@ class QCMetricValuePanel:
                 auto_value = True
                 df = pd.DataFrame(value)
                 value_widget = pn.pane.DataFrame(df)
-            elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in value.values()]):
+            elif all(
+                [
+                    isinstance(v, str)
+                    or isinstance(v, int)
+                    or isinstance(v, float)
+                    for v in value.values()
+                ]
+            ):
                 auto_value = True
                 df = pd.DataFrame([value])
                 value_widget = pn.pane.DataFrame(df)
@@ -197,7 +210,8 @@ class QCMetricValuePanel:
             header,
             pn.WidgetBox(value_widget, self.state_selector),
             self.hidden_html,
-            width=350, max_height=1200,
+            width=350,
+            max_height=1200,
         )
 
         return col

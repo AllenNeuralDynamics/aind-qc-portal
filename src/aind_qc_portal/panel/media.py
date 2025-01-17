@@ -50,14 +50,12 @@ CSS = """
 
 
 class Fullscreen(ReactiveHTML):
-    """A Fullscreen component that allows the user to toggle fullscreen mode.
-    """
+    """A Fullscreen component that allows the user to toggle fullscreen mode."""
 
     object = param.Parameter()
 
     def __init__(self, object, **params):
-        """Build fullscreen object
-        """
+        """Build fullscreen object"""
         super().__init__(object=object, **params)
 
     _template = """
@@ -157,7 +155,7 @@ class Media:
             reference_data = _get_kachery_cloud_url(reference)
         else:
             # assume local data asset_get_s3_asset
-            
+
             # if a user appends extra things up to results/, strip that
             if "results/" in reference:
                 reference = reference.split("results/")[1]
@@ -167,30 +165,46 @@ class Media:
             )
 
         if not reference_data:
-            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
+            return pn.pane.Alert(
+                f"Failed to load asset: {reference}", alert_type="danger"
+            )
 
         # Step 2: parse the type and return the appropriate object
         return _parse_type(reference, reference_data)
 
     def panel(self):
-        return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
+        return Fullscreen(
+            self.object, sizing_mode="stretch_width", max_height=1200
+        )
 
 
 def _is_image(reference):
-    return reference.endswith(".png") or reference.endswith(".jpg") or reference.endswith(".gif") or reference.endswith(".jpeg") or reference.endswith(".svg")
+    return (
+        reference.endswith(".png")
+        or reference.endswith(".jpg")
+        or reference.endswith(".gif")
+        or reference.endswith(".jpeg")
+        or reference.endswith(".svg")
+    )
+
 
 def _is_pdf(reference):
     return reference.endswith(".pdf")
+
 
 def _get_s3_file(url, ext):
     try:
         response = requests.get(url)
         if response.status_code == 200:
-            with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
+            with tempfile.NamedTemporaryFile(
+                suffix=ext, delete=False
+            ) as temp_file:
                 temp_file.write(response.content)
             return temp_file.name
         else:
-            print(f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}")
+            print(
+                f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}"
+            )
             return None
     except Exception as e:
         print(f"[ERROR] Failed to fetch asset {url}, error: {e}")
@@ -213,12 +227,16 @@ def _parse_type(reference, data):
         data = _get_s3_file(data, os.path.splitext(reference)[1])
 
         if not data:
-            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
+            return pn.pane.Alert(
+                f"Failed to load asset: {reference}", alert_type="danger"
+            )
 
     if _is_image(reference):
         return pn.pane.Image(data, sizing_mode="scale_width", max_width=1200)
     elif _is_pdf(reference):
-        return pn.pane.PDF(data, sizing_mode="scale_width", max_width=1200, height=1000)
+        return pn.pane.PDF(
+            data, sizing_mode="scale_width", max_width=1200, height=1000
+        )
     elif reference.endswith(".mp4"):
         # Return the Video pane using the temporary file
         return pn.pane.Video(
@@ -235,12 +253,16 @@ def _parse_type(reference, data):
         src = f"https://app.rerun.io/version/{full_version}/index.html?url={data}"
         iframe_html = f'<iframe src="{src}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
-            iframe_html, sizing_mode="stretch_width", height=1000,
+            iframe_html,
+            sizing_mode="stretch_width",
+            height=1000,
         )
     elif "neuroglancer" in reference:
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
-            iframe_html, sizing_mode="stretch_width", height=1000,
+            iframe_html,
+            sizing_mode="stretch_width",
+            height=1000,
         )
     elif "http" in reference:
         return pn.widgets.StaticText(
@@ -260,12 +282,12 @@ def _get_s3_url(bucket, key):
         S3 bucket name
     key : str
         S3 key name
-    """      
+    """
     return s3_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': bucket, 'Key': key},
-            ExpiresIn=MEDIA_TTL,
-        )
+        "get_object",
+        Params={"Bucket": bucket, "Key": key},
+        ExpiresIn=MEDIA_TTL,
+    )
 
 
 @pn.cache()
@@ -312,22 +334,24 @@ def _get_kachery_cloud_url(hash: str):
     }
     data = {
         "payload": {
-        "type": "findFile",
-        "timestamp": timestamp,
-        "hashAlg": "sha1",
-        "hash": simplified_hash,
-        "zone": KACHERY_ZONE,
+            "type": "findFile",
+            "timestamp": timestamp,
+            "hashAlg": "sha1",
+            "hash": simplified_hash,
+            "zone": KACHERY_ZONE,
         }
     }
 
     response = requests.post(url, headers=headers, json=data)
     if response.status_code != 200:
-        return f"[ERROR] Failed to fetch asset {simplified_hash}: {response.text}"
+        return (
+            f"[ERROR] Failed to fetch asset {simplified_hash}: {response.text}"
+        )
 
     data = response.json()
 
     if not data["found"]:
-        print (f"File not found in kachery-cloud: {simplified_hash}")
+        print(f"File not found in kachery-cloud: {simplified_hash}")
         return None
     else:
         return response.json()["url"]

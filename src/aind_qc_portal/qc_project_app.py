@@ -4,10 +4,16 @@ Generates a view of a single project's asset records and a dataframe with links 
 
 Intended to be the main entry point for a project's data
 """
+
 import panel as pn
 import param
 from aind_qc_portal.docdb.database import get_project_names
-from aind_qc_portal.utils import format_css_background, AIND_COLORS, OUTER_STYLE
+from aind_qc_portal.projects.dataset import ProjectDataset
+from aind_qc_portal.utils import (
+    format_css_background,
+    AIND_COLORS,
+    OUTER_STYLE,
+)
 from aind_qc_portal.projects.project_view import ProjectView
 
 pn.extension("vega", "tabulator")
@@ -36,28 +42,51 @@ class Settings(param.Parameterized):
 
     def __init__(self, **params):
         super().__init__(**params)
-        self.project_name_selector = pn.widgets.Select(name='Project Name', options=get_project_names(), value=self.project_name)
-        self.project_name_selector.link(self, value='project_name')
 
-    @property
-    def project_selector(self):
-        return self.project_name_selector
+        self.project_name_selector = pn.widgets.Select(
+            name="Project Name", options=get_project_names()
+        )
+        self.project_name_selector.link(self, value="project_name")
 
     def panel(self):
 
         header = pn.pane.Markdown("## Settings")
 
-        col = pn.Column(header, self.project_name_selector, css_classes=["sticky"], styles=OUTER_STYLE, width=350)
+        col = pn.Column(
+            header,
+            self.project_name_selector,
+        )
 
         return col
 
 
 settings = Settings()
-pn.state.location.sync(settings, {"project_name": "project_name"})  # sync to URL
-settings.project_selector.value = settings.project_name  # also sync to dropdown value
+pn.state.location.sync(
+    settings,
+    {
+        "project_name": "project_name",
+    },
+)
+
+settings.project_name_selector.value = (
+    settings.project_name
+)  # also sync to dropdown value
+project_name_original = settings.project_name
 
 # Build the project view
-project_view = ProjectView(project_name=settings.project_name)
+dataset = ProjectDataset(project_name=settings.project_name)
+project_view = ProjectView(project_name=settings.project_name, dataset=dataset)
+
+pn.state.location.sync(
+    dataset,
+    {
+        "subject_filter": "subject_filter",
+        "derived_filter": "derived_filter",
+        "columns_filter": "columns_filter",
+        "type_filter": "type_filter",
+        "status_filter": "status_filter",
+    },
+)
 
 
 def update_header(project_name):
@@ -73,24 +102,42 @@ def update_header(project_name):
     return header_md_pane
 
 
-def update_project_view(project_name):
-    """Helper to update project view and return the new panel object
-    """
-    try:
-        project_view.update(project_name)
-        return project_view.panel()
-    except Exception as e:
-        return pn.pane.Alert(f"Error loading project data: {e}.\n\nThis error likely indicates your metadata is invalid, the QC portal *requires* valid metadata in every data asset to function. Please reach out to Scientific Computing for help repairing your assets, you can use the metadata portal at metadata-portal.allenneuraldynamics.org to help find errors in your metadata.", alert_type="danger")
+hidden_html = pn.pane.HTML("")
+
+
+def refresh(project_name):
+    """Helper to update project view and return the new panel object"""
+    if project_name != project_name_original:
+        hidden_html.object = "<script>window.location.reload();</script>"
+    return hidden_html
 
 
 # Add the header project dropdown list
 project_names = get_project_names()
 
-interactive_header = pn.bind(update_header, settings.project_selector)
-header = pn.Row(interactive_header, pn.HSpacer(), width=1000, styles=OUTER_STYLE)
+interactive_header = pn.bind(update_header, settings.project_name_selector)
+header = pn.Row(
+    interactive_header, pn.HSpacer(), width=990, styles=OUTER_STYLE
+)
 
-interactive_project_view = pn.bind(update_project_view, settings.project_selector)
-main_col = pn.Column(header, interactive_project_view, width=1000)
-row = pn.Row(pn.HSpacer(), main_col, pn.HSpacer(max_width=10), settings.panel())
+setting_panel = settings.panel()
+
+interactive_refresh = pn.bind(
+    refresh, project_name=settings.project_name_selector
+)
+
+main_col = pn.Column(
+    header, project_view.panel(), interactive_refresh, width=1000
+)
+
+side_col = pn.Column(
+    setting_panel,
+    dataset.panel(),
+    css_classes=["sticky"],
+    styles=OUTER_STYLE,
+    width=350,
+)
+
+row = pn.Row(pn.HSpacer(), main_col, pn.HSpacer(max_width=10), side_col)
 
 row.servable(title="AIND QC - Project")

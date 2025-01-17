@@ -3,21 +3,18 @@ import altair as alt
 from datetime import datetime
 
 from aind_qc_portal.projects.dataset import ProjectDataset
-from aind_qc_portal.utils import df_timestamp_range, OUTER_STYLE, AIND_COLORS, range_unit_format
+from aind_qc_portal.utils import (
+    df_timestamp_range,
+    OUTER_STYLE,
+    range_unit_format,
+)
+from aind_qc_portal.projects.dataset import ALWAYS_COLUMNS
 
 
-class AssetView():
-    """Panel view of a single raw asset and its derived assets
-    """
-
-    def __init__(self, asset_id: str):
-        pass
-
-
-class ProjectView():
+class ProjectView:
     """Panel view of an entire project's assets"""
 
-    def __init__(self, project_name: str):
+    def __init__(self, project_name: str, dataset: ProjectDataset):
         """Create a new ProjectView object
 
         Parameters
@@ -25,24 +22,30 @@ class ProjectView():
         project_name : str
             _description_
         """
-        self.subject_filter = pn.widgets.MultiChoice(name="Subject filter")
-        self.update(project_name)
+        self.project_name = ""
+        self.dataset = dataset
 
-    def update(self, new_project_name: str):
-        print(f"Updating project view for {new_project_name}")
-        self.dataset = ProjectDataset(new_project_name)
-        self.project_name = new_project_name
-        self.subject_filter.options = list(self.get_subjects())
+        self.df_pane = pn.widgets.Tabulator(
+            self.dataset.data_filtered(),
+            width=950,
+            show_index=False,
+            disabled=True,
+            formatters={
+                "QC Status": {"type": "html"},
+                "QC view": {"type": "html"},
+                "S3 link": {"type": "html"},
+            },
+        )
+
+        self.brush = alt.selection_interval(name="brush")
+        self.history_chart = self.history_panel()
+        self.selection_history_chart = pn.bind(
+            self.selection_history_panel, self.history_chart.selection.param.brush
+        )
 
     @property
     def has_data(self):
         return self.dataset.data is not None
-
-    def get_subjects(self):
-        if not self.has_data:
-            return []
-
-        return self.dataset.data["subject_id"].unique()
 
     def get_asset_count(self):
         if not self.has_data:
@@ -50,11 +53,13 @@ class ProjectView():
 
         return len(self.dataset.data_filtered())
 
-    def get_data_styled(self):
-        if not self.has_data:
-            return None
-
-        return self.dataset.data_styled
+    def update_subject_selector(self, event):
+        """Update the subject selector based on the brush selection
+        """
+        if event.new.get("Subject ID") is not None:
+            self.dataset.subject_selector.value = event.new["Subject ID"]
+        else:
+            self.dataset.subject_selector.value = []
 
     def history_panel(self):
         """Create a plot showing the history of this asset, showing how assets were derived from each other"""
@@ -63,15 +68,15 @@ class ProjectView():
                 value=f"No data found for project: {self.project_name}"
             )
 
-        brush = alt.selection_interval(name='brush')
+        data = self.dataset.data
 
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(
-            self.dataset.timestamps
+            data[["timestamp"]]
         )
 
         chart = (
-            alt.Chart(self.dataset.data_filtered())
+            alt.Chart(self.dataset.data)
             .mark_bar()
             .encode(
                 x=alt.X(
@@ -80,20 +85,26 @@ class ProjectView():
                     scale=alt.Scale(domain=[min_range, max_range]),
                     axis=alt.Axis(format=format, tickCount=range_unit),
                 ),
-                y=alt.Y("subject_id:N", title="Subject ID"),
+                y=alt.Y("Subject ID:N", title="Subject ID"),
                 tooltip=[
-                    "subject_id",
-                    "session_type",
-                    "Date",
+                    alt.Tooltip("Subject ID:N", title="Subject ID"),
+                    alt.Tooltip("name:Q", title="Asset name"),
+                    alt.Tooltip("session_type:Q", title="Session Type"),
+                    alt.Tooltip("Date:T", title="Date"),
                 ],
-                color=alt.condition(brush, alt.Color("subject_id:N"), alt.value('lightgray')),
+                color=alt.condition(
+                    self.brush, alt.Color("Subject ID:N"), alt.value("lightgray")
+                ),
                 href=alt.Href("qc_link:N"),
             )
             .properties(width=900)
-            .add_params(brush)
+            .add_params(self.brush)
         )
 
-        return pn.pane.Vega(chart, sizing_mode="stretch_width")
+        chart_pane = pn.pane.Vega(chart, sizing_mode="stretch_width")
+        chart_pane.selection.param.watch(self.update_subject_selector, "brush")
+
+        return chart_pane
 
     def selection_history_panel(self, selection):
         """Create a plot showing the history of the selected assets"""
@@ -104,6 +115,9 @@ class ProjectView():
 
         data = self.dataset.data_filtered()
 
+        if data.empty:
+            return pn.widgets.StaticText(value="No data found for the selected filters")
+
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(
             self.dataset.timestamps
@@ -111,17 +125,15 @@ class ProjectView():
 
         if selection is None or selection == {}:
             data = data.head(0)
-            self.subject_filter.value = []
         else:
-            self.subject_filter.value = []
-            if selection.get("subject_id") is not None:
-                data = data[data["subject_id"].isin(selection["subject_id"])]
-                self.subject_filter.value = selection["subject_id"]
+            if selection.get("Subject ID") is not None:
+                data = data[data["Subject ID"].isin(selection["Subject ID"])]
             if selection.get("Date") is not None:
                 min_range = datetime.fromtimestamp(selection["Date"][0] / 1000)
                 max_range = datetime.fromtimestamp(selection["Date"][1] / 1000)
                 (range_unit, format) = range_unit_format(
-                    datetime.fromtimestamp(selection["Date"][1] / 1000) - datetime.fromtimestamp(selection["Date"][0] / 1000)
+                    datetime.fromtimestamp(selection["Date"][1] / 1000)
+                    - datetime.fromtimestamp(selection["Date"][0] / 1000)
                 )
 
         chart = (
@@ -134,13 +146,14 @@ class ProjectView():
                     scale=alt.Scale(domain=[min_range, max_range]),
                     axis=alt.Axis(format=format, tickCount=range_unit),
                 ),
-                y=alt.Y("subject_id:N", title="Subject ID"),
+                y=alt.Y("Subject ID:N", title="Subject ID"),
                 tooltip=[
-                    "subject_id",
-                    "session_type",
-                    "Date",
+                    alt.Tooltip("Subject ID:N", title="Subject ID"),
+                    alt.Tooltip("name:Q", title="Asset name"),
+                    alt.Tooltip("session_type:Q", title="Session Type"),
+                    alt.Tooltip("Date:T", title="Date"),
                 ],
-                color=alt.Color("subject_id:N"),
+                color=alt.Color("Subject ID:N"),
                 href=alt.Href("qc_link:N"),
             )
             .properties(width=900)
@@ -148,26 +161,33 @@ class ProjectView():
 
         return pn.pane.Vega(chart, sizing_mode="stretch_width")
 
-    def panel(self) -> pn.Column:
+    def _panel(self,
+               subject_filter,
+               derived_filter,
+               columns_filter,
+               type_filter,
+               status_filter) -> pn.Column:
         """Return panel object"""
 
-        history_chart = self.history_panel()
+        self.dataset.subject_filter = subject_filter
+        self.dataset.derived_filter = derived_filter
+        self.dataset.columns_filter = ALWAYS_COLUMNS + columns_filter
+        self.dataset.type_filter = type_filter
+        self.dataset.status_filter = status_filter
 
-        chart_pane = pn.Column(history_chart, pn.bind(self.selection_history_panel, history_chart.selection.param.brush), styles=OUTER_STYLE)
+        self.df_pane.value = self.dataset.data_filtered()
 
-        df_pane = pn.widgets.Tabulator(self.get_data_styled(), width=950, show_index=False, disabled=True, formatters={
-            'QC view': {'type': 'html'},
-            'S3 link': {'type': 'html'}
-        })
-
-        def update_subject_filter(event):
-            self.dataset.subject_filter = event.new
-            df_pane.object = self.get_data_styled()
-
-        self.subject_filter.param.watch(update_subject_filter, "value")
-
-        df_col = pn.Column(self.subject_filter, df_pane, styles=OUTER_STYLE)
-
-        col = pn.Column(chart_pane, df_col)
+        col = pn.Column(self.selection_history_chart, self.df_pane)
 
         return col
+
+    def panel(self):
+
+        return pn.Column(self.history_chart, pn.bind(
+            self._panel,
+            subject_filter=self.dataset.subject_selector,
+            derived_filter=self.dataset.derived_selector,
+            columns_filter=self.dataset.columns_selector,
+            type_filter=self.dataset.type_selector,
+            status_filter=self.dataset.status_selector,
+        ), styles=OUTER_STYLE)

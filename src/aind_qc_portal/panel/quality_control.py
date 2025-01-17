@@ -9,7 +9,11 @@ from datetime import datetime, timezone
 
 from aind_data_schema.core.quality_control import QualityControl
 
-from aind_qc_portal.docdb.database import record_from_id, qc_update_to_id, project_name_from_id
+from aind_qc_portal.docdb.database import (
+    record_from_id,
+    qc_update_to_id,
+    project_name_from_id,
+)
 from aind_data_schema_models.modalities import Modality
 from aind_qc_portal.panel.evaluation import QCEvalPanel
 from aind_qc_portal.utils import (
@@ -56,16 +60,13 @@ class QCPanel(param.Parameterized):
         self.tag_filter = event.new
 
     def _init_submission(self):
-        """Set up the submission area for this QC object
-        """
+        """Set up the submission area for this QC object"""
         self.submit_button = pn.widgets.Button(
             name="Submit changes" if pn.state.user != "guest" else "Log in",
             button_type="success",
         )
         self.changes = 0
-        self.change_info = pn.widgets.StaticText(
-            value=""
-        )
+        self.change_info = pn.widgets.StaticText(value="")
         self.submit_info = pn.widgets.StaticText(
             value=(
                 f"Logged in as {pn.state.user}"
@@ -75,15 +76,17 @@ class QCPanel(param.Parameterized):
         )
         self.submit_error = pn.widgets.StaticText(value="")
         self.submit_col = pn.Column(
-            self.submit_button, self.change_info, self.submit_info, self.submit_error
+            self.submit_button,
+            self.change_info,
+            self.submit_info,
+            self.submit_error,
         )
         pn.bind(self.submit_changes, self.submit_button, watch=True)
 
     def _get_data(self):
-        """Get the data for this record from DocDB and validate as a QualityControl object
-        """
+        """Get the data for this record from DocDB and validate as a QualityControl object"""
         json_data = record_from_id(self.id)
-        
+
         # Basic checks
         if not json_data:
             return
@@ -104,7 +107,11 @@ class QCPanel(param.Parameterized):
             return
 
         # Pull modality information
-        if "data_description" in json_data and json_data["data_description"] and "modality" in json_data["data_description"]:
+        if (
+            "data_description" in json_data
+            and json_data["data_description"]
+            and "modality" in json_data["data_description"]
+        ):
             self.modalities = [
                 Modality.from_abbreviation(modality["abbreviation"])
                 for modality in json_data["data_description"]["modality"]
@@ -123,16 +130,28 @@ class QCPanel(param.Parameterized):
         self.asset_name = json_data["name"]
 
     def _proc_data(self):
-        """Pull out the evaluations and build the evaluation panels
-        """
-        self.stages = list({evaluation.stage for evaluation in self._data.evaluations})
-        self.tags = list({tag for evaluation in self._data.evaluations if evaluation.tags for tag in evaluation.tags})
+        """Pull out the evaluations and build the evaluation panels"""
+        self.stages = list(
+            {evaluation.stage for evaluation in self._data.evaluations}
+        )
+        self.tags = list(
+            {
+                tag
+                for evaluation in self._data.evaluations
+                if evaluation.tags
+                for tag in evaluation.tags
+            }
+        )
 
         self.evaluations = []
         self.evaluation_filters = []
         for evaluation in self._data.evaluations:
             self.evaluation_filters.append(
-                (evaluation.stage, evaluation.modality.abbreviation, evaluation.tags)
+                (
+                    evaluation.stage,
+                    evaluation.modality.abbreviation,
+                    evaluation.tags,
+                )
             )
             self.evaluations.append(
                 QCEvalPanel(parent=self, qc_evaluation=evaluation)
@@ -144,13 +163,10 @@ class QCPanel(param.Parameterized):
 
     def _refresh(self):
         """Refresh the page"""
-        self.hidden_html.object = (
-            "<script>window.location.reload();</script>"
-        )
+        self.hidden_html.object = "<script>window.location.reload();</script>"
 
     def update(self):
-        """Update the data for this QC object and set the submission area state
-        """
+        """Update the data for this QC object and set the submission area state"""
         self._get_data()
         self._proc_data()
 
@@ -204,12 +220,16 @@ class QCPanel(param.Parameterized):
         ):
             (stage, modality, tags) = filters
             if (
-                self.modality_filter == "All"
-                or modality == self.modality_filter
-            ) and (
-                self.stage_filter == "All" or stage == self.stage_filter
-            ) and (
-                not tags or self.tag_filter == "All" or any([self.tag_filter == tag for tag in tags])
+                (
+                    self.modality_filter == "All"
+                    or modality == self.modality_filter
+                )
+                and (self.stage_filter == "All" or stage == self.stage_filter)
+                and (
+                    not tags
+                    or self.tag_filter == "All"
+                    or any([self.tag_filter == tag for tag in tags])
+                )
             ):
                 objects.append(evaluation.panel())
         self.tabs.objects = objects
@@ -226,7 +246,11 @@ class QCPanel(param.Parameterized):
                         "Group": modality.abbreviation,
                         "Stage": stage,
                         "Status": qc_status_html(
-                            self._data.status(date=datetime.now(tz=timezone.utc), modality=modality, stage=stage)
+                            self._data.status(
+                                date=datetime.now(tz=timezone.utc),
+                                modality=modality,
+                                stage=stage,
+                            )
                         ),
                     }
                 )
@@ -236,7 +260,11 @@ class QCPanel(param.Parameterized):
                         "Group": tag,
                         "Stage": stage,
                         "Status": qc_status_html(
-                            self._data.status(date=datetime.now(tz=timezone.utc), tag=tag, stage=stage)
+                            self._data.status(
+                                date=datetime.now(tz=timezone.utc),
+                                tag=tag,
+                                stage=stage,
+                            )
                         ),
                     }
                 )
@@ -253,7 +281,7 @@ class QCPanel(param.Parameterized):
         df_squashed.reset_index(inplace=True)
 
         return pn.pane.DataFrame(df_squashed, index=False, escape=False)
-    
+
     def panel_header(self):
         """Build a Panel header for this QC object"""
         # build the header
@@ -271,9 +299,16 @@ class QCPanel(param.Parameterized):
         if not self._has_data or not self._data:
             return pn.Row(
                 pn.HSpacer(),
-                pn.Column(self.panel_header(),
-                          pn.widgets.StaticText(value="No QC object available", styles={"font-size": "22pt"}), styles=OUTER_STYLE),
-                pn.HSpacer())
+                pn.Column(
+                    self.panel_header(),
+                    pn.widgets.StaticText(
+                        value="No QC object available",
+                        styles={"font-size": "22pt"},
+                    ),
+                    styles=OUTER_STYLE,
+                ),
+                pn.HSpacer(),
+            )
 
         # build the display box: this shows the current state in DocDB of this asset
         # if any evaluations are failing, we'll show a warning
@@ -333,15 +368,19 @@ class QCPanel(param.Parameterized):
 
         header_col = pn.Column(
             header_row,
-            pn.Row(self.modality_selector, self.stage_selector, self.tag_selector),
+            pn.Row(
+                self.modality_selector, self.stage_selector, self.tag_selector
+            ),
             styles=OUTER_STYLE,
         )
 
-        self.tabs = pn.Tabs(sizing_mode="stretch_width", styles=OUTER_STYLE, tabs_location="left")
+        self.tabs = pn.Tabs(
+            sizing_mode="stretch_width",
+            styles=OUTER_STYLE,
+            tabs_location="left",
+        )
         self.update_tabs_from_filters()
 
-        col = pn.Column(
-            header_col, self.tabs, self.hidden_html
-        )
+        col = pn.Column(header_col, self.tabs, self.hidden_html)
 
         return col

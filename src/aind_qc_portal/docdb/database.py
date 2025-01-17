@@ -30,7 +30,12 @@ def get_project_names():
     response = client.aggregate_docdb_records(
         pipeline=[
             {"$group": {"_id": "$data_description.project_name"}},
-            {"$group": {"_id": None, "unique_project_names": {"$push": "$_id"}}},
+            {
+                "$group": {
+                    "_id": None,
+                    "unique_project_names": {"$push": "$_id"},
+                }
+            },
             {"$project": {"_id": 0, "unique_project_names": 1}},
         ]
     )
@@ -64,7 +69,7 @@ def project_name_from_id(id: str) -> Optional[str]:
     )
     if len(response) == 0:
         return None
-    return response[0]["data_description"]["project_name"]
+    return response[0].get("data_description", {}).get("project_name")
 
 
 def qc_update_to_id(id: str, qc: QualityControl):
@@ -86,7 +91,9 @@ def get_name_from_id(id: str):
 
 @pn.cache()
 def get_subj_from_id(id: str):
-    response = get_projection_by_id(client=client, _id=id, projection={"subject.subject_id": 1})
+    response = get_projection_by_id(
+        client=client, _id=id, projection={"subject.subject_id": 1}
+    )
     if response is not None:
         return response["subject"]["subject_id"]
     return None

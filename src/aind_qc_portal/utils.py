@@ -149,9 +149,7 @@ def qc_status_html(status: Status, text: str = ""):
 
 
 def range_unit_format(time_range):
-    """Compute the altair plot axis unit and format for displaying a time range
-
-    """
+    """Compute the altair plot axis unit and format for displaying a time range"""
     if time_range < ONE_WEEK:
         unit = "day"
         format = "%b %d"

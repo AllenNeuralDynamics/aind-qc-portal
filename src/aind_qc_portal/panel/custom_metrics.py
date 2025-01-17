@@ -76,7 +76,12 @@ class CustomMetricValue:
                     self._status_callback(Status.PENDING)
                 else:
                     if isinstance(updated_data.value, list):
-                        values = [updated_data.status[updated_data.options.index(value)] for value in updated_data.value]
+                        values = [
+                            updated_data.status[
+                                updated_data.options.index(value)
+                            ]
+                            for value in updated_data.value
+                        ]
                         if any(values == Status.FAIL for value in values):
                             self._status_callback(Status.FAIL)
                         elif any(values == Status.PENDING for value in values):
@@ -89,7 +94,7 @@ class CustomMetricValue:
             except Exception as e:
                 print(e)
                 self._status_callback(Status.PENDING)
-        
+
         self._data = updated_data
 
     def _dropdown_helper(self, data: dict):
@@ -110,7 +115,11 @@ class CustomMetricValue:
             name="Value",
             options=data["options"],
         )
-        if data["value"] and isinstance(data["value"], list) and all(value in data["options"] for value in data["value"]):
+        if (
+            data["value"]
+            and isinstance(data["value"], list)
+            and all(value in data["options"] for value in data["value"])
+        ):
             self._panel.value = [data["value"]]
         else:
             print("Checkbox value not in options")
