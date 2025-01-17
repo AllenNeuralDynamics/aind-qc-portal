@@ -54,16 +54,6 @@ class ProjectDataset(param.Parameterized):
         self.columns_selector.options = self.columns
         self.type_selector.options = ["All"] + self.types
 
-        self.subject_selector.value = self.subject_filter
-        self.columns_selector.value = [
-            column
-            for column in self.columns_filter
-            if column not in ALWAYS_COLUMNS
-        ]
-        self.derived_selector.value = self.derived_filter
-        self.type_selector.value = self.type_filter
-        self.status_selector.value = self.status_filter
-
     def _get_assets(self):
         """Get all assets with this project name"""
         records = get_project(self.project_name)

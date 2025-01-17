@@ -15,6 +15,7 @@ from aind_qc_portal.utils import (
     OUTER_STYLE,
 )
 from aind_qc_portal.projects.project_view import ProjectView
+from aind_qc_portal.projects.dataset import ALWAYS_COLUMNS
 
 pn.extension("vega", "tabulator")
 
@@ -87,6 +88,15 @@ pn.state.location.sync(
         "status_filter": "status_filter",
     },
 )
+dataset.subject_selector.value = dataset.subject_filter
+dataset.derived_selector.value = dataset.derived_filter
+dataset.columns_selector.value = [
+    column
+    for column in dataset.columns_filter
+    if column not in ALWAYS_COLUMNS
+]
+dataset.type_selector.value = dataset.type_filter
+dataset.status_selector.value = dataset.status_filter
 
 
 def update_header(project_name):
