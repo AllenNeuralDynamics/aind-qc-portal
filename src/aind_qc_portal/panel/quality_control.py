@@ -131,6 +131,10 @@ class QCPanel(param.Parameterized):
 
     def _proc_data(self):
         """Pull out the evaluations and build the evaluation panels"""
+
+        if not self._has_data:
+            return
+
         self.stages = list(
             {evaluation.stage for evaluation in self._data.evaluations}
         )
