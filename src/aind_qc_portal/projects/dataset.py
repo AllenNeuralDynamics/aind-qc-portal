@@ -2,7 +2,7 @@ import pandas as pd
 import panel as pn
 import param
 
-from aind_qc_portal.docdb.database import get_project
+from aind_qc_portal.docdb.database import get_project_data
 from aind_qc_portal.utils import format_link, qc_status_color_css, qc_status_link_html
 from aind_data_schema.core.quality_control import QualityControl, Status
 
@@ -56,7 +56,7 @@ class ProjectDataset(param.Parameterized):
 
     def _get_assets(self):
         """Get all assets with this project name"""
-        records = get_project(self.project_name)
+        records = get_project_data(self.project_name)
 
         data = []
         for record in records:

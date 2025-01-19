@@ -26,7 +26,13 @@ client = MetadataDbClient(
 
 @pn.cache()
 def get_project_names():
-    """Get all unique project names"""
+    """Get all unique project names from the database.
+
+    Returns
+    -------
+    list[str]
+        List of unique project names found in the database.
+    """
     response = client.aggregate_docdb_records(
         pipeline=[
             {"$group": {"_id": "$data_description.project_name"}},
@@ -43,15 +49,17 @@ def get_project_names():
 
 
 def record_from_id(id: str) -> dict | None:
-    """Get the QC object from the database for a given ID
+    """Get the complete record from the database for a given ID.
 
     Parameters
     ----------
     id : str
+        The unique identifier of the record.
 
     Returns
     -------
-    QualityControl
+    dict | None
+        The complete record as a dictionary if found, None otherwise.
     """
     response = client.retrieve_docdb_records(filter_query={"_id": id}, limit=1)
     if len(response) == 0:
@@ -60,7 +68,18 @@ def record_from_id(id: str) -> dict | None:
 
 
 def project_name_from_id(id: str) -> Optional[str]:
-    """Get the project name from the database for a given ID"""
+    """Get the project name from the database for a given ID.
+
+    Parameters
+    ----------
+    id : str
+        The unique identifier of the record.
+
+    Returns
+    -------
+    Optional[str]
+        The project name if found, None otherwise.
+    """
 
     response = client.retrieve_docdb_records(
         filter_query={"_id": id},
@@ -73,6 +92,20 @@ def project_name_from_id(id: str) -> Optional[str]:
 
 
 def qc_update_to_id(id: str, qc: QualityControl):
+    """Update or insert quality control information for a given record ID.
+
+    Parameters
+    ----------
+    id : str
+        The unique identifier of the record to update.
+    qc : QualityControl
+        The quality control object containing the update information.
+
+    Returns
+    -------
+    dict
+        Response from the database update operation.
+    """
     print("Uploading QC")
     print(qc.model_dump())
     response = client.upsert_one_docdb_record(
@@ -83,6 +116,18 @@ def qc_update_to_id(id: str, qc: QualityControl):
 
 @pn.cache()
 def get_name_from_id(id: str):
+    """Get the name field from a record with the given ID.
+
+    Parameters
+    ----------
+    id : str
+        The unique identifier of the record.
+
+    Returns
+    -------
+    str
+        The name field from the record.
+    """
     response = client.aggregate_docdb_records(
         pipeline=[{"$match": {"_id": id}}, {"$project": {"name": 1, "_id": 0}}]
     )
@@ -91,6 +136,18 @@ def get_name_from_id(id: str):
 
 @pn.cache()
 def get_subj_from_id(id: str):
+    """Get the subject ID from a record with the given ID.
+
+    Parameters
+    ----------
+    id : str
+        The unique identifier of the record.
+
+    Returns
+    -------
+    str | None
+        The subject ID if found, None otherwise.
+    """
     response = get_projection_by_id(
         client=client, _id=id, projection={"subject.subject_id": 1}
     )
@@ -121,6 +178,18 @@ def _raw_name_from_derived(s):
 
 @pn.cache(ttl=TIMEOUT_1H)
 def get_assets_by_name(asset_name: str):
+    """Get all assets that match a given asset name pattern.
+
+    Parameters
+    ----------
+    asset_name : str
+        The asset name to search for (will be converted to raw name if derived).
+
+    Returns
+    -------
+    list[dict]
+        List of matching asset records.
+    """
     raw_name = _raw_name_from_derived(asset_name)
     response = client.retrieve_docdb_records(
         filter_query={"name": {"$regex": raw_name, "$options": "i"}}, limit=0
@@ -129,6 +198,18 @@ def get_assets_by_name(asset_name: str):
 
 
 def get_assets_by_subj(subj: str):
+    """Get all assets associated with a given subject ID.
+
+    Parameters
+    ----------
+    subj : str
+        The subject ID to search for.
+
+    Returns
+    -------
+    list[dict]
+        List of asset records associated with the subject.
+    """
     response = client.retrieve_docdb_records(
         filter_query={"subject.subject_id": subj}, limit=0
     )
@@ -136,6 +217,13 @@ def get_assets_by_subj(subj: str):
 
 
 def get_meta():
+    """Get metadata information for all records.
+
+    Returns
+    -------
+    list[dict]
+        List of records containing ID, name, and quality control information.
+    """
     response = client.aggregate_docdb_records(
         pipeline=[
             {"$project": {"_id": 1, "name": 1, "quality_control": 1}},
@@ -146,6 +234,13 @@ def get_meta():
 
 @pn.cache(ttl=TIMEOUT_24H)  # twenty-four hour cache
 def get_all():
+    """Get a limited set of all records from the database.
+
+    Returns
+    -------
+    list[dict]
+        List of records, limited to 50 entries.
+    """
     filter = {}
     limit = 50
     paginate_batch_size = 500
@@ -159,7 +254,19 @@ def get_all():
 
 
 @pn.cache(ttl=TIMEOUT_1H)
-def get_project(project_name: str):
+def get_project_data(project_name: str):
+    """Get detailed data for all records associated with a specific project.
+
+    Parameters
+    ----------
+    project_name : str
+        The name of the project to query.
+
+    Returns
+    -------
+    list[dict]
+        List of records containing detailed information about the project's assets.
+    """
     filter = {"data_description.project_name": project_name}
     limit = 0
     paginate_batch_size = 500
@@ -191,6 +298,13 @@ def get_project(project_name: str):
 
 @pn.cache
 def get_subjects():
+    """Get a list of all unique subject IDs from the database.
+
+    Returns
+    -------
+    list[int]
+        List of unique subject IDs.
+    """
     filter = {
         "subject.subject_id": {"$exists": True},
         "session": {"$ne": None},
@@ -214,17 +328,17 @@ def get_subjects():
 
 @pn.cache
 def get_sessions(subject_id):
-    """Get the raw JSON sessions list for a subject
+    """Get all session information for a given subject.
 
     Parameters
     ----------
-    subject_id : string or int
-        _description_
+    subject_id : str or int
+        The ID of the subject to query sessions for.
 
     Returns
     -------
-    _type_
-        _description_
+    list[dict]
+        List of session records for the subject.
     """
     filter = {
         "subject.subject_id": str(subject_id),
