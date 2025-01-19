@@ -340,7 +340,7 @@ class QCPanel(param.Parameterized):
 
         # state row
         state_row = pn.Row(state_pane, notes_box, self.panel_status_table())
-        quality_control_pane = pn.Column(header, state_row)
+        quality_control_pane = pn.Column(self.panel_header(), state_row)
 
         # button
         header_row = pn.Row(
