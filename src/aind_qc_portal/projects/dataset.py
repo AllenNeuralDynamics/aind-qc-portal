@@ -8,6 +8,7 @@ from aind_data_schema.core.quality_control import QualityControl, Status
 
 ALWAYS_COLUMNS = ["Subject ID", "Date"]
 DEFAULT_COLUMNS = ["Researcher", "QC Status", "Type"]
+HIDDEN_COLUMNS = ["timestamp"]
 
 QC_STATUS_OPTIONS = [
     "All",
@@ -51,7 +52,7 @@ class ProjectDataset(param.Parameterized):
         self._get_assets()
 
         self.subject_selector.options = self.subjects
-        self.columns_selector.options = self.columns
+        self.columns_selector.options = [column for column in self.columns if column not in ALWAYS_COLUMNS + HIDDEN_COLUMNS]
         self.type_selector.options = ["All"] + self.types
 
     def _get_assets(self):
