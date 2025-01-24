@@ -237,10 +237,10 @@ def _parse_type(reference, data):
         return pn.pane.PDF(
             data, sizing_mode="scale_width", max_width=1200, height=1000
         )
-    elif reference.endswith(".mp4"):
+    elif reference.endswith(".mp4") or reference.endswith(".avi"):
         # Return the Video pane using the temporary file
         return pn.pane.Video(
-            data,  # Use the temporary file's path
+            data,
             sizing_mode="scale_width",
             max_width=1200,
         )
