@@ -39,9 +39,14 @@ class ProjectView:
 
         self.brush = alt.selection_interval(name="brush")
         self.history_chart = self.history_panel()
-        self.selection_history_chart = pn.bind(
-            self.selection_history_panel, self.history_chart.selection.param.brush
-        )
+        if hasattr(self.history_chart, "selection"):
+            self.selection_history_chart = pn.bind(
+                self.selection_history_panel, self.history_chart.selection.param.brush
+            )
+        else:
+            self.selection_history_chart = pn.widgets.StaticText(
+                value=""
+            )
 
     @property
     def has_data(self):
@@ -69,6 +74,10 @@ class ProjectView:
             )
 
         data = self.dataset.data
+
+        # Check that timestamp column has values
+        if data['timestamp'].isnull().all():
+            return pn.widgets.StaticText(value="Data processing error: project is missing timestamp data in some assets. Please reach out to scientific computing for help repairing your metadata.")
 
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(

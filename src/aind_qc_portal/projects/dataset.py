@@ -89,7 +89,7 @@ class ProjectDataset(param.Parameterized):
                     "session_start_time"
                 )
             else:
-                start_time = 0
+                start_time = None
 
             if record.get("session", {}):
                 session_type = record.get("session", {}).get("session_type")
