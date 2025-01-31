@@ -91,9 +91,7 @@ pn.state.location.sync(
 dataset.subject_selector.value = dataset.subject_filter
 dataset.derived_selector.value = dataset.derived_filter
 dataset.columns_selector.value = [
-    column
-    for column in dataset.columns_filter
-    if column not in ALWAYS_COLUMNS
+    column for column in dataset.columns_filter if column not in ALWAYS_COLUMNS
 ]
 dataset.type_selector.value = dataset.type_filter
 dataset.status_selector.value = dataset.status_filter
