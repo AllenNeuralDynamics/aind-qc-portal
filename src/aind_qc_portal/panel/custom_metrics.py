@@ -5,6 +5,8 @@ from aind_qcportal_schema.metric_value import (
     CheckboxMetric,
     DropdownMetric,
     RulebasedMetric,
+    CurationMetric,
+    CurationHistory
 )
 from aind_data_schema.core.quality_control import Status
 
@@ -39,6 +41,8 @@ class CustomMetricValue:
                 )
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
+            elif data["type"] == "curation":
+                self._data = 
             else:
                 raise ValueError("Unknown type for custom metric value")
         elif "rule" in data:

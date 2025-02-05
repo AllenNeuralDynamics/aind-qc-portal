@@ -33,7 +33,9 @@ class QCMetricPanel:
 
         if self.metrics[0]._data.reference:
             self.reference_img = Media(
-                self.metrics[0]._data.reference, self.parent
+                self.metrics[0]._data.reference,
+                self.parent,
+                self.metrics[0]._set_value,
             ).panel()
         else:
             self.reference_img = "No references included"
