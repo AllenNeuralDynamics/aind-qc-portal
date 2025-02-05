@@ -30,19 +30,17 @@ class CustomMetricValue:
 
         if "type" in data:
             if data["type"] == "dropdown":
-                self._data = DropdownMetric.model_validate_json(
-                    json.dumps(data)
-                )
+                self._data = DropdownMetric.model_validate(data)
                 self._auto_state = self._data.status is not None
                 self._dropdown_helper(data)
             elif data["type"] == "checkbox":
-                self._data = CheckboxMetric.model_validate_json(
-                    json.dumps(data)
-                )
+                self._data = CheckboxMetric.model_validate(data)
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
             elif data["type"] == "curation":
-                self._data = 
+                self._data = CurationMetric.model_validate(data)
+                self._auto_state = False
+                self._curation_helper(data)
             else:
                 raise ValueError("Unknown type for custom metric value")
         elif "rule" in data:
@@ -131,6 +129,12 @@ class CustomMetricValue:
 
         # watch the selector and pass event updates back through the callback
         self._panel.param.watch(self._callback_helper, "value")
+
+    def _curation_helper(self, data: dict):
+        self._panel = pn.widgets.JSONEditor(
+            name="Value",
+            value=data["value"],
+        )
 
     def _rulebased_helper(self, data: dict):
         self._panel = pn.widgets.StaticText(value="Todo")
