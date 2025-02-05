@@ -37,7 +37,8 @@ class CustomMetricValue:
                 self._data = CheckboxMetric.model_validate(data)
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
-            elif data["type"] == "curation":
+            elif data["type"] == "curation" or data["type"] == "ephys_curation":
+                data["type"] = "curation"  # todo: remove when EphysCurationMetric removed
                 self._data = CurationMetric.model_validate(data)
                 self._auto_state = False
                 self._curation_helper(data)
@@ -133,7 +134,9 @@ class CustomMetricValue:
     def _curation_helper(self, data: dict):
         self._panel = pn.widgets.JSONEditor(
             name="Value",
-            value=data["value"],
+            value=data["value"] if "value" in data else {},
+            sizing_mode="stretch_width",
+            disabled=True,
         )
 
     def _rulebased_helper(self, data: dict):
