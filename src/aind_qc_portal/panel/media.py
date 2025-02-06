@@ -9,7 +9,6 @@ from panel.custom import JSComponent
 import requests
 import time
 import os
-import json
 
 s3_client = boto3.client("s3")
 MEDIA_TTL = 3600  # 1 hour
@@ -141,12 +140,19 @@ toggleFullScreen()
 class Media:
     """A Media object that can display images, videos, and other media types."""
 
-    def __init__(self, reference, parent, value_callback):
-        """Build Media object"""
+    def __init__(self, reference: str, parent, callback=None):
+        """Build a media object
+
+        Parameters
+        ----------
+        reference : string
+        parent : _type_
+        callback : _type_, optional
+        """
 
         self.parent = parent
         self.object = self.parse_reference(reference)
-        self.value_callback = value_callback
+        self.value_callback = callback
 
     def parse_reference(self, reference: str):
         """Parse the reference string and return the appropriate media object
@@ -288,6 +294,9 @@ def _parse_type(reference, data, media_obj):
 
         def on_msg(event):
             print(f"Received message: {event.data}")
+            if not media_obj.value_callback:
+                raise ValueError("No value callback set for sortingview object")
+
             media_obj.value_callback(event.data)
             media_obj.parent.set_submit_dirty()
 

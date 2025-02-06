@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import panel as pn
 import json
 
@@ -27,6 +28,7 @@ class CustomMetricValue:
         self._auto_state = False
         self._value_callback = value_callback
         self._status_callback = status_callback
+        self.type = None
 
         if "type" in data:
             if data["type"] == "dropdown":
@@ -51,7 +53,25 @@ class CustomMetricValue:
         else:
             raise ValueError("Unknown custom metric value")
 
-    @property
+    def update_value(self, value):
+        """
+        Update to a new value and return what should be stored in the QCMetric.value field
+        """
+        if isinstance(self._data, DropdownMetric):
+            self._data.value = value
+        elif isinstance(self._data, CheckboxMetric):
+            self._data.value = value
+        elif isinstance(self._data, CurationMetric):
+            self._data.curations.append(value)
+            self._data.curation_history.append(CurationHistory(
+                curator=value,
+                timestamp=datetime.now(timezone.utc),
+            ))
+        else:
+            self._data.value = value
+
+        return self._data
+
     def panel(self):
         """Panel pane for this custom metric value"""
         return self._panel
@@ -134,7 +154,7 @@ class CustomMetricValue:
     def _curation_helper(self, data: dict):
         self._panel = pn.widgets.JSONEditor(
             name="Value",
-            value=data["value"] if "value" in data else {},
+            value=data["curations"] if "curations" in data else {},
             sizing_mode="stretch_width",
             disabled=True,
         )
