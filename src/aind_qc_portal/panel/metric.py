@@ -5,9 +5,13 @@ import pandas as pd
 from typing import List, Union
 
 from aind_qc_portal.panel.custom_metrics import CustomMetricValue
-from aind_qcportal_schema.metric_value import CurationHistory
 from aind_qc_portal.panel.media import Media
 from aind_qc_portal.utils import replace_markdown_with_html
+
+
+def df_scalar_to_list(data: dict):
+    """Convert a dictionary of scalars to a dictionary of lists"""
+    return {k: [v] if not isinstance(v, list) else v for k, v in data.items()}
 
 
 class QCMetricMediaPanel:
@@ -48,7 +52,7 @@ class QCMetricValuePanel:
         self.hidden_html.visible = False
         self.type = None
 
-        self.parse_type()
+        self.value = self.parse_value_type()
 
     @property
     def data(self):
@@ -66,7 +70,7 @@ class QCMetricValuePanel:
         """
         print(f"Updating metric value to: {value}")
         if self.type == "custom":
-            self._data.value = self.value.update_value(value)
+            self._data.value = value.update_value(value)
         else:
             self._data.value = value
 
@@ -106,53 +110,53 @@ class QCMetricValuePanel:
 
         self.parent.set_submit_dirty()
     
-    def parse_type(self):
+    def parse_value_type(self):
         """Parse the type of the metric's value field"""
 
-        self.value = self._data.value
+        value = self._data.value
 
-        if isinstance(self.value, bool):
+        if isinstance(value, bool):
             self.type = "checkbox"
-        elif isinstance(self.value, str):
+        elif not value or isinstance(value, str):
+            # None defaults to a textbox
             self.type = "text"
-        elif isinstance(self.value, float):
+        elif isinstance(value, float):
             self.type = "float"
-        elif isinstance(self.value, int):
+        elif isinstance(value, int):
             self.type = "int"
-        elif isinstance(self.value, list):
+        elif isinstance(value, list):
             self.type = "list"
-        elif isinstance(self.value, dict):
-            # first, check if every key/value pair has the same length, if so coerce to a dataframe
-            if all([isinstance(v, list) for v in self.value.values()]) and all(
-                [
-                    len(v) == len(self.value[list(self.value.keys())[0]])
-                    for v in self.value.values()
-                ]
-            ):
-                self.type = "dataframe"
-            # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
-            elif all(
-                [
-                    isinstance(v, str)
-                    or isinstance(v, int)
-                    or isinstance(v, float)
-                    for v in self.value.values()
-                ]
-            ):
-                self.type = "dataframe"
+        elif isinstance(value, dict):
+            if CustomMetricValue.is_custom_metric(value):
+                value = CustomMetricValue(
+                    value, self._set_value, self._set_status
+                )
+                self.type = "custom"
             else:
-                # Check if this is a custom metric value, and if not give up and just display the JSON
-                try:
-                    self.value = CustomMetricValue(
-                        self.value, self._set_value, self._set_status
-                    )
-                    self.type = "custom"
-                except ValueError as e:
-                    print(e)
+                # first, check if every key/value pair has the same length, if so coerce to a dataframe
+                if all([isinstance(v, list) for v in value.values()]) and all(
+                    [
+                        len(v) == len(value[list(value.keys())[0]])
+                        for v in value.values()
+                    ]
+                ):
+                    self.type = "dataframe"
+                # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
+                elif all(
+                    [
+                        isinstance(v, str)
+                        or isinstance(v, int)
+                        or isinstance(v, float)
+                        for v in value.values()
+                    ]
+                ):
+                    self.type = "dataframe"
+                else:
                     self.type = "json"
         else:
             self.type = "unknown"
-
+            
+        return value
 
     def value_to_panel(self, name, value):
         """Convert a metric value to a panel object"""
@@ -162,34 +166,30 @@ class QCMetricValuePanel:
 
         if self.type == "checkbox":
             value_widget = pn.widgets.Checkbox(name=name)
-            value_widget.value = value
         elif self.type == "text":
             value_widget = pn.widgets.TextInput(name=name)
-            value_widget.value = value
         elif self.type == "float":
             value_widget = pn.widgets.FloatInput(name=name)
-            value_widget.value = value
         elif self.type == "int":
             value_widget = pn.widgets.IntInput(name=name)
-            value_widget.value = value
         elif self.type == "list":
             df = pd.DataFrame({"values": value})
             value_widget = pn.pane.DataFrame(df)
             auto_value = True
         elif self.type == "dataframe":
             auto_value = True
-            df = pd.DataFrame(value)
+            df = pd.DataFrame(df_scalar_to_list(value))
             value_widget = pn.pane.DataFrame(df)
         elif self.type == "custom":
             # Check if this is a custom metric value, and if not give up and just display the JSON
             auto_value = True
-            auto_state = self.value.auto_state
-            value_widget = self.value.panel()
+            if hasattr(value, "auto_state"):    
+                auto_state = value.auto_state
+            value_widget = value.panel()
         elif self.type == "json":
             value_widget = pn.widgets.JSONEditor(name=name)
-            value_widget.value = value
         else:
-            value_widget = pn.widgets.StaticText(f"Can't deal with type {type(value)}")
+            value_widget = pn.widgets.StaticText(value=f"Can't deal with type {type(value)}")
 
         return value_widget, auto_value, auto_state
 
@@ -202,11 +202,7 @@ class QCMetricValuePanel:
 {replace_markdown_with_html(8, self._data.description if self._data.description else "*no description provided*")}
 """
         name = self._data.name
-        value = self._data.value
-
-        # Check if empty, if so set to empty string
-        if value is None or value == "" or value == [] or value == {}:
-            value = ""
+        value = self.value
 
         value_widget, auto_value, auto_state = self.value_to_panel(name, value)
 
