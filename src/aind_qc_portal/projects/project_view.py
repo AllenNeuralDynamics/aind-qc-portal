@@ -172,6 +172,7 @@ class ProjectView:
 
     def _panel(self,
                subject_filter,
+               group_filter,
                derived_filter,
                columns_filter,
                type_filter,
@@ -179,6 +180,7 @@ class ProjectView:
         """Return panel object"""
 
         self.dataset.subject_filter = subject_filter
+        self.dataset.group_filter = group_filter
         self.dataset.derived_filter = derived_filter
         self.dataset.columns_filter = ALWAYS_COLUMNS + columns_filter
         self.dataset.type_filter = type_filter
@@ -195,6 +197,7 @@ class ProjectView:
         return pn.Column(self.history_chart, pn.bind(
             self._panel,
             subject_filter=self.dataset.subject_selector,
+            group_filter=self.dataset.group_selector,
             derived_filter=self.dataset.derived_selector,
             columns_filter=self.dataset.columns_selector,
             type_filter=self.dataset.type_selector,

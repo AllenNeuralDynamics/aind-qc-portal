@@ -2,7 +2,7 @@ import pandas as pd
 import panel as pn
 import param
 
-from aind_qc_portal.docdb.database import get_project_data
+from aind_qc_portal.docdb.database import get_project_data, _raw_name_from_derived
 from aind_qc_portal.utils import format_link, qc_status_color_css, qc_status_link_html
 from aind_data_schema.core.quality_control import QualityControl, Status
 
@@ -17,6 +17,10 @@ QC_STATUS_OPTIONS = [
     Status.FAIL.value,
     Status.PENDING.value,
 ]
+GROUP_BY_OPTIONS = [
+    "Subject ID",
+    "Primary asset"
+]
 
 
 class ProjectDataset(param.Parameterized):
@@ -24,6 +28,7 @@ class ProjectDataset(param.Parameterized):
 
     subject_filter = param.List(default=[])
     columns_filter = param.List(default=ALWAYS_COLUMNS + DEFAULT_COLUMNS)
+    group_filter = param.List(default=[])
     derived_filter = param.String(default="All")
     type_filter = param.String(default="All")
     status_filter = param.String(default="All")
@@ -37,6 +42,10 @@ class ProjectDataset(param.Parameterized):
 
         self.subject_selector = pn.widgets.MultiChoice(
             name="Subject ID"
+        )
+        self.group_selector = pn.widgets.MultiChoice(
+            name="Group by",
+            options=GROUP_BY_OPTIONS,
         )
         self.columns_selector = pn.widgets.MultiChoice(
             name="Columns"
@@ -114,6 +123,7 @@ class ProjectDataset(param.Parameterized):
                 "Subject ID": subject_id,
                 "operator": operator_list,
                 "QC Status": qc.status().value if qc else "No QC",
+                "raw_asset": _raw_name_from_derived(record.get("name")),
             }
             data.append(record_data)
 
@@ -244,6 +254,7 @@ class ProjectDataset(param.Parameterized):
 
         col = pn.Column(
             self.subject_selector,
+            self.group_selector,
             self.columns_selector,
             self.derived_selector,
             self.type_selector,
