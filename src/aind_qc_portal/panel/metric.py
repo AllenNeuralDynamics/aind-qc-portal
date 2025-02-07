@@ -202,7 +202,14 @@ class QCMetricValuePanel:
 {replace_markdown_with_html(8, self._data.description if self._data.description else "*no description provided*")}
 """
         name = self._data.name
-        value = self.value
+        if self.type == "text":
+            value = str(self.value)
+        elif self.type == "float":
+            value = float(self.value)
+        elif self.type == "int":
+            value = int(self.value)
+        else:
+            value = self.value
 
         value_widget, auto_value, auto_state = self.value_to_panel(name, value)
 
