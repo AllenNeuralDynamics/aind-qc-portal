@@ -216,6 +216,16 @@ def _is_image(reference):
         or reference.endswith(".gif")
         or reference.endswith(".jpeg")
         or reference.endswith(".svg")
+        or reference.endswith(".tiff")
+        or reference.endswith(".webp")
+    )
+
+
+def _is_video(reference):
+    return (
+        reference.endswith(".mp4")
+        or reference.endswith(".avi")
+        or reference.endswith(".webm")
     )
 
 
@@ -268,7 +278,7 @@ def _parse_type(reference, data, media_obj):
         return pn.pane.PDF(
             data, sizing_mode="scale_width", max_width=1200, height=1000
         )
-    elif reference.endswith(".mp4") or reference.endswith(".avi"):
+    elif _is_video(reference):
         # Return the Video pane using the temporary file
         return pn.pane.Video(
             data,
