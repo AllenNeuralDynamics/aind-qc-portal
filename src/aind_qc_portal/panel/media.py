@@ -8,6 +8,7 @@ from panel.reactive import ReactiveHTML
 import requests
 import time
 import os
+from .panel_utils import _is_image, _is_video, _is_pdf
 
 s3_client = boto3.client("s3")
 MEDIA_TTL = 3600  # 1 hour
@@ -176,30 +177,6 @@ class Media:
         return Fullscreen(
             self.object, sizing_mode="stretch_width", max_height=1200
         )
-
-
-def _is_image(reference):
-    return (
-        reference.endswith(".png")
-        or reference.endswith(".jpg")
-        or reference.endswith(".gif")
-        or reference.endswith(".jpeg")
-        or reference.endswith(".svg")
-        or reference.endswith(".tiff")
-        or reference.endswith(".webp")
-    )
-
-
-def _is_video(reference):
-    return (
-        reference.endswith(".mp4")
-        or reference.endswith(".avi")
-        or reference.endswith(".webm")
-    )
-
-
-def _is_pdf(reference):
-    return reference.endswith(".pdf")
 
 
 def _get_s3_file(url, ext):
