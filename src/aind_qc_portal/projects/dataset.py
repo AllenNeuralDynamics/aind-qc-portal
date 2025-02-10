@@ -3,7 +3,11 @@ import panel as pn
 import param
 
 from aind_qc_portal.docdb.database import get_project_data
-from aind_qc_portal.utils import format_link, qc_status_color_css, qc_status_link_html
+from aind_qc_portal.utils import (
+    format_link,
+    qc_status_color_css,
+    qc_status_link_html,
+)
 from aind_data_schema.core.quality_control import QualityControl, Status
 
 ALWAYS_COLUMNS = ["Subject ID", "Date"]
@@ -35,16 +39,12 @@ class ProjectDataset(param.Parameterized):
         self.project_name = project_name
         self._df = pd.DataFrame(columns=["_id", "timestamp"])
 
-        self.subject_selector = pn.widgets.MultiChoice(
-            name="Subject ID"
+        self.subject_selector = pn.widgets.MultiChoice(name="Subject ID")
+        self.columns_selector = pn.widgets.MultiChoice(name="Columns")
+        self.derived_selector = pn.widgets.Select(
+            name="Derived", options=["All", "Raw", "Derived"]
         )
-        self.columns_selector = pn.widgets.MultiChoice(
-            name="Columns"
-        )
-        self.derived_selector = pn.widgets.Select(name="Derived", options=["All", "Raw", "Derived"])
-        self.type_selector = pn.widgets.Select(
-            name="Type"
-        )
+        self.type_selector = pn.widgets.Select(name="Type")
         self.status_selector = pn.widgets.Select(
             name="QC Status", options=QC_STATUS_OPTIONS
         )
@@ -52,7 +52,11 @@ class ProjectDataset(param.Parameterized):
         self._get_assets()
 
         self.subject_selector.options = self.subjects
-        self.columns_selector.options = [column for column in self.columns if column not in ALWAYS_COLUMNS + HIDDEN_COLUMNS]
+        self.columns_selector.options = [
+            column
+            for column in self.columns
+            if column not in ALWAYS_COLUMNS + HIDDEN_COLUMNS
+        ]
         self.type_selector.options = ["All"] + self.types
 
     def _get_assets(self):
@@ -102,7 +106,9 @@ class ProjectDataset(param.Parameterized):
 
             record_data = {
                 "_id": record.get("_id"),
-                "Raw Data": record.get("data_description", {}).get("data_level")
+                "Raw Data": record.get("data_description", {}).get(
+                    "data_level"
+                )
                 == "raw",
                 "project_name": record.get("data_description", {}).get(
                     "project_name"
@@ -141,11 +147,16 @@ class ProjectDataset(param.Parameterized):
             lambda x: ", ".join(x) if x else None
         )
         self._df["QC Status"] = self._df.apply(
-            lambda row: qc_status_link_html(row["QC Status"], row["qc_link"], row["QC Status"]), axis=1
+            lambda row: qc_status_link_html(
+                row["QC Status"], row["qc_link"], row["QC Status"]
+            ),
+            axis=1,
         )
         print(self._df["QC Status"].values[0])
 
-        self._df.drop(columns=["qc_link", "operator", "session_start_time", "location"])
+        self._df.drop(
+            columns=["qc_link", "operator", "session_start_time", "location"]
+        )
 
         # Sort dataframe by time and then by subject ID
         self._df.sort_values(by="timestamp", ascending=True, inplace=True)
@@ -168,13 +179,12 @@ class ProjectDataset(param.Parameterized):
 
         if self.derived_filter != "All":
             filtered_df = filtered_df[
-                filtered_df["Raw Data"] == (True if self.derived_filter == "Raw" else False)
+                filtered_df["Raw Data"]
+                == (True if self.derived_filter == "Raw" else False)
             ]
 
         if self.type_filter != "All":
-            filtered_df = filtered_df[
-                filtered_df["Type"] == self.type_filter
-            ]
+            filtered_df = filtered_df[filtered_df["Type"] == self.type_filter]
 
         if self.status_filter != "All":
             filtered_df = filtered_df[
