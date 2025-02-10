@@ -1,12 +1,40 @@
+from datetime import datetime, timezone
 import panel as pn
 import json
+from typing import Any
 
 from aind_qcportal_schema.metric_value import (
     CheckboxMetric,
     DropdownMetric,
     RulebasedMetric,
+    CurationMetric,
+    CurationHistory,
 )
 from aind_data_schema.core.quality_control import Status
+
+
+def attempt_custom_repairs(data: dict) -> dict:
+    """Attempt to repair a custom metric value that has been corrupted
+
+    [todo: this should be removed]
+
+    Parameters
+    ----------
+    data : dict
+
+    Returns
+    -------
+    dict
+    """
+    # Usually this is caused by a value field that doesn't match the allowed defaults
+    if data["type"] == "dropdown":
+        if "value" not in data or data["value"] not in data["options"]:
+            data["value"] = ""
+    elif data["type"] == "checkbox":
+        if "value" not in data or not isinstance(data["value"], list):
+            data["value"] = []
+
+    return data
 
 
 class CustomMetricValue:
@@ -25,20 +53,36 @@ class CustomMetricValue:
         self._auto_state = False
         self._value_callback = value_callback
         self._status_callback = status_callback
+        self.type = None
 
         if "type" in data:
             if data["type"] == "dropdown":
-                self._data = DropdownMetric.model_validate_json(
-                    json.dumps(data)
-                )
+                try:
+                    self._data = DropdownMetric.model_validate(data)
+                except Exception:
+                    self._data = DropdownMetric.model_validate(
+                        attempt_custom_repairs(data)
+                    )
                 self._auto_state = self._data.status is not None
                 self._dropdown_helper(data)
             elif data["type"] == "checkbox":
-                self._data = CheckboxMetric.model_validate_json(
-                    json.dumps(data)
-                )
+                try:
+                    self._data = CheckboxMetric.model_validate(data)
+                except Exception:
+                    self._data = CheckboxMetric.model_validate(
+                        attempt_custom_repairs(data)
+                    )
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
+            elif (
+                data["type"] == "curation" or data["type"] == "ephys_curation"
+            ):
+                data["type"] = (
+                    "curation"  # todo: remove when EphysCurationMetric removed
+                )
+                self._data = CurationMetric.model_validate(data)
+                self._auto_state = False
+                self._curation_helper(data)
             else:
                 raise ValueError("Unknown type for custom metric value")
         elif "rule" in data:
@@ -48,7 +92,42 @@ class CustomMetricValue:
         else:
             raise ValueError("Unknown custom metric value")
 
-    @property
+    @classmethod
+    def is_custom_metric(cls, data: Any):
+        if isinstance(data, dict):
+            return "type" in data or "rule" in data
+        else:
+            return isinstance(
+                data,
+                (
+                    DropdownMetric,
+                    CheckboxMetric,
+                    CurationMetric,
+                    RulebasedMetric,
+                ),
+            )
+
+    def update_value(self, value):
+        """
+        Update to a new value and return what should be stored in the QCMetric.value field
+        """
+        if isinstance(self._data, DropdownMetric):
+            self._data.value = value
+        elif isinstance(self._data, CheckboxMetric):
+            self._data.value = value
+        elif isinstance(self._data, CurationMetric):
+            self._data.curations.append(value)
+            self._data.curation_history.append(
+                CurationHistory(
+                    curator=value,
+                    timestamp=datetime.now(timezone.utc),
+                )
+            )
+        else:
+            self._data.value = value
+
+        return self._data
+
     def panel(self):
         """Panel pane for this custom metric value"""
         return self._panel
@@ -59,28 +138,27 @@ class CustomMetricValue:
         return self._auto_state
 
     def _callback_helper(self, event):
-        updated_data = self._data
-        if hasattr(updated_data, "value"):
-            updated_data.value = event.new
-        else:
-            updated_data["value"] = event.new
+        """Helper function for custom metric value callbacks, called by Panel event callback
+        when the user changes the value of the metric
+        """
+        # Update the value according to the t ype of custom metric
+        self.update_value(event.new)
 
-        if isinstance(updated_data, dict):
-            self._value_callback(json.dumps(updated_data))
-        else:
-            self._value_callback(updated_data.model_dump())
+        # Push the new value into the upstream QCMetric.value field
+        self._value_callback(self._data)
 
+        # Handle state updates
         if self._auto_state:
             try:
-                if not updated_data.value:
+                if not self._data.value:
                     self._status_callback(Status.PENDING)
                 else:
-                    if isinstance(updated_data.value, list):
+                    if isinstance(self._data.value, list):
                         values = [
-                            updated_data.status[
-                                updated_data.options.index(value)
+                            self._data.status[
+                                self._data.options.index(value)
                             ]
-                            for value in updated_data.value
+                            for value in self._data.value
                         ]
                         if any(values == Status.FAIL for value in values):
                             self._status_callback(Status.FAIL)
@@ -89,13 +167,11 @@ class CustomMetricValue:
                         else:
                             self._status_callback(Status.PASS)
                     else:
-                        idx = updated_data.options.index(updated_data.value)
-                        self._status_callback(updated_data.status[idx])
+                        idx = self._data.options.index(self._data.value)
+                        self._status_callback(self._data.status[idx])
             except Exception as e:
                 print(e)
                 self._status_callback(Status.PENDING)
-
-        self._data = updated_data
 
     def _dropdown_helper(self, data: dict):
         self._panel = pn.widgets.Select(
@@ -127,6 +203,14 @@ class CustomMetricValue:
 
         # watch the selector and pass event updates back through the callback
         self._panel.param.watch(self._callback_helper, "value")
+
+    def _curation_helper(self, data: dict):
+        self._panel = pn.widgets.JSONEditor(
+            name="Value",
+            value=data["curations"] if "curations" in data else {},
+            sizing_mode="stretch_width",
+            disabled=True,
+        )
 
     def _rulebased_helper(self, data: dict):
         self._panel = pn.widgets.StaticText(value="Todo")
