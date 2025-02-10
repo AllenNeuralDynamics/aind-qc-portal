@@ -141,31 +141,24 @@ class CustomMetricValue:
         """Helper function for custom metric value callbacks, called by Panel event callback
         when the user changes the value of the metric
         """
+        # Update the value according to the t ype of custom metric
+        self.update_value(event.new)
 
-        # Make a copy of the new value locally and push it up to the parent
-        updated_data = self._data
-        if hasattr(updated_data, "value"):
-            updated_data.value = event.new
-            self._value_callback(updated_data)
-        else:
-            # In case our custom metric is stored as a dict
-            updated_data["value"] = event.new
-            self._value_callback(json.dumps(updated_data))
-
-        self._data = updated_data
+        # Push the new value into the upstream QCMetric.value field
+        self._value_callback(self._data)
 
         # Handle state updates
         if self._auto_state:
             try:
-                if not updated_data.value:
+                if not self._data.value:
                     self._status_callback(Status.PENDING)
                 else:
-                    if isinstance(updated_data.value, list):
+                    if isinstance(self._data.value, list):
                         values = [
-                            updated_data.status[
-                                updated_data.options.index(value)
+                            self._data.status[
+                                self._data.options.index(value)
                             ]
-                            for value in updated_data.value
+                            for value in self._data.value
                         ]
                         if any(values == Status.FAIL for value in values):
                             self._status_callback(Status.FAIL)
@@ -174,8 +167,8 @@ class CustomMetricValue:
                         else:
                             self._status_callback(Status.PASS)
                     else:
-                        idx = updated_data.options.index(updated_data.value)
-                        self._status_callback(updated_data.status[idx])
+                        idx = self._data.options.index(self._data.value)
+                        self._status_callback(self._data.status[idx])
             except Exception as e:
                 print(e)
                 self._status_callback(Status.PENDING)
