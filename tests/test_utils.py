@@ -106,14 +106,20 @@ class TestUtils(unittest.TestCase):
     def test_qc_status_link_html(self):
         """Test the qc_status_link_html function"""
         from aind_qc_portal.utils import qc_status_link_html
-        
+
         result = qc_status_link_html("Pass", "http://example.com", "Example")
         expected = '<span style="background-color:#1D8649;"><a href="http://example.com" target="_blank">Example</a></span>'
         self.assertEqual(result, expected)
 
     def test_range_unit_format(self):
         """Test the range_unit_format function for different time ranges"""
-        from aind_qc_portal.utils import range_unit_format, ONE_WEEK, ONE_MONTH, ONE_YEAR, FIVE_YEARS
+        from aind_qc_portal.utils import (
+            range_unit_format,
+            ONE_WEEK,
+            ONE_MONTH,
+            ONE_YEAR,
+            FIVE_YEARS,
+        )
 
         # Test different time ranges
         test_cases = [
@@ -133,11 +139,13 @@ class TestUtils(unittest.TestCase):
     def test_timestamp_range(self):
         """Test the timestamp_range function"""
         from aind_qc_portal.utils import timestamp_range
-        
+
         min_date = datetime(2023, 1, 1)
         max_date = datetime(2023, 1, 3)
-        min_range, max_range, unit, format = timestamp_range(min_date, max_date)
-        
+        min_range, max_range, unit, format = timestamp_range(
+            min_date, max_date
+        )
+
         # For a 2-day range, should expand to show a week
         self.assertTrue(min_range < min_date)  # Should pad before start
         self.assertTrue(max_range > max_date)  # Should pad after end
@@ -147,7 +155,9 @@ class TestUtils(unittest.TestCase):
     def test_qc_status_html_with_custom_text(self):
         """Test qc_status_html with custom display text"""
         result = qc_status_html(Status.PASS, "Custom Text")
-        self.assertEqual(result, '<span style="color:#1D8649;">Custom Text</span>')
+        self.assertEqual(
+            result, '<span style="color:#1D8649;">Custom Text</span>'
+        )
 
     def test_replace_markdown_with_html_with_links(self):
         """Test replace_markdown_with_html with actual markdown links"""
@@ -161,12 +171,12 @@ class TestUtils(unittest.TestCase):
         x = np.array([1, 2, 2, 3])
         y = np.array([4, 5, 5, 6])
         weights = np.array([1, 2, 2, 3])
-        
+
         # Test with weights
         r, xscale, yscale = bincount2D(x, y, weights=weights)
         self.assertEqual(r.shape, (3, 3))
         self.assertEqual(r[1, 1], 4)  # Sum of weights for x=2, y=5
-        
+
         # Test with specific bin values
         xbin = np.array([1, 2, 3, 4])
         ybin = np.array([4, 5, 6, 7])

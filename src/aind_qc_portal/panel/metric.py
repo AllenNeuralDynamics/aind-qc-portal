@@ -31,9 +31,7 @@ class QCMetricMediaPanel:
 
         if self.reference:
             self.reference_media = Media(
-                self.reference,
-                self.parent,
-                self.value_callback
+                self.reference, self.parent, self.value_callback
             ).panel()
         else:
             self.reference_media = "No references included"
@@ -63,13 +61,11 @@ class QCMetricValuePanel:
         self._set_value(event.new)
 
     def _set_value(self, value):
-        """Set the value of this metric
-        """
+        """Set the value of this metric"""
         self._data.value = value
 
     def set_status(self, event):
-        """Set the status (Panel event callback)
-        """
+        """Set the status (Panel event callback)"""
         self._set_status(Status(event.new))
 
     def _set_status(self, status: Status | str):
@@ -98,7 +94,7 @@ class QCMetricValuePanel:
         )
 
         self.parent.set_submit_dirty()
-    
+
     def parse_value_type(self):
         """Parse the type of the metric's value field"""
 
@@ -144,7 +140,7 @@ class QCMetricValuePanel:
                     self.type = "json"
         else:
             self.type = "unknown"
-            
+
         return value
 
     def value_to_panel(self, name, value):
@@ -172,13 +168,15 @@ class QCMetricValuePanel:
         elif self.type == "custom":
             # Check if this is a custom metric value, and if not give up and just display the JSON
             auto_value = True
-            if hasattr(value, "auto_state"):    
+            if hasattr(value, "auto_state"):
                 auto_state = value.auto_state
             value_widget = value.panel()
         elif self.type == "json":
             value_widget = pn.widgets.JSONEditor(name=name)
         else:
-            value_widget = pn.widgets.StaticText(value=f"Can't deal with type {type(value)}")
+            value_widget = pn.widgets.StaticText(
+                value=f"Can't deal with type {type(value)}"
+            )
 
         return value_widget, auto_value, auto_state
 
@@ -239,7 +237,11 @@ class QCMetricValuePanel:
 class QCMetricPanel:
     """Object which combines one or multiple metric value panels and a reference media panel"""
 
-    def __init__(self, qc_metrics: Union[QCMetricValuePanel, List[QCMetricValuePanel]], qc_media: QCMetricMediaPanel):
+    def __init__(
+        self,
+        qc_metrics: Union[QCMetricValuePanel, List[QCMetricValuePanel]],
+        qc_media: QCMetricMediaPanel,
+    ):
         """Build a Metric object, should only be called by Evaluation()
 
         Parameters

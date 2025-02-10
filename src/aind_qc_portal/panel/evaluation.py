@@ -3,7 +3,11 @@ from datetime import datetime, timezone
 
 from aind_data_schema.core.quality_control import QCEvaluation
 
-from aind_qc_portal.panel.metric import QCMetricMediaPanel, QCMetricPanel, QCMetricValuePanel
+from aind_qc_portal.panel.metric import (
+    QCMetricMediaPanel,
+    QCMetricPanel,
+    QCMetricValuePanel,
+)
 from aind_qc_portal.utils import replace_markdown_with_html, qc_status_html
 
 
@@ -54,7 +58,9 @@ class QCEvalPanel:
                 # Store the mapping
                 self.media_to_value_map.append([index])
             else:
-                self.media_to_value_map[reference_groups[metric.reference]].append(index)
+                self.media_to_value_map[
+                    reference_groups[metric.reference]
+                ].append(index)
 
     @property
     def data(self):

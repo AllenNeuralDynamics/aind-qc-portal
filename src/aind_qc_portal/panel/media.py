@@ -282,17 +282,22 @@ def _parse_type(reference, data, media_obj):
         def on_msg(event):
             print(f"Received message: {event.data}")
             if not media_obj.value_callback:
-                raise ValueError("No value callback set for sortingview object")
+                raise ValueError(
+                    "No value callback set for sortingview object"
+                )
 
             media_obj.value_callback(event.data)
             media_obj.parent.set_submit_dirty()
 
         curation_data.on_msg(on_msg)
-        return pn.Column(pn.pane.HTML(
-            iframe_html,
-            sizing_mode="stretch_width",
-            height=1000,
-        ), curation_data)
+        return pn.Column(
+            pn.pane.HTML(
+                iframe_html,
+                sizing_mode="stretch_width",
+                height=1000,
+            ),
+            curation_data,
+        )
     elif "neuroglancer" in reference:
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(

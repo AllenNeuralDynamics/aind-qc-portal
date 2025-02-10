@@ -8,14 +8,14 @@ from aind_qcportal_schema.metric_value import (
     DropdownMetric,
     RulebasedMetric,
     CurationMetric,
-    CurationHistory
+    CurationHistory,
 )
 from aind_data_schema.core.quality_control import Status
 
 
 def attempt_custom_repairs(data: dict) -> dict:
     """Attempt to repair a custom metric value that has been corrupted
-    
+
     [todo: this should be removed]
 
     Parameters
@@ -60,18 +60,26 @@ class CustomMetricValue:
                 try:
                     self._data = DropdownMetric.model_validate(data)
                 except Exception:
-                    self._data = DropdownMetric.model_validate(attempt_custom_repairs(data))
+                    self._data = DropdownMetric.model_validate(
+                        attempt_custom_repairs(data)
+                    )
                 self._auto_state = self._data.status is not None
                 self._dropdown_helper(data)
             elif data["type"] == "checkbox":
                 try:
                     self._data = CheckboxMetric.model_validate(data)
                 except Exception:
-                    self._data = CheckboxMetric.model_validate(attempt_custom_repairs(data))
+                    self._data = CheckboxMetric.model_validate(
+                        attempt_custom_repairs(data)
+                    )
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
-            elif data["type"] == "curation" or data["type"] == "ephys_curation":
-                data["type"] = "curation"  # todo: remove when EphysCurationMetric removed
+            elif (
+                data["type"] == "curation" or data["type"] == "ephys_curation"
+            ):
+                data["type"] = (
+                    "curation"  # todo: remove when EphysCurationMetric removed
+                )
                 self._data = CurationMetric.model_validate(data)
                 self._auto_state = False
                 self._curation_helper(data)
@@ -89,7 +97,15 @@ class CustomMetricValue:
         if isinstance(data, dict):
             return "type" in data or "rule" in data
         else:
-            return isinstance(data, (DropdownMetric, CheckboxMetric, CurationMetric, RulebasedMetric))
+            return isinstance(
+                data,
+                (
+                    DropdownMetric,
+                    CheckboxMetric,
+                    CurationMetric,
+                    RulebasedMetric,
+                ),
+            )
 
     def update_value(self, value):
         """
@@ -101,10 +117,12 @@ class CustomMetricValue:
             self._data.value = value
         elif isinstance(self._data, CurationMetric):
             self._data.curations.append(value)
-            self._data.curation_history.append(CurationHistory(
-                curator=value,
-                timestamp=datetime.now(timezone.utc),
-            ))
+            self._data.curation_history.append(
+                CurationHistory(
+                    curator=value,
+                    timestamp=datetime.now(timezone.utc),
+                )
+            )
         else:
             self._data.value = value
 
@@ -161,7 +179,6 @@ class CustomMetricValue:
             except Exception as e:
                 print(e)
                 self._status_callback(Status.PENDING)
-
 
     def _dropdown_helper(self, data: dict):
         self._panel = pn.widgets.Select(
