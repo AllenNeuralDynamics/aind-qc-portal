@@ -83,7 +83,7 @@ class CustomMetricValue:
             self._rulebased_helper(data)
         else:
             raise ValueError("Unknown custom metric value")
-    
+
     @classmethod
     def is_custom_metric(cls, data: Any):
         if isinstance(data, dict):
@@ -120,17 +120,23 @@ class CustomMetricValue:
         return self._auto_state
 
     def _callback_helper(self, event):
+        """Helper function for custom metric value callbacks, called by Panel event callback
+        when the user changes the value of the metric
+        """
+
+        # Make a copy of the new value locally and push it up to the parent
         updated_data = self._data
         if hasattr(updated_data, "value"):
             updated_data.value = event.new
+            self._value_callback(updated_data)
         else:
+            # In case our custom metric is stored as a dict
             updated_data["value"] = event.new
-
-        if isinstance(updated_data, dict):
             self._value_callback(json.dumps(updated_data))
-        else:
-            self._value_callback(updated_data.model_dump())
 
+        self._data = updated_data
+
+        # Handle state updates
         if self._auto_state:
             try:
                 if not updated_data.value:
@@ -156,7 +162,6 @@ class CustomMetricValue:
                 print(e)
                 self._status_callback(Status.PENDING)
 
-        self._data = updated_data
 
     def _dropdown_helper(self, data: dict):
         self._panel = pn.widgets.Select(

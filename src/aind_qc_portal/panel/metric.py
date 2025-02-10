@@ -59,32 +59,21 @@ class QCMetricValuePanel:
         return self._data
 
     def set_value(self, event):
-        """Set value (event callback)"""
+        """Set value (Panel event callback)"""
         self._set_value(event.new)
 
     def _set_value(self, value):
         """Set the value of this metric
-
-        Note that this doesn't automatically set_dirty in the parent
-        This is because the status_history needs to be updated before a new value can be saved
         """
-        print(f"Updating metric value to: {value}")
-        if self.type == "custom":
-            self._data.value = value.update_value(value)
-        else:
-            self._data.value = value
+        self._data.value = value
 
     def set_status(self, event):
-        """Set the status from a Panel event
-
-        Parameters
-        ----------
-        event : Event
+        """Set the status (Panel event callback)
         """
         self._set_status(Status(event.new))
 
     def _set_status(self, status: Status | str):
-        """Set the status of this metric and record
+        """Set the status of this metric and force the parent to record the event
 
         Parameters
         ----------
