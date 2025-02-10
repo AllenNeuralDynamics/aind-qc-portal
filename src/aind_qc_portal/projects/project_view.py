@@ -41,12 +41,11 @@ class ProjectView:
         self.history_chart = self.history_panel()
         if hasattr(self.history_chart, "selection"):
             self.selection_history_chart = pn.bind(
-                self.selection_history_panel, self.history_chart.selection.param.brush
+                self.selection_history_panel,
+                self.history_chart.selection.param.brush,
             )
         else:
-            self.selection_history_chart = pn.widgets.StaticText(
-                value=""
-            )
+            self.selection_history_chart = pn.widgets.StaticText(value="")
 
     @property
     def has_data(self):
@@ -59,8 +58,7 @@ class ProjectView:
         return len(self.dataset.data_filtered())
 
     def update_subject_selector(self, event):
-        """Update the subject selector based on the brush selection
-        """
+        """Update the subject selector based on the brush selection"""
         if event.new.get("Subject ID") is not None:
             self.dataset.subject_selector.value = event.new["Subject ID"]
         else:
@@ -76,8 +74,10 @@ class ProjectView:
         data = self.dataset.data
 
         # Check that timestamp column has values
-        if data['timestamp'].isnull().all():
-            return pn.widgets.StaticText(value="Data processing error: project is missing timestamp data in some assets. Please reach out to scientific computing for help repairing your metadata.")
+        if data["timestamp"].isnull().all():
+            return pn.widgets.StaticText(
+                value="Data processing error: project is missing timestamp data in some assets. Please reach out to scientific computing for help repairing your metadata."
+            )
 
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(
@@ -102,7 +102,9 @@ class ProjectView:
                     alt.Tooltip("Date:T", title="Date"),
                 ],
                 color=alt.condition(
-                    self.brush, alt.Color("Subject ID:N"), alt.value("lightgray")
+                    self.brush,
+                    alt.Color("Subject ID:N"),
+                    alt.value("lightgray"),
                 ),
                 href=alt.Href("qc_link:N"),
             )
@@ -125,7 +127,9 @@ class ProjectView:
         data = self.dataset.data_filtered()
 
         if data.empty:
-            return pn.widgets.StaticText(value="No data found for the selected filters")
+            return pn.widgets.StaticText(
+                value="No data found for the selected filters"
+            )
 
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(
@@ -170,12 +174,14 @@ class ProjectView:
 
         return pn.pane.Vega(chart, sizing_mode="stretch_width")
 
-    def _panel(self,
-               subject_filter,
-               derived_filter,
-               columns_filter,
-               type_filter,
-               status_filter) -> pn.Column:
+    def _panel(
+        self,
+        subject_filter,
+        derived_filter,
+        columns_filter,
+        type_filter,
+        status_filter,
+    ) -> pn.Column:
         """Return panel object"""
 
         self.dataset.subject_filter = subject_filter
@@ -192,11 +198,15 @@ class ProjectView:
 
     def panel(self):
 
-        return pn.Column(self.history_chart, pn.bind(
-            self._panel,
-            subject_filter=self.dataset.subject_selector,
-            derived_filter=self.dataset.derived_selector,
-            columns_filter=self.dataset.columns_selector,
-            type_filter=self.dataset.type_selector,
-            status_filter=self.dataset.status_selector,
-        ), styles=OUTER_STYLE)
+        return pn.Column(
+            self.history_chart,
+            pn.bind(
+                self._panel,
+                subject_filter=self.dataset.subject_selector,
+                derived_filter=self.dataset.derived_selector,
+                columns_filter=self.dataset.columns_selector,
+                type_filter=self.dataset.type_selector,
+                status_filter=self.dataset.status_selector,
+            ),
+            styles=OUTER_STYLE,
+        )
