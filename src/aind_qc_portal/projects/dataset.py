@@ -104,14 +104,21 @@ class ProjectDataset(param.Parameterized):
                 )
             else:
                 session_type = None
-            
+
             # parse processing time
             processing_time = None
             if record.get("processing", {}):
-                data_processes = record.get("processing", {}).get("processing_pipeline", {}).get("data_processes", [])
+                data_processes = (
+                    record.get("processing", {})
+                    .get("processing_pipeline", {})
+                    .get("data_processes", [])
+                )
                 if len(data_processes) > 0:
                     # convert to datetime from 2025-02-08T00:06:31.973872Z
-                    processing_time = datetime.strptime(data_processes[-1].get("end_date_time"), "%Y-%m-%dT%H:%M:%S.%fZ")
+                    processing_time = datetime.strptime(
+                        data_processes[-1].get("end_date_time"),
+                        "%Y-%m-%dT%H:%M:%S.%fZ",
+                    )
 
             record_data = {
                 "_id": record.get("_id"),

@@ -164,9 +164,7 @@ class CustomMetricValue:
                 else:
                     if isinstance(self._data.value, list):
                         values = [
-                            self._data.status[
-                                self._data.options.index(value)
-                            ]
+                            self._data.status[self._data.options.index(value)]
                             for value in self._data.value
                         ]
                         if any(values == Status.FAIL for value in values):

@@ -36,7 +36,9 @@ class QCPanel(param.Parameterized):
         super().__init__(**params)
 
         # Sync evaluation with URL
-        pn.state.location.sync(self, {"active_evaluation": "active_evaluation"})
+        pn.state.location.sync(
+            self, {"active_evaluation": "active_evaluation"}
+        )
 
         # Setup minimal record information from DocDB
         self.id = id
@@ -391,9 +393,7 @@ class QCPanel(param.Parameterized):
             styles=OUTER_STYLE,
             tabs_location="left",
         )
-        self.tabs.param.watch(
-            update_active_evaluation, ["active"]
-        )
+        self.tabs.param.watch(update_active_evaluation, ["active"])
         self.update_tabs_from_filters()
 
         col = pn.Column(header_col, self.tabs, self.hidden_html)
