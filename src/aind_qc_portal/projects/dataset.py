@@ -13,7 +13,7 @@ from aind_data_schema.core.quality_control import QualityControl, Status
 
 ALWAYS_COLUMNS = ["Subject ID", "Acquisition Time"]
 DEFAULT_COLUMNS = ["Researcher", "QC Status", "Type"]
-HIDDEN_COLUMNS = ["timestamp"]
+HIDDEN_COLUMNS = ["timestamp", "session_start_time", "project_name", "qc_link"]
 
 QC_STATUS_OPTIONS = [
     "All",
