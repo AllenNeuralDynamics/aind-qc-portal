@@ -37,6 +37,16 @@ TWO_YEARS = timedelta(days=730)
 FIVE_YEARS = timedelta(days=1825)
 TEN_YEARS = timedelta(days=3650)
 
+ADMINS = [("daniel", "birman")]
+
+
+def check_admin():
+    """Check if the current user is an admin"""
+    family_name = pn.state.user_info["family_name"]
+    given_name = pn.state.user_info["given_name"]
+
+    return (given_name, family_name) in ADMINS
+
 
 def format_link(link: str, text: str = "link"):
     """Format link as an HTML anchor tag

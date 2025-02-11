@@ -19,6 +19,7 @@ from aind_qc_portal.panel.evaluation import QCEvalPanel
 from aind_qc_portal.utils import (
     qc_status_html,
     OUTER_STYLE,
+    check_admin,
 )
 
 
@@ -65,6 +66,14 @@ class QCPanel(param.Parameterized):
             name="Submit changes" if pn.state.user != "guest" else "Log in",
             button_type="success",
         )
+        self.clear_button = pn.widgets.Button(
+            name="Clear",
+            button_type="danger",
+        )
+        self.clear_button.disabled = True
+        if pn.state.user != "guest" and check_admin():
+            self.clear_button.disabled = False
+
         self.changes = 0
         self.change_info = pn.widgets.StaticText(value="")
         self.submit_info = pn.widgets.StaticText(
@@ -75,13 +84,17 @@ class QCPanel(param.Parameterized):
             )
         )
         self.submit_error = pn.widgets.StaticText(value="")
+        
+        # set up layout
+        button_row = pn.Row(self.submit_button, self.clear_button)
         self.submit_col = pn.Column(
-            self.submit_button,
+            button_row,
             self.change_info,
             self.submit_info,
             self.submit_error,
         )
         pn.bind(self.submit_changes, self.submit_button, watch=True)
+        pn.bind(self.clear, self.clear_button, watch=True)
 
     def _get_data(self):
         """Get the data for this record from DocDB and validate as a QualityControl object"""
@@ -215,6 +228,24 @@ class QCPanel(param.Parameterized):
             self.changes = 0
             self.change_info.value = f"{self.changes} pending changes"
             self._refresh()
+
+    def clear(self, *event):
+        """Clear all QC for this object"""
+        # We can't call submit_changes() here because it pulls data up from the evaluations
+        response = qc_update_to_id(self.id, QualityControl())
+
+        if response.status_code != 200:
+            self.submit_error.value = f"Error ({response.status_code}) submitting changes: {response.text}"
+            self.submit_button.button_type = "danger"
+            return
+        else:
+            self.submit_button.disabled = True
+            self.clear_button.disabled = True
+            self.changes = 0
+            self.change_info.value = f"{self.changes} pending changes"
+            self._refresh()
+
+        
 
     @param.depends("modality_filter", "stage_filter", "tag_filter", watch=True)
     def update_tabs_from_filters(self):

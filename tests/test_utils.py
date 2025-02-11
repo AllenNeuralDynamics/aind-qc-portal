@@ -13,6 +13,7 @@ from aind_qc_portal.utils import (
     replace_markdown_with_html,
     qc_status_color_css,
     bincount2D,
+    check_admin,
 )
 
 
@@ -161,12 +162,12 @@ class TestUtils(unittest.TestCase):
         x = np.array([1, 2, 2, 3])
         y = np.array([4, 5, 5, 6])
         weights = np.array([1, 2, 2, 3])
-        
+
         # Test with weights
         r, xscale, yscale = bincount2D(x, y, weights=weights)
         self.assertEqual(r.shape, (3, 3))
         self.assertEqual(r[1, 1], 4)  # Sum of weights for x=2, y=5
-        
+
         # Test with specific bin values
         xbin = np.array([1, 2, 3, 4])
         ybin = np.array([4, 5, 6, 7])
@@ -174,6 +175,16 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(r.shape, (4, 4))
         self.assertTrue(np.array_equal(xscale, xbin))
         self.assertTrue(np.array_equal(yscale, ybin))
+
+    @patch("aind_qc_portal.utils.pn")
+    def test_check_admin(self, mock_pn):
+        # Mock user_info to simulate an admin user
+        mock_pn.state.user_info = {"family_name": "birman", "given_name": "daniel"}
+        self.assertTrue(check_admin())
+
+        # Mock user_info to simulate a non-admin user
+        mock_pn.state.user_info = {"family_name": "doe", "given_name": "john"}
+        self.assertFalse(check_admin())
 
 
 if __name__ == "__main__":
