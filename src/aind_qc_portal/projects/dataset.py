@@ -1,3 +1,4 @@
+from datetime import datetime
 import pandas as pd
 import panel as pn
 import param
@@ -10,7 +11,7 @@ from aind_qc_portal.utils import (
 )
 from aind_data_schema.core.quality_control import QualityControl, Status
 
-ALWAYS_COLUMNS = ["Subject ID", "Date"]
+ALWAYS_COLUMNS = ["Subject ID", "Acquisition Time"]
 DEFAULT_COLUMNS = ["Researcher", "QC Status", "Type"]
 HIDDEN_COLUMNS = ["timestamp"]
 
@@ -103,6 +104,14 @@ class ProjectDataset(param.Parameterized):
                 )
             else:
                 session_type = None
+            
+            # parse processing time
+            processing_time = None
+            if record.get("processing", {}):
+                data_processes = record.get("processing", {}).get("processing_pipeline", {}).get("data_processes", [])
+                if len(data_processes) > 0:
+                    # convert to datetime from 2025-02-08T00:06:31.973872Z
+                    processing_time = datetime.strptime(data_processes[-1].get("end_date_time"), "%Y-%m-%dT%H:%M:%S.%fZ")
 
             record_data = {
                 "_id": record.get("_id"),
@@ -120,6 +129,7 @@ class ProjectDataset(param.Parameterized):
                 "Subject ID": subject_id,
                 "operator": operator_list,
                 "QC Status": qc.status().value if qc else "No QC",
+                "Processing Time": processing_time,
             }
             data.append(record_data)
 
@@ -131,7 +141,7 @@ class ProjectDataset(param.Parameterized):
         self._df["timestamp"] = pd.to_datetime(
             self._df["session_start_time"], format="mixed", utc=True
         )
-        self._df["Date"] = self._df["timestamp"].dt.strftime(
+        self._df["Acquisition Time"] = self._df["timestamp"].dt.strftime(
             "%Y-%m-%d %H:%M:%S"
         )
         self._df["S3 link"] = self._df["location"].apply(
