@@ -38,6 +38,13 @@ FIVE_YEARS = timedelta(days=1825)
 TEN_YEARS = timedelta(days=3650)
 
 
+def get_user_name() -> str:
+    """Return the user name from the current session"""
+    if pn.state.user:
+        return pn.state.user
+    return "guest"
+
+
 def format_link(link: str, text: str = "link"):
     """Format link as an HTML anchor tag
 

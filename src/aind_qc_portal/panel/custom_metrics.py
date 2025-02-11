@@ -11,6 +11,7 @@ from aind_qcportal_schema.metric_value import (
     CurationHistory,
 )
 from aind_data_schema.core.quality_control import Status
+from aind_qc_portal.utils import get_user_name
 
 
 def attempt_custom_repairs(data: dict) -> dict:
@@ -112,18 +113,22 @@ class CustomMetricValue:
         Update to a new value and return what should be stored in the QCMetric.value field
         """
         if isinstance(self._data, DropdownMetric):
+            print(f"Updating dropdown value to {value}")
             self._data.value = value
         elif isinstance(self._data, CheckboxMetric):
+            print(f"Updating checkbox value to {value}")
             self._data.value = value
         elif isinstance(self._data, CurationMetric):
-            self._data.curations.append(value)
+            print(f"Updating curation value to {value}")
+            self._data.curations.append(json.dumps(value))
             self._data.curation_history.append(
                 CurationHistory(
-                    curator=value,
+                    curator=get_user_name(),
                     timestamp=datetime.now(timezone.utc),
                 )
             )
         else:
+            print(f"Updating dictionary value to {value}")
             self._data.value = value
 
         return self._data
@@ -131,6 +136,10 @@ class CustomMetricValue:
     def panel(self):
         """Panel pane for this custom metric value"""
         return self._panel
+
+    @property
+    def data(self):
+        return self._data
 
     @property
     def auto_state(self) -> bool:

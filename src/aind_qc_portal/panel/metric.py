@@ -62,7 +62,11 @@ class QCMetricValuePanel:
 
     def _set_value(self, value):
         """Set the value of this metric"""
-        self._data.value = value
+        print('setting value')
+        if self.type == "custom":
+            self._data.value = self.value.update_value(value)
+        else:
+            self._data.value = value
 
     def set_status(self, event):
         """Set the status (Panel event callback)"""
