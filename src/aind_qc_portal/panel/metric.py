@@ -30,9 +30,7 @@ class QCMetricMediaPanel:
         """Build the media reference"""
 
         if self.reference:
-            self.reference_media = Media(
-                self.reference, self.parent, self.value_callback
-            ).panel()
+            self.reference_media = Media(self.reference, self.parent, self.value_callback).panel()
         else:
             self.reference_media = "No references included"
 
@@ -117,28 +115,16 @@ class QCMetricValuePanel:
             self.type = "list"
         elif isinstance(value, dict):
             if CustomMetricValue.is_custom_metric(value):
-                value = CustomMetricValue(
-                    value, self._set_value, self._set_status
-                )
+                value = CustomMetricValue(value, self._set_value, self._set_status)
                 self.type = "custom"
             else:
                 # first, check if every key/value pair has the same length, if so coerce to a dataframe
                 if all([isinstance(v, list) for v in value.values()]) and all(
-                    [
-                        len(v) == len(value[list(value.keys())[0]])
-                        for v in value.values()
-                    ]
+                    [len(v) == len(value[list(value.keys())[0]]) for v in value.values()]
                 ):
                     self.type = "dataframe"
                 # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
-                elif all(
-                    [
-                        isinstance(v, str)
-                        or isinstance(v, int)
-                        or isinstance(v, float)
-                        for v in value.values()
-                    ]
-                ):
+                elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in value.values()]):
                     self.type = "dataframe"
                 else:
                     self.type = "json"
@@ -178,9 +164,7 @@ class QCMetricValuePanel:
         elif self.type == "json":
             value_widget = pn.widgets.JSONEditor(name=name)
         else:
-            value_widget = pn.widgets.StaticText(
-                value=f"Can't deal with type {type(value)}"
-            )
+            value_widget = pn.widgets.StaticText(value=f"Can't deal with type {type(value)}")
 
         return value_widget, auto_value, auto_state
 

@@ -67,9 +67,7 @@ class ProjectView:
     def history_panel(self):
         """Create a plot showing the history of this asset, showing how assets were derived from each other"""
         if not self.has_data:
-            return pn.widgets.StaticText(
-                value=f"No data found for project: {self.project_name}"
-            )
+            return pn.widgets.StaticText(value=f"No data found for project: {self.project_name}")
 
         data = self.dataset.data
 
@@ -80,9 +78,7 @@ class ProjectView:
             )
 
         # Calculate the time range to show on the x axis
-        (min_range, max_range, range_unit, format) = df_timestamp_range(
-            data[["timestamp"]]
-        )
+        (min_range, max_range, range_unit, format) = df_timestamp_range(data[["timestamp"]])
 
         chart = (
             alt.Chart(self.dataset.data)
@@ -120,21 +116,15 @@ class ProjectView:
     def selection_history_panel(self, selection):
         """Create a plot showing the history of the selected assets"""
         if not self.has_data:
-            return pn.widgets.StaticText(
-                value=f"No data found for project: {self.project_name}"
-            )
+            return pn.widgets.StaticText(value=f"No data found for project: {self.project_name}")
 
         data = self.dataset.data_filtered()
 
         if data.empty:
-            return pn.widgets.StaticText(
-                value="No data found for the selected filters"
-            )
+            return pn.widgets.StaticText(value="No data found for the selected filters")
 
         # Calculate the time range to show on the x axis
-        (min_range, max_range, range_unit, format) = df_timestamp_range(
-            self.dataset.timestamps
-        )
+        (min_range, max_range, range_unit, format) = df_timestamp_range(self.dataset.timestamps)
 
         if selection is None or selection == {}:
             data = data.head(0)

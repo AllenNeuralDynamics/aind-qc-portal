@@ -197,32 +197,24 @@ class Media:
             )
 
         if not reference_data:
-            return pn.pane.Alert(
-                f"Failed to load asset: {reference}", alert_type="danger"
-            )
+            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
         # Step 2: parse the type and return the appropriate object
         return _parse_type(reference, reference_data, self)
 
     def panel(self):  # pragma: no cover
-        return Fullscreen(
-            self.object, sizing_mode="stretch_width", max_height=1200
-        )
+        return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
 
 
 def _get_s3_file(url, ext):
     try:
         response = requests.get(url)
         if response.status_code == 200:
-            with tempfile.NamedTemporaryFile(
-                suffix=ext, delete=False
-            ) as temp_file:
+            with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
                 temp_file.write(response.content)
             return temp_file.name
         else:
-            print(
-                f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}"
-            )
+            print(f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}")
             return None
     except Exception as e:
         print(f"[ERROR] Failed to fetch asset {url}, error: {e}")
@@ -245,16 +237,12 @@ def _parse_type(reference, data, media_obj):
         data = _get_s3_file(data, os.path.splitext(reference)[1])
 
         if not data:
-            return pn.pane.Alert(
-                f"Failed to load asset: {reference}", alert_type="danger"
-            )
+            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
     if _is_image(reference):
         return pn.pane.Image(data, sizing_mode="scale_width", max_width=1200)
     elif _is_pdf(reference):
-        return pn.pane.PDF(
-            data, sizing_mode="scale_width", max_width=1200, height=1000
-        )
+        return pn.pane.PDF(data, sizing_mode="scale_width", max_width=1200, height=1000)
     elif _is_video(reference):
         # Return the Video pane using the temporary file
         return pn.pane.Video(
@@ -282,9 +270,7 @@ def _parse_type(reference, data, media_obj):
         def on_msg(event):
             print(f"Received message: {event.data}")
             if not media_obj.value_callback:
-                raise ValueError(
-                    "No value callback set for sortingview object"
-                )
+                raise ValueError("No value callback set for sortingview object")
 
             media_obj.value_callback(event.data)
             media_obj.parent.set_submit_dirty()
@@ -306,9 +292,7 @@ def _parse_type(reference, data, media_obj):
             height=1000,
         )
     elif "http" in reference:
-        return pn.widgets.StaticText(
-            value=f'Reference: <a target="_blank" href="{reference}">link</a>'
-        )
+        return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
     else:
         return pn.widgets.StaticText(value=data)
 
@@ -385,9 +369,7 @@ def _get_kachery_cloud_url(hash: str):
 
     response = requests.post(url, headers=headers, json=data)
     if response.status_code != 200:
-        return (
-            f"[ERROR] Failed to fetch asset {simplified_hash}: {response.text}"
-        )
+        return f"[ERROR] Failed to fetch asset {simplified_hash}: {response.text}"
 
     data = response.json()
 

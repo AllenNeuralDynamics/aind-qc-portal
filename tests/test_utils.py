@@ -74,21 +74,11 @@ class TestUtils(unittest.TestCase):
     def test_qc_color(self):
         self.assertEqual(qc_status_color(Status.PASS), AIND_COLORS["green"])
 
-        self.assertEqual(
-            qc_status_color_css("No QC"), "background-color: #FFB71B"
-        )
-        self.assertEqual(
-            qc_status_color_css("Pass"), "background-color: #1D8649"
-        )
-        self.assertEqual(
-            qc_status_color_css("Fail"), "background-color: #FF5733"
-        )
-        self.assertEqual(
-            qc_status_color_css("Pending"), "background-color: #2A7DE1"
-        )
-        self.assertEqual(
-            qc_status_color_css("Other"), "background-color: #7C7C7F"
-        )
+        self.assertEqual(qc_status_color_css("No QC"), "background-color: #FFB71B")
+        self.assertEqual(qc_status_color_css("Pass"), "background-color: #1D8649")
+        self.assertEqual(qc_status_color_css("Fail"), "background-color: #FF5733")
+        self.assertEqual(qc_status_color_css("Pending"), "background-color: #2A7DE1")
+        self.assertEqual(qc_status_color_css("Other"), "background-color: #7C7C7F")
 
     def test_bincount2D(self):
         x = np.array([1, 2, 2, 3])
@@ -101,29 +91,23 @@ class TestUtils(unittest.TestCase):
     @patch("aind_qc_portal.utils.pn")
     def test_set_background(self, mock_pn):
         mock_pn.config.raw_css = []  # Mock raw_css to ensure a clean state
-        mock_pn.state.location.query_params = (
-            {}
-        )  # Mock query_params to ensure no background param
+        mock_pn.state.location.query_params = {}  # Mock query_params to ensure no background param
         format_css_background()
-        self.assertIn(
-            "background-color: #003057", mock_pn.config.raw_css[0]
-        )  # Default dark_blue color
+        self.assertIn("background-color: #003057", mock_pn.config.raw_css[0])  # Default dark_blue color
 
         mock_pn.config.raw_css = []  # Reset mock raw_css
-        mock_pn.state.location.query_params = {
-            "background": "light_blue"
-        }  # Mock query_params with light_blue
+        mock_pn.state.location.query_params = {"background": "light_blue"}  # Mock query_params with light_blue
         format_css_background()
-        self.assertIn(
-            "background-color: #2A7DE1", mock_pn.config.raw_css[0]
-        )  # light_blue color
+        self.assertIn("background-color: #2A7DE1", mock_pn.config.raw_css[0])  # light_blue color
 
     def test_qc_status_link_html(self):
         """Test the qc_status_link_html function"""
         from aind_qc_portal.utils import qc_status_link_html
 
         result = qc_status_link_html("Pass", "http://example.com", "Example")
-        expected = '<span style="background-color:#1D8649;"><a href="http://example.com" target="_blank">Example</a></span>'
+        expected = (
+            '<span style="background-color:#1D8649;"><a href="http://example.com" target="_blank">Example</a></span>'
+        )
         self.assertEqual(result, expected)
 
     def test_range_unit_format(self):
@@ -167,9 +151,7 @@ class TestUtils(unittest.TestCase):
     def test_qc_status_html_with_custom_text(self):
         """Test qc_status_html with custom display text"""
         result = qc_status_html(Status.PASS, "Custom Text")
-        self.assertEqual(
-            result, '<span style="color:#1D8649;">Custom Text</span>'
-        )
+        self.assertEqual(result, '<span style="color:#1D8649;">Custom Text</span>')
 
     def test_replace_markdown_with_html_with_links(self):
         """Test replace_markdown_with_html with actual markdown links"""
@@ -196,7 +178,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(r.shape, (4, 4))
         self.assertTrue(np.array_equal(xscale, xbin))
         self.assertTrue(np.array_equal(yscale, ybin))
-    
+
     @patch("aind_qc_portal.utils.pn")
     def test_get_user_name(self, mock_pn):
         # Test when pn.state.user is set

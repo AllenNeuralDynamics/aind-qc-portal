@@ -58,9 +58,7 @@ class QCEvalPanel:
                 # Store the mapping
                 self.media_to_value_map.append([index])
             else:
-                self.media_to_value_map[
-                    reference_groups[metric.reference]
-                ].append(index)
+                self.media_to_value_map[reference_groups[metric.reference]].append(index)
 
     @property
     def data(self):
@@ -82,11 +80,7 @@ class QCEvalPanel:
             group = [self.value_panels[index] for index in group_indexes]
             objects.append(QCMetricPanel(group, self.media_panels[i]).panel())
 
-        allow_failing_str = (
-            "Metrics are allowed to fail."
-            if self._data.allow_failed_metrics
-            else ""
-        )
+        allow_failing_str = "Metrics are allowed to fail." if self._data.allow_failed_metrics else ""
 
         md = f"""
 {replace_markdown_with_html(12, self._data.description if self._data.description else "*no description provided*")}
@@ -109,9 +103,7 @@ class QCEvalPanel:
 
         header_row = pn.Row(header, notes, max_height=1200)
 
-        accordion = pn.Accordion(
-            *objects, sizing_mode="stretch_width", max_height=1200
-        )
+        accordion = pn.Accordion(*objects, sizing_mode="stretch_width", max_height=1200)
         accordion.active = [0]
 
         col = pn.Column(header_row, accordion, name=self._data.name)

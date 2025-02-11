@@ -1,4 +1,5 @@
 """QC View main entrypoint"""
+
 import altair as alt
 import panel as pn
 import param

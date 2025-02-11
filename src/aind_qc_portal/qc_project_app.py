@@ -44,9 +44,7 @@ class Settings(param.Parameterized):
     def __init__(self, **params):
         super().__init__(**params)
 
-        self.project_name_selector = pn.widgets.Select(
-            name="Project Name", options=get_project_names()
-        )
+        self.project_name_selector = pn.widgets.Select(name="Project Name", options=get_project_names())
         self.project_name_selector.link(self, value="project_name")
 
     def panel(self):
@@ -69,9 +67,7 @@ pn.state.location.sync(
     },
 )
 
-settings.project_name_selector.value = (
-    settings.project_name
-)  # also sync to dropdown value
+settings.project_name_selector.value = settings.project_name  # also sync to dropdown value
 project_name_original = settings.project_name
 
 # Build the project view
@@ -90,9 +86,7 @@ pn.state.location.sync(
 )
 dataset.subject_selector.value = dataset.subject_filter
 dataset.derived_selector.value = dataset.derived_filter
-dataset.columns_selector.value = [
-    column for column in dataset.columns_filter if column not in ALWAYS_COLUMNS
-]
+dataset.columns_selector.value = [column for column in dataset.columns_filter if column not in ALWAYS_COLUMNS]
 dataset.type_selector.value = dataset.type_filter
 dataset.status_selector.value = dataset.status_filter
 
@@ -124,19 +118,13 @@ def refresh(project_name):
 project_names = get_project_names()
 
 interactive_header = pn.bind(update_header, settings.project_name_selector)
-header = pn.Row(
-    interactive_header, pn.HSpacer(), width=990, styles=OUTER_STYLE
-)
+header = pn.Row(interactive_header, pn.HSpacer(), width=990, styles=OUTER_STYLE)
 
 setting_panel = settings.panel()
 
-interactive_refresh = pn.bind(
-    refresh, project_name=settings.project_name_selector
-)
+interactive_refresh = pn.bind(refresh, project_name=settings.project_name_selector)
 
-main_col = pn.Column(
-    header, project_view.panel(), interactive_refresh, width=1000
-)
+main_col = pn.Column(header, project_view.panel(), interactive_refresh, width=1000)
 
 side_col = pn.Column(
     setting_panel,

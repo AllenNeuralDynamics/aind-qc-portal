@@ -48,9 +48,7 @@ class SearchOptions(param.Parameterized):
                     # try to validate the QC object
 
                     try:
-                        qc = QualityControl.model_validate_json(
-                            json.dumps(record["quality_control"])
-                        )
+                        qc = QualityControl.model_validate_json(json.dumps(record["quality_control"]))
                         status = qc.status().value
                     except Exception as e:
                         print(f"QC object failed to validate: {e}")
@@ -72,9 +70,7 @@ class SearchOptions(param.Parameterized):
                     "subject_id": record_split[1],
                     "date": record_split[2],
                     "status": status,
-                    "qc_view": format_link(
-                        QC_LINK_PREFIX + record["_id"], "link"
-                    ),
+                    "qc_view": format_link(QC_LINK_PREFIX + record["_id"], "link"),
                 }
                 data.append(r)
             else:
@@ -155,12 +151,8 @@ options = SearchOptions()
 
 
 class SearchView(param.Parameterized):
-    modality_filter = param.ObjectSelector(
-        default="", objects=options.modalities
-    )
-    subject_filter = param.ObjectSelector(
-        default="", objects=options.subject_ids
-    )
+    modality_filter = param.ObjectSelector(default="", objects=options.modalities)
+    subject_filter = param.ObjectSelector(default="", objects=options.subject_ids)
     date_filter = param.ObjectSelector(default="", objects=options.dates)
     text_filter = param.String(default="")
 
@@ -172,9 +164,7 @@ class SearchView(param.Parameterized):
         if self.text_filter != "" and self.text_filter != "Clear":
             return options.df[options.df["name"] == self.text_filter]
 
-        df_filtered = options.active(
-            self.modality_filter, self.subject_filter, self.date_filter
-        )
+        df_filtered = options.active(self.modality_filter, self.subject_filter, self.date_filter)
         return df_filtered.style.map(qc_status_color_css, subset=["Status"])
 
     def df_textinput(self, value):
@@ -251,9 +241,7 @@ Connected to: <span style="color:{AIND_COLORS["light_blue"]}">{API_GATEWAY_HOST}
 """
 header = pn.pane.Markdown(md)
 
-col = pn.Column(
-    header, left_col, dataframe_pane, min_width=700, styles=OUTER_STYLE
-)
+col = pn.Column(header, left_col, dataframe_pane, min_width=700, styles=OUTER_STYLE)
 
 display = pn.Row(pn.HSpacer(), col, pn.HSpacer())
 

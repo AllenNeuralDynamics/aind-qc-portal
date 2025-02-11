@@ -61,26 +61,18 @@ class CustomMetricValue:
                 try:
                     self._data = DropdownMetric.model_validate(data)
                 except Exception:
-                    self._data = DropdownMetric.model_validate(
-                        attempt_custom_repairs(data)
-                    )
+                    self._data = DropdownMetric.model_validate(attempt_custom_repairs(data))
                 self._auto_state = self._data.status is not None
                 self._dropdown_helper(data)
             elif data["type"] == "checkbox":
                 try:
                     self._data = CheckboxMetric.model_validate(data)
                 except Exception:
-                    self._data = CheckboxMetric.model_validate(
-                        attempt_custom_repairs(data)
-                    )
+                    self._data = CheckboxMetric.model_validate(attempt_custom_repairs(data))
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
-            elif (
-                data["type"] == "curation" or data["type"] == "ephys_curation"
-            ):
-                data["type"] = (
-                    "curation"  # todo: remove when EphysCurationMetric removed
-                )
+            elif data["type"] == "curation" or data["type"] == "ephys_curation":
+                data["type"] = "curation"  # todo: remove when EphysCurationMetric removed
                 self._data = CurationMetric.model_validate(data)
                 self._auto_state = False
                 self._curation_helper(data)
@@ -163,10 +155,7 @@ class CustomMetricValue:
                     self._status_callback(Status.PENDING)
                 else:
                     if isinstance(self._data.value, list):
-                        values = [
-                            self._data.status[self._data.options.index(value)]
-                            for value in self._data.value
-                        ]
+                        values = [self._data.status[self._data.options.index(value)] for value in self._data.value]
                         if any(values == Status.FAIL for value in values):
                             self._status_callback(Status.FAIL)
                         elif any(values == Status.PENDING for value in values):

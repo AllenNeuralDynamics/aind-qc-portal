@@ -11,11 +11,7 @@ def _is_image(reference):
 
 
 def _is_video(reference):
-    return (
-        reference.endswith(".mp4")
-        or reference.endswith(".avi")
-        or reference.endswith(".webm")
-    )
+    return reference.endswith(".mp4") or reference.endswith(".avi") or reference.endswith(".webm")
 
 
 def _is_pdf(reference):
