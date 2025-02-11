@@ -29,10 +29,14 @@ class QCPanel(param.Parameterized):
     modality_filter = param.String(default="All")
     stage_filter = param.String(default="All")
     tag_filter = param.String(default="All")
+    active_evaluation = param.Integer(default=0)
 
     def __init__(self, id, **params):
         """Construct the QCPanel object"""
         super().__init__(**params)
+
+        # Sync evaluation with URL
+        pn.state.location.sync(self, {"active_evaluation": "active_evaluation"})
 
         # Setup minimal record information from DocDB
         self.id = id
@@ -237,6 +241,7 @@ class QCPanel(param.Parameterized):
             ):
                 objects.append(evaluation.panel())
         self.tabs.objects = objects
+        self.tabs.active = self.active_evaluation
 
     def panel_status_table(self):
         """Build a Panel table that shows the current status of all evaluations"""
@@ -378,10 +383,16 @@ class QCPanel(param.Parameterized):
             styles=OUTER_STYLE,
         )
 
+        def update_active_evaluation(event):
+            self.active_evaluation = event.new
+
         self.tabs = pn.Tabs(
             sizing_mode="stretch_width",
             styles=OUTER_STYLE,
             tabs_location="left",
+        )
+        self.tabs.param.watch(
+            update_active_evaluation, ["active"]
         )
         self.update_tabs_from_filters()
 
