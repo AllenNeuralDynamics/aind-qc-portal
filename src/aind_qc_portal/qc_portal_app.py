@@ -14,7 +14,6 @@ from aind_qc_portal.docdb.database import (
     COLLECTION,
 )
 from aind_qc_portal.utils import (
-    ASSET_LINK_PREFIX,
     QC_LINK_PREFIX,
     qc_status_color_css,
     OUTER_STYLE,

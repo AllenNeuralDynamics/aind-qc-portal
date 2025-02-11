@@ -1,12 +1,12 @@
 def _is_image(reference):
     return (
         reference.endswith(".png")
-        or reference.endswith(".jpg")
-        or reference.endswith(".gif")
-        or reference.endswith(".jpeg")
-        or reference.endswith(".svg")
-        or reference.endswith(".tiff")
-        or reference.endswith(".webp")
+        or reference.endswith(".jpg")  # noqa: W503
+        or reference.endswith(".gif")  # noqa: W503
+        or reference.endswith(".jpeg")  # noqa: W503
+        or reference.endswith(".svg")  # noqa: W503
+        or reference.endswith(".tiff")  # noqa: W503
+        or reference.endswith(".webp")  # noqa: W503
     )
 
 

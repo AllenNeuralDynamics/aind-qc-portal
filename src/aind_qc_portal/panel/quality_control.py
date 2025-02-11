@@ -105,11 +105,7 @@ class QCPanel(param.Parameterized):
             return
 
         # Pull modality information
-        if (
-            "data_description" in json_data
-            and json_data["data_description"]
-            and "modality" in json_data["data_description"]
-        ):
+        if "data_description" in json_data and json_data["data_description"] and "modality" in json_data["data_description"]:
             self.modalities = [
                 Modality.from_abbreviation(modality["abbreviation"])
                 for modality in json_data["data_description"]["modality"]
