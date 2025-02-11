@@ -1,4 +1,3 @@
-
 def _is_image(reference):
     return (
         reference.endswith(".png")

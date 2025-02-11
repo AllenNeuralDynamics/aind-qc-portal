@@ -1,6 +1,7 @@
 import unittest
 from aind_qc_portal.panel.panel_utils import _is_image, _is_video, _is_pdf
 
+
 class TestPanelUtils(unittest.TestCase):
     def test_is_image(self):
         # Test valid image extensions
@@ -11,7 +12,7 @@ class TestPanelUtils(unittest.TestCase):
         self.assertTrue(_is_image("test.svg"))
         self.assertTrue(_is_image("test.tiff"))
         self.assertTrue(_is_image("test.webp"))
-        
+
         # Test invalid image extensions
         self.assertFalse(_is_image("test.txt"))
         self.assertFalse(_is_image("test.png.txt"))
@@ -23,7 +24,7 @@ class TestPanelUtils(unittest.TestCase):
         self.assertTrue(_is_video("test.mp4"))
         self.assertTrue(_is_video("test.avi"))
         self.assertTrue(_is_video("test.webm"))
-        
+
         # Test invalid video extensions
         self.assertFalse(_is_video("test.txt"))
         self.assertFalse(_is_video("test.mp4.txt"))
@@ -33,9 +34,9 @@ class TestPanelUtils(unittest.TestCase):
     def test_is_pdf(self):
         # Test valid PDF extension
         self.assertTrue(_is_pdf("test.pdf"))
-        
+
         # Test invalid PDF extensions
         self.assertFalse(_is_pdf("test.txt"))
         self.assertFalse(_is_pdf("test.pdf.txt"))
         self.assertFalse(_is_pdf(""))
-        self.assertFalse(_is_pdf("test")) 
+        self.assertFalse(_is_pdf("test"))

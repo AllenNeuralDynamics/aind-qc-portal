@@ -5,6 +5,7 @@ import param
 import boto3
 from pathlib import Path
 from panel.reactive import ReactiveHTML
+from panel.custom import JSComponent
 import requests
 import time
 import os
@@ -47,6 +48,28 @@ CSS = """
         height: 100%;
         width: 100%;
 }
+"""
+
+
+class CurationData(JSComponent):
+    """A CurationData component that allows the user to toggle curation data."""
+
+    curation_json = param.Dict()
+
+    _esm = """
+    export function render({ model }) {
+        window.addEventListener('message', (event) => {
+            // Check if the message is from the expected origin
+            if (!event.origin.match(/^https?:\/\/(.*\.)?figurl\.org$/)) {
+                console.warn('Received message from unexpected origin:', event.origin);
+                return;
+            }
+
+            model.curation_json = event.data.curation;
+            model.send_msg(model.curation_json);
+        });
+        return ""
+    }
 """
 
 
@@ -118,11 +141,19 @@ toggleFullScreen()
 class Media:
     """A Media object that can display images, videos, and other media types."""
 
-    def __init__(self, reference, parent):
-        """Build Media object"""
+    def __init__(self, reference: str, parent, callback=None):
+        """Build a media object
+
+        Parameters
+        ----------
+        reference : string
+        parent : _type_
+        callback : _type_, optional
+        """
 
         self.parent = parent
         self.object = self.parse_reference(reference)
+        self.value_callback = callback
 
     def parse_reference(self, reference: str):
         """Parse the reference string and return the appropriate media object
@@ -171,7 +202,7 @@ class Media:
             )
 
         # Step 2: parse the type and return the appropriate object
-        return _parse_type(reference, reference_data)
+        return _parse_type(reference, reference_data, self)
 
     def panel(self):
         return Fullscreen(
@@ -198,7 +229,7 @@ def _get_s3_file(url, ext):
         return None
 
 
-def _parse_type(reference, data):
+def _parse_type(reference, data, media_obj):
     """Interpret the media type from the reference string
 
     Parameters
@@ -243,6 +274,29 @@ def _parse_type(reference, data):
             iframe_html,
             sizing_mode="stretch_width",
             height=1000,
+        )
+    elif "sortingview" in reference:
+        iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
+        curation_data = CurationData()
+
+        def on_msg(event):
+            print(f"Received message: {event.data}")
+            if not media_obj.value_callback:
+                raise ValueError(
+                    "No value callback set for sortingview object"
+                )
+
+            media_obj.value_callback(event.data)
+            media_obj.parent.set_submit_dirty()
+
+        curation_data.on_msg(on_msg)
+        return pn.Column(
+            pn.pane.HTML(
+                iframe_html,
+                sizing_mode="stretch_width",
+                height=1000,
+            ),
+            curation_data,
         )
     elif "neuroglancer" in reference:
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'

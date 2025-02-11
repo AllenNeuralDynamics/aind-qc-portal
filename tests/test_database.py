@@ -20,10 +20,11 @@ from aind_qc_portal.docdb.database import (
     get_sessions,
 )
 
+
 class TestDatabase(unittest.TestCase):
     def setUp(self):
         # Set up mock client
-        self.patcher = patch('aind_qc_portal.docdb.database.client')
+        self.patcher = patch("aind_qc_portal.docdb.database.client")
         self.mock_client = self.patcher.start()
 
     def tearDown(self):
@@ -64,12 +65,16 @@ class TestDatabase(unittest.TestCase):
 
     def test_qc_update_to_id(self):
         mock_qc = QualityControl(notes="test note", evaluations=[])
-        self.mock_client.upsert_one_docdb_record.return_value = {"status": "success"}
+        self.mock_client.upsert_one_docdb_record.return_value = {
+            "status": "success"
+        }
         result = qc_update_to_id("123", mock_qc)
         self.assertEqual(result, {"status": "success"})
 
     def test_get_name_from_id(self):
-        self.mock_client.aggregate_docdb_records.return_value = [{"name": "test_name"}]
+        self.mock_client.aggregate_docdb_records.return_value = [
+            {"name": "test_name"}
+        ]
         result = get_name_from_id("123")
         self.assertEqual(result, "test_name")
 
@@ -98,7 +103,10 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(result, mock_assets)
 
     def test_get_assets_by_subj(self):
-        mock_assets = [{"subject": {"subject_id": "123"}}, {"subject": {"subject_id": "123"}}]
+        mock_assets = [
+            {"subject": {"subject_id": "123"}},
+            {"subject": {"subject_id": "123"}},
+        ]
         self.mock_client.retrieve_docdb_records.return_value = mock_assets
         result = get_assets_by_subj("123")
         self.assertEqual(result, mock_assets)
@@ -116,7 +124,9 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(result, mock_records)
 
     def test_get_project_data(self):
-        mock_data = [{"_id": "1", "data_description": {"project_name": "test_project"}}]
+        mock_data = [
+            {"_id": "1", "data_description": {"project_name": "test_project"}}
+        ]
         self.mock_client.retrieve_docdb_records.return_value = mock_data
         result = get_project_data("test_project")
         self.assertEqual(result, mock_data)
@@ -124,20 +134,18 @@ class TestDatabase(unittest.TestCase):
     def test_get_subjects(self):
         mock_subjects = [
             {"subject": {"subject_id": "1"}},
-            {"subject": {"subject_id": "2"}}
+            {"subject": {"subject_id": "2"}},
         ]
         self.mock_client.retrieve_docdb_records.return_value = mock_subjects
         result = get_subjects()
         self.assertEqual(result, [1, 2])
 
     def test_get_sessions(self):
-        mock_sessions = [
-            {"session": {"id": "1"}},
-            {"session": {"id": "2"}}
-        ]
+        mock_sessions = [{"session": {"id": "1"}}, {"session": {"id": "2"}}]
         self.mock_client.retrieve_docdb_records.return_value = mock_sessions
         result = get_sessions("123")
         self.assertEqual(result, [{"id": "1"}, {"id": "2"}])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
