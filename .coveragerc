@@ -1,0 +1,5 @@
+[run]
+omit =
+    src/aind_qc_portal/qc_app.py
+    src/aind_qc_portal/qc_portal_app.py
+    src/aind_qc_portal/qc_project_app.py

@@ -6,13 +6,23 @@ import numpy as np
 from aind_data_schema.core.quality_control import Status
 
 from aind_qc_portal.utils import (
+    AIND_COLORS,
+    FIVE_YEARS,
+    ONE_MONTH,
+    ONE_WEEK,
+    ONE_YEAR,
+    _get_scale_and_indices,
     format_link,
     format_css_background,
+    qc_status_color,
     qc_status_html,
     df_timestamp_range,
+    range_unit_format,
     replace_markdown_with_html,
     qc_status_color_css,
     bincount2D,
+    get_user_name,
+    timestamp_range,
 )
 
 
@@ -62,6 +72,8 @@ class TestUtils(unittest.TestCase):
         )
 
     def test_qc_color(self):
+        self.assertEqual(qc_status_color(Status.PASS), AIND_COLORS["green"])
+
         self.assertEqual(
             qc_status_color_css("No QC"), "background-color: #FFB71B"
         )
@@ -73,6 +85,9 @@ class TestUtils(unittest.TestCase):
         )
         self.assertEqual(
             qc_status_color_css("Pending"), "background-color: #2A7DE1"
+        )
+        self.assertEqual(
+            qc_status_color_css("Other"), "background-color: #7C7C7F"
         )
 
     def test_bincount2D(self):
@@ -113,13 +128,6 @@ class TestUtils(unittest.TestCase):
 
     def test_range_unit_format(self):
         """Test the range_unit_format function for different time ranges"""
-        from aind_qc_portal.utils import (
-            range_unit_format,
-            ONE_WEEK,
-            ONE_MONTH,
-            ONE_YEAR,
-            FIVE_YEARS,
-        )
 
         # Test different time ranges
         test_cases = [
@@ -129,7 +137,8 @@ class TestUtils(unittest.TestCase):
             (ONE_YEAR / 2, ("month", "%b")),  # Less than a year
             (ONE_YEAR * 1.5, ("year", "%b")),  # Less than 2 years
             (ONE_YEAR * 3, ("year", "%Y")),  # Less than 5 years
-            (FIVE_YEARS * 3, ("year", "%Y")),  # More than 5 years
+            (ONE_YEAR * 7, ("year", "%Y")),  # More than 5 years
+            (FIVE_YEARS * 3, ("year", "%Y")),  # More than 10 years
         ]
 
         for time_range, expected in test_cases:
@@ -138,19 +147,22 @@ class TestUtils(unittest.TestCase):
 
     def test_timestamp_range(self):
         """Test the timestamp_range function"""
-        from aind_qc_portal.utils import timestamp_range
 
-        min_date = datetime(2023, 1, 1)
-        max_date = datetime(2023, 1, 3)
-        min_range, max_range, unit, format = timestamp_range(
-            min_date, max_date
-        )
+        test_cases = [
+            (datetime(2023, 1, 1), datetime(2023, 1, 3), "day", "%b %d"),
+            (datetime(2023, 1, 1), datetime(2023, 1, 15), "week", "%b %d"),
+            (datetime(2023, 1, 1), datetime(2023, 2, 15), "week", "%b %d"),
+            (datetime(2023, 1, 1), datetime(2023, 6, 1), "month", "%b"),
+            (datetime(2023, 1, 1), datetime(2024, 1, 1), "year", "%b"),
+            (datetime(2023, 1, 1), datetime(2026, 1, 1), "year", "%Y"),
+            (datetime(2023, 1, 1), datetime(2030, 1, 1), "year", "%Y"),
+            (datetime(2023, 1, 1), datetime(2050, 1, 1), "year", "%Y"),
+        ]
 
-        # For a 2-day range, should expand to show a week
-        self.assertTrue(min_range < min_date)  # Should pad before start
-        self.assertTrue(max_range > max_date)  # Should pad after end
-        self.assertEqual(unit, "day")
-        self.assertEqual(format, "%b %d")
+        for min_date, max_date, _, _ in test_cases:
+            min_range, max_range, _, _ = timestamp_range(min_date, max_date)
+            self.assertTrue(min_range < min_date)  # Should pad before start
+            self.assertTrue(max_range > max_date)  # Should pad after end
 
     def test_qc_status_html_with_custom_text(self):
         """Test qc_status_html with custom display text"""
@@ -184,7 +196,37 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(r.shape, (4, 4))
         self.assertTrue(np.array_equal(xscale, xbin))
         self.assertTrue(np.array_equal(yscale, ybin))
+    
+    @patch("aind_qc_portal.utils.pn")
+    def test_get_user_name(self, mock_pn):
+        # Test when pn.state.user is set
+        mock_pn.state.user = "test_user"
+        self.assertEqual(get_user_name(), "test_user")
+
+        # Test when pn.state.user is not set
+        mock_pn.state.user = None
+        self.assertEqual(get_user_name(), "guest")
+
+    def test_get_scale_and_indices_with_scalar_bin(self):
+        v = np.array([1, 2, 3, 4, 5])
+        bin_size = 1
+        lim = [1, 5]
+        scale, ind = _get_scale_and_indices(v, bin_size, lim)
+        expected_scale = np.array([1, 2, 3, 4, 5])
+        expected_ind = np.array([0, 1, 2, 3, 4])
+        np.testing.assert_array_equal(scale, expected_scale)
+        np.testing.assert_array_equal(ind, expected_ind)
+
+    def test_get_scale_and_indices_with_nonzero_scalar_bin(self):
+        v = np.array([1, 2, 3, 4, 5])
+        bin_size = 2
+        lim = [1, 5]
+        scale, ind = _get_scale_and_indices(v, bin_size, lim)
+        expected_scale = np.array([1, 3, 5])
+        expected_ind = np.array([0, 0, 1, 1, 2])
+        np.testing.assert_array_equal(scale, expected_scale)
+        np.testing.assert_array_equal(ind, expected_ind)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

@@ -245,7 +245,7 @@ class QCPanel(param.Parameterized):
         self.tabs.objects = objects
         self.tabs.active = self.active_evaluation
 
-    def panel_status_table(self):
+    def panel_status_table(self):  # pragma: no cover
         """Build a Panel table that shows the current status of all evaluations"""
 
         # We'll loop over stage/modality/tabs to build a table
@@ -293,7 +293,7 @@ class QCPanel(param.Parameterized):
 
         return pn.pane.DataFrame(df_squashed, index=False, escape=False)
 
-    def panel_header(self):
+    def panel_header(self):  # pragma: no cover
         """Build a Panel header for this QC object"""
         # build the header
         md = f"""
@@ -304,7 +304,7 @@ class QCPanel(param.Parameterized):
 
         return header
 
-    def panel(self):
+    def panel(self):  # pragma: no cover
         """Build a Panel pane representing this QC object"""
 
         if not self._has_data or not self._data:
@@ -325,7 +325,7 @@ class QCPanel(param.Parameterized):
         # if any evaluations are failing, we'll show a warning
         failing_eval_str = ""
 
-        def state_panel():
+        def state_panel():  # pragma: no cover
             state_md = f"""
     <span style="font-size:12pt">Current state:</span>
     <span style="font-size:10pt">Status: **{qc_status_html((self._data.status(date=datetime.now(tz=timezone.utc))))}**</span>

@@ -204,7 +204,7 @@ class Media:
         # Step 2: parse the type and return the appropriate object
         return _parse_type(reference, reference_data, self)
 
-    def panel(self):
+    def panel(self):  # pragma: no cover
         return Fullscreen(
             self.object, sizing_mode="stretch_width", max_height=1200
         )

@@ -1,6 +1,5 @@
 import unittest
-from unittest.mock import Mock, patch
-import numpy as np
+from unittest.mock import patch
 from aind_data_schema.core.quality_control import QualityControl
 
 from aind_qc_portal.docdb.database import (
@@ -23,7 +22,7 @@ from aind_qc_portal.docdb.database import (
 
 class TestDatabase(unittest.TestCase):
     def setUp(self):
-        # Set up mock client
+        """ Set up the mock client for testing """
         self.patcher = patch("aind_qc_portal.docdb.database.client")
         self.mock_client = self.patcher.start()
 
@@ -79,11 +78,18 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(result, "test_name")
 
     def test_get_subj_from_id(self):
+        # Test found subject
         self.mock_client.retrieve_docdb_records.return_value = [
             {"subject": {"subject_id": "test_subject"}}
         ]
         result = get_subj_from_id("123")
         self.assertEqual(result, "test_subject")
+
+        # Test not found
+        self.mock_client.retrieve_docdb_records.return_value = []
+
+        result = get_subj_from_id("456")
+        self.assertIsNone(result)
 
     def test_raw_name_from_derived(self):
         # Test derived name
@@ -147,5 +153,5 @@ class TestDatabase(unittest.TestCase):
         self.assertEqual(result, [{"id": "1"}, {"id": "2"}])
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

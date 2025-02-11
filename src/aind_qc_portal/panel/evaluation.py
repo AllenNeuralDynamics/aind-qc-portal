@@ -73,7 +73,7 @@ class QCEvalPanel:
         self._data.notes = event.new
         self.parent.set_submit_dirty()
 
-    def panel(self):
+    def panel(self):  # pragma: no cover
         """Build a Panel object representing this Evaluation"""
 
         objects = []

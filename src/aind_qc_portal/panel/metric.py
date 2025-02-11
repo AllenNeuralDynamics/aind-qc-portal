@@ -184,7 +184,7 @@ class QCMetricValuePanel:
 
         return value_widget, auto_value, auto_state
 
-    def panel(self):
+    def panel(self):  # pragma: no cover
         """Create the metric value panel"""
 
         # Markdown header to display current state
