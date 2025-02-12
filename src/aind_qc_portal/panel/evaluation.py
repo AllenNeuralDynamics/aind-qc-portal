@@ -52,7 +52,6 @@ class QCEvalPanel:
             self.value_panels.append(value_panel)
             index = len(self.media_panels) - 1
             # Track mapping
-            print(self.media_to_value_map)
             if metric.reference not in self.media_to_value_map:
                 # Store the media_panel index in the reference_groups list
                 self.media_to_value_map[metric.reference] = [index]
