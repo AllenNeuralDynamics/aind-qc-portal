@@ -143,7 +143,7 @@ class CustomMetricValue:
 
     @property
     def data(self):
-        """ Return the data object """
+        """Return the data object"""
         return self._data
 
     @property
@@ -183,7 +183,7 @@ class CustomMetricValue:
                 self._status_callback(Status.PENDING)
 
     def _dropdown_helper(self, data: dict):
-        """ Helper function for dropdown metric values """
+        """Helper function for dropdown metric values"""
         self._panel = pn.widgets.Select(
             name="Value",
             options=[""] + data["options"],
@@ -197,7 +197,7 @@ class CustomMetricValue:
         self._panel.param.watch(self._callback_helper, "value")
 
     def _checkbox_helper(self, data: dict):
-        """ Helper function for checkbox metric values """
+        """Helper function for checkbox metric values"""
         self._panel = pn.widgets.MultiChoice(
             name="Value",
             options=data["options"],
@@ -216,7 +216,7 @@ class CustomMetricValue:
         self._panel.param.watch(self._callback_helper, "value")
 
     def _curation_helper(self, data: dict):
-        """ Helper function for curation metric values """
+        """Helper function for curation metric values"""
         self._panel = pn.widgets.JSONEditor(
             name="Value",
             value=data["curations"] if "curations" in data else {},
@@ -225,5 +225,5 @@ class CustomMetricValue:
         )
 
     def _rulebased_helper(self, data: dict):
-        """ Helper function for rulebased metric values """
+        """Helper function for rulebased metric values"""
         self._panel = pn.widgets.StaticText(value="Todo")

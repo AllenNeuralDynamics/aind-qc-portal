@@ -94,7 +94,9 @@ class Fullscreen(ReactiveHTML):
         </span>
         <div id="object_el" class="object-container">${object}</div>
 </div>
-""".replace("{path_str}", _path_str)
+""".replace(
+        "{path_str}", _path_str
+    )
     _stylesheets = [CSS]
     _scripts = {
         "maximize": """
@@ -206,12 +208,12 @@ class Media:
         return _parse_type(reference, reference_data, self)
 
     def panel(self):  # pragma: no cover
-        """ Return the media object as a Panel object"""
+        """Return the media object as a Panel object"""
         return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
 
 
 def _get_s3_file(url, ext):
-    """ Get an S3 file from the given URL"""
+    """Get an S3 file from the given URL"""
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -227,7 +229,7 @@ def _get_s3_file(url, ext):
 
 
 def _parse_rrd(reference, data):
-    """ Parse an RRD file and return the appropriate object"""
+    """Parse an RRD file and return the appropriate object"""
     if "_v" in reference:
         full_version = reference.split("_v")[1].split(".rrd")[0]
     else:
@@ -242,12 +244,12 @@ def _parse_rrd(reference, data):
 
 
 def _parse_sortingview(reference, data, media_obj):
-    """ Parse a sortingview URL and return the appropriate object"""
+    """Parse a sortingview URL and return the appropriate object"""
     iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
     curation_data = CurationData()
 
     def on_msg(event):
-        """ Handle messages from the sortingview iframe"""
+        """Handle messages from the sortingview iframe"""
         print(f"Received message: {event.data}")
         if not media_obj.value_callback:
             raise ValueError("No value callback set for sortingview object")

@@ -48,7 +48,7 @@ version = {attr = "aind_qc_portal.__version__"}
 
 [tool.black]
 line-length = 120
-target_version = ['py37']
+target_version = ['py310']
 exclude = '''
 
 (

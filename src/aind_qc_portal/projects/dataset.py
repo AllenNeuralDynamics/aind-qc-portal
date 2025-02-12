@@ -207,25 +207,25 @@ class ProjectDataset(param.Parameterized):
 
     @property
     def subjects(self):
-        """ Return the unique subject IDs in the dataset """
+        """Return the unique subject IDs in the dataset"""
         return list(self._df["Subject ID"].unique())
 
     @property
     def timestamps(self):
-        """ Return the timestamps in the dataset """
+        """Return the timestamps in the dataset"""
         filtered_df = self._data_filtered
 
         return filtered_df[["timestamp"]]
 
     @property
     def columns(self):
-        """ Return the columns in the dataset """
+        """Return the columns in the dataset"""
         columns = ALWAYS_COLUMNS + DEFAULT_COLUMNS + list(self._df.columns)
         return list(set(columns))
 
     @property
     def types(self):
-        """ Return the unique types in the dataset """
+        """Return the unique types in the dataset"""
         return list(self._df["Type"].unique())
 
     def panel(self):

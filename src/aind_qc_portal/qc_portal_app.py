@@ -1,4 +1,5 @@
 """QC Portal app"""
+
 import panel as pn
 import pandas as pd
 import param
@@ -104,16 +105,16 @@ class SearchOptions(param.Parameterized):
 
     @property
     def modalities(self):
-        """ List of modalities"""
+        """List of modalities"""
         return self._modalities
 
     @property
     def dates(self):
-        """ List of dates"""
+        """List of dates"""
         return self._dates
 
     def active(self, modality_filter, subject_filter, date_filter):
-        """ Filter the dataframe based on the filters"""
+        """Filter the dataframe based on the filters"""
         df = self.df.copy()
 
         if modality_filter != "":
@@ -143,11 +144,11 @@ class SearchOptions(param.Parameterized):
         return df
 
     def active_names(self):
-        """ Return the active names, plus a clear option"""
+        """Return the active names, plus a clear option"""
         return ["Clear"] + self._active_names
 
     def all_names(self):
-        """ Return all names"""
+        """Return all names"""
         return list(set(self.df["name"].values))
 
 
@@ -155,14 +156,15 @@ options = SearchOptions()
 
 
 class SearchView(param.Parameterized):
-    """ Filtered view based on the search options"""
+    """Filtered view based on the search options"""
+
     modality_filter = param.ObjectSelector(default="", objects=options.modalities)
     subject_filter = param.ObjectSelector(default="", objects=options.subject_ids)
     date_filter = param.ObjectSelector(default="", objects=options.dates)
     text_filter = param.String(default="")
 
     def __init__(self, **params):
-        """ Initialize the search view"""
+        """Initialize the search view"""
         super().__init__(**params)
 
     def df_filtered(self):
@@ -174,7 +176,7 @@ class SearchView(param.Parameterized):
         return df_filtered.style.map(qc_status_color_css, subset=["Status"])
 
     def df_textinput(self, value):
-        """ Filter the dataframe based on the text input"""
+        """Filter the dataframe based on the text input"""
         self.text_filter = value
 
 
@@ -220,13 +222,13 @@ dataframe_pane = pn.pane.DataFrame(
     watch=True,
 )
 def update_dataframe(*events):
-    """ Binding function to update the dataframe based on the search view"""
+    """Binding function to update the dataframe based on the search view"""
     text_input.options = options.active_names()
     dataframe_pane.object = searchview.df_filtered()
 
 
 def textinput_update(event):
-    """ Update the dataframe based on the text input"""
+    """Update the dataframe based on the text input"""
     searchview.df_textinput(event.new)
     update_dataframe()
 

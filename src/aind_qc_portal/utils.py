@@ -161,7 +161,7 @@ def qc_status_html(status: Status | str, text: str = ""):
 
 
 def qc_status_link_html(status: str, link: str, text: str = ""):
-    """ Return a formatted <span> tag with the color of the QC status and a link"""
+    """Return a formatted <span> tag with the color of the QC status and a link"""
     return f'<span style="background-color:{_qc_status_color(status)};">{format_link(link, text)}</span>'
 
 
@@ -278,7 +278,7 @@ def replace_markdown_with_html(font_size: int = 12, inner_str: str = ""):
 
 
 def _get_scale_and_indices(v, bin, lim):
-    """ Helper function for bincount2D """
+    """Helper function for bincount2D"""
     # if bin is a nonzero scalar, this is a bin size: create scale and indices
     if np.isscalar(bin) and bin != 0:
         scale = np.arange(lim[0], lim[1] + bin / 2, bin)

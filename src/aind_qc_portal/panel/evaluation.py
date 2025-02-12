@@ -14,7 +14,7 @@ from aind_qc_portal.utils import replace_markdown_with_html, qc_status_html
 
 
 class QCEvalPanel:
-    """ Evaluation Panel"""
+    """Evaluation Panel"""
 
     def __init__(self, parent, qc_evaluation: QCEvaluation):
         """Build an Evaluation object
@@ -65,7 +65,7 @@ class QCEvalPanel:
 
     @property
     def data(self):
-        """ Return the data in this Evaluation object"""
+        """Return the data in this Evaluation object"""
 
         # allow metrics to update themselves
         self._data.metrics = [metric.data for metric in self.value_panels]

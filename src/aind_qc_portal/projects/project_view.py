@@ -17,8 +17,7 @@ class ProjectView:
     """Panel view of an entire project's assets"""
 
     def __init__(self, dataset: ProjectDataset):
-        """Create a new ProjectView object
-        """
+        """Create a new ProjectView object"""
         self.project_name = ""
         self.dataset = dataset
 
@@ -46,11 +45,11 @@ class ProjectView:
 
     @property
     def has_data(self):
-        """ Check if the dataset has data """
+        """Check if the dataset has data"""
         return self.dataset.data is not None
 
     def get_asset_count(self):
-        """ Return the number of assets in the dataset """
+        """Return the number of assets in the dataset"""
         if not self.has_data:
             return 0
 
@@ -73,8 +72,10 @@ class ProjectView:
         # Check that timestamp column has values
         if data["timestamp"].isnull().all():
             return pn.widgets.StaticText(
-                value=("Data processing error: project is missing timestamp data in some assets."
-                       "Please reach out to scientific computing for help repairing your metadata.")
+                value=(
+                    "Data processing error: project is missing timestamp data in some assets."
+                    "Please reach out to scientific computing for help repairing your metadata."
+                )
             )
 
         # Calculate the time range to show on the x axis
@@ -172,7 +173,7 @@ class ProjectView:
         type_filter,
         status_filter,
     ) -> pn.Column:
-        """Helper function to construct the settings section of the panel object """
+        """Helper function to construct the settings section of the panel object"""
 
         self.dataset.subject_filter = subject_filter
         self.dataset.derived_filter = derived_filter
@@ -187,7 +188,7 @@ class ProjectView:
         return col
 
     def panel(self):
-        """ Return the panel object """
+        """Return the panel object"""
 
         return pn.Column(
             self.history_chart,

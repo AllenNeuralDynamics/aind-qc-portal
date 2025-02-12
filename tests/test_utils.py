@@ -29,10 +29,10 @@ from aind_qc_portal.utils import (
 
 
 class TestUtils(unittest.TestCase):
-    """ Test the utility functions """
+    """Test the utility functions"""
 
     def test_format_link(self):
-        """ Test the format_link function """
+        """Test the format_link function"""
         self.assertEqual(
             format_link("http://example.com"),
             '<a href="http://example.com" target="_blank">link</a>',
@@ -43,7 +43,7 @@ class TestUtils(unittest.TestCase):
         )
 
     def test_status_html(self):
-        """ Test the qc_status_html function """
+        """Test the qc_status_html function"""
         self.assertEqual(
             qc_status_html(Status.PASS),
             '<span style="color:#1D8649;">Pass</span>',
@@ -58,7 +58,7 @@ class TestUtils(unittest.TestCase):
         )
 
     def test_df_timestamp_range(self):
-        """ Test the df_timestamp_range function """
+        """Test the df_timestamp_range function"""
         data = {
             "timestamp": [
                 datetime(2023, 1, 1),
@@ -72,14 +72,14 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(fmt, "%b %d")
 
     def test_md_style(self):
-        """ Test the replace_markdown_with_html function """
+        """Test the replace_markdown_with_html function"""
         self.assertEqual(
             replace_markdown_with_html(12, "test"),
             '<span style="font-size:12pt">test</span>',
         )
 
     def test_qc_color(self):
-        """ Test the qc_status_color function """
+        """Test the qc_status_color function"""
         self.assertEqual(qc_status_color(Status.PASS), AIND_COLORS["green"])
 
         self.assertEqual(qc_status_color_css("No QC"), "background-color: #FFB71B")
@@ -89,7 +89,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(qc_status_color_css("Other"), "background-color: #7C7C7F")
 
     def test_bincount2D(self):
-        """ Test the bincount2D function """
+        """Test the bincount2D function"""
         x = np.array([1, 2, 2, 3])
         y = np.array([4, 5, 5, 6])
         r, xscale, yscale = bincount2D(x, y)
@@ -99,7 +99,7 @@ class TestUtils(unittest.TestCase):
 
     @patch("aind_qc_portal.utils.pn")
     def test_set_background(self, mock_pn):
-        """ Test the format_css_background function """
+        """Test the format_css_background function"""
         mock_pn.config.raw_css = []  # Mock raw_css to ensure a clean state
         mock_pn.state.location.query_params = {}  # Mock query_params to ensure no background param
         format_css_background()
@@ -191,7 +191,7 @@ class TestUtils(unittest.TestCase):
 
     @patch("aind_qc_portal.utils.pn")
     def test_get_user_name(self, mock_pn):
-        """ Test the get_user_name function """
+        """Test the get_user_name function"""
         # Test when pn.state.user is set
         mock_pn.state.user = "test_user"
         self.assertEqual(get_user_name(), "test_user")
@@ -201,7 +201,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(get_user_name(), "guest")
 
     def test_get_scale_and_indices_with_scalar_bin(self):
-        """ Test the _get_scale_and_indices function"""
+        """Test the _get_scale_and_indices function"""
         v = np.array([1, 2, 3, 4, 5])
         bin_size = 1
         lim = [1, 5]
@@ -212,7 +212,7 @@ class TestUtils(unittest.TestCase):
         np.testing.assert_array_equal(ind, expected_ind)
 
     def test_get_scale_and_indices_with_nonzero_scalar_bin(self):
-        """ Test the _get_scale_and_indices function"""
+        """Test the _get_scale_and_indices function"""
         v = np.array([1, 2, 3, 4, 5])
         bin_size = 2
         lim = [1, 5]
@@ -224,5 +224,5 @@ class TestUtils(unittest.TestCase):
 
 
 if __name__ == "__main__":  # pragma: no cover
-    """ Run the tests"""
+    """Run the tests"""
     unittest.main()
