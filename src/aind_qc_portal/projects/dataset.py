@@ -54,10 +54,8 @@ class ProjectDataset(param.Parameterized):
         ]
         self.type_selector.options = ["All"] + self.types
 
-    def _get_assets(self):
-        """Get all assets with this project name"""
-        records = get_project_data(self.project_name)
-
+    def _parse_assets(self, records):
+        """Parse asset data from a list of record dictionaries"""
         data = []
         for record in records:
             subject_id = record.get("subject", {}).get("subject_id")
@@ -114,6 +112,14 @@ class ProjectDataset(param.Parameterized):
                 "Processing Time": processing_time,
             }
             data.append(record_data)
+
+        return data
+
+    def _get_assets(self):
+        """Get all assets with this project name"""
+        records = get_project_data(self.project_name)
+
+        data = self._parse_assets(records)
 
         if len(data) == 0:
             return

@@ -156,7 +156,7 @@ class TestUtils(unittest.TestCase):
     def test_replace_markdown_with_html_with_links(self):
         """Test replace_markdown_with_html with actual markdown links"""
         markdown = "Check out [this link](http://example.com) and [another](http://test.com)"
-        expected = '<span style="font-size:12pt">Check out <a href="http://example.com" target="_blank">this link</a> and <a href="http://test.com" target="_blank">another</a></span>'
+        expected = '<span style="font-size:12pt">Check out <a href="http://example.com" target="_blank">this link</a> and <a href="http://test.com" target="_blank">another</a></span>'  # noqa
         result = replace_markdown_with_html(12, markdown)
         self.assertEqual(result, expected)
 

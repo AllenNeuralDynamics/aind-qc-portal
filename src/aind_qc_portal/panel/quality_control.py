@@ -105,7 +105,9 @@ class QCPanel(param.Parameterized):
             return
 
         # Pull modality information
-        if "data_description" in json_data and json_data["data_description"] and "modality" in json_data["data_description"]:
+        if ("data_description" in json_data
+                and json_data["data_description"]
+                and "modality" in json_data["data_description"]):
             self.modalities = [
                 Modality.from_abbreviation(modality["abbreviation"])
                 for modality in json_data["data_description"]["modality"]
@@ -264,7 +266,9 @@ class QCPanel(param.Parameterized):
         # build the header
         md = f"""
 <span style="font-size:14pt">Quality control for {self.asset_name}</span>
-<span style="font-size:10pt">Return to <a href="/qc_project_app?project_name={self.project_name}">{self.project_name} project</a></span>
+<span style="font-size:10pt">
+Return to <a href="/qc_project_app?project_name={self.project_name}">{self.project_name} project</a>
+</span>
 """
         header = pn.pane.Markdown(md)
 
@@ -293,9 +297,11 @@ class QCPanel(param.Parameterized):
 
         def state_panel():  # pragma: no cover
             state_md = f"""
-    <span style="font-size:12pt">Current state:</span>
-    <span style="font-size:10pt">Status: **{qc_status_html((self._data.status(date=datetime.now(tz=timezone.utc))))}**</span>
-    <span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
+<span style="font-size:12pt">Current state:</span>
+<span style="font-size:10pt">
+Status: **{qc_status_html((self._data.status(date=datetime.now(tz=timezone.utc))))}**
+</span>
+<span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
     """
             return pn.pane.Markdown(state_md)
 

@@ -5,4 +5,4 @@ exclude =
     build
 max-complexity = 10
 max-line-length = 120
-ignore = W605
+ignore = W605, W503

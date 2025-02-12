@@ -74,7 +74,8 @@ class ProjectView:
         # Check that timestamp column has values
         if data["timestamp"].isnull().all():
             return pn.widgets.StaticText(
-                value="Data processing error: project is missing timestamp data in some assets. Please reach out to scientific computing for help repairing your metadata."
+                value=("Data processing error: project is missing timestamp data in some assets."
+                       "Please reach out to scientific computing for help repairing your metadata.")
             )
 
         # Calculate the time range to show on the x axis

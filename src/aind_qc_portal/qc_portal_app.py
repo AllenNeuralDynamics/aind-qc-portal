@@ -235,7 +235,9 @@ md = f"""
 <h1 style="color:{AIND_COLORS["dark_blue"]};">
     Allen Institute for Neural Dynamics - QC Portal
 </h1>
-This portal allows you to search all existing metadata and explore the <span style="color:{AIND_COLORS["dark_blue"]}"><b>quality control</b></span> file. Open the subject view to see the raw and derived assets related to a single record. Open the QC view to explore the quality control object for that record.
+This portal allows you to search all existing metadata and explore the <span style="color:{AIND_COLORS["dark_blue"]}">
+<b>quality control</b></span> file. Open the subject view to see the raw and derived assets related to a single record.
+Open the QC view to explore the quality control object for that record.
 Connected to: <span style="color:{AIND_COLORS["light_blue"]}">{API_GATEWAY_HOST}/{DATABASE}/{COLLECTION}</span>
 """
 header = pn.pane.Markdown(md)
