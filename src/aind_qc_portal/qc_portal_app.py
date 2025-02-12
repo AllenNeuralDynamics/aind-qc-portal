@@ -1,6 +1,4 @@
-# Searchbar
-# Generates a Panel row object that integrates with DocDB to get the subject/session/date of a record
-# Eventually we'll add an LLM summary of the
+"""QC Portal app"""
 import panel as pn
 import pandas as pd
 import param
@@ -29,6 +27,7 @@ format_css_background()
 
 
 class SearchOptions(param.Parameterized):
+    """Search options for portal"""
 
     def __init__(self):
         """Initialize a search options object"""
@@ -100,17 +99,21 @@ class SearchOptions(param.Parameterized):
 
     @property
     def subject_ids(self):
+        """List of subject ids"""
         return self._subject_ids
 
     @property
     def modalities(self):
+        """ List of modalities"""
         return self._modalities
 
     @property
     def dates(self):
+        """ List of dates"""
         return self._dates
 
     def active(self, modality_filter, subject_filter, date_filter):
+        """ Filter the dataframe based on the filters"""
         df = self.df.copy()
 
         if modality_filter != "":
@@ -140,9 +143,11 @@ class SearchOptions(param.Parameterized):
         return df
 
     def active_names(self):
+        """ Return the active names, plus a clear option"""
         return ["Clear"] + self._active_names
 
     def all_names(self):
+        """ Return all names"""
         return list(set(self.df["name"].values))
 
 
@@ -150,12 +155,14 @@ options = SearchOptions()
 
 
 class SearchView(param.Parameterized):
+    """ Filtered view based on the search options"""
     modality_filter = param.ObjectSelector(default="", objects=options.modalities)
     subject_filter = param.ObjectSelector(default="", objects=options.subject_ids)
     date_filter = param.ObjectSelector(default="", objects=options.dates)
     text_filter = param.String(default="")
 
     def __init__(self, **params):
+        """ Initialize the search view"""
         super().__init__(**params)
 
     def df_filtered(self):
@@ -167,16 +174,11 @@ class SearchView(param.Parameterized):
         return df_filtered.style.map(qc_status_color_css, subset=["Status"])
 
     def df_textinput(self, value):
-        print(value)
+        """ Filter the dataframe based on the text input"""
         self.text_filter = value
 
 
 searchview = SearchView()
-# pn.state.location.sync(searchview, {
-#     'modality_filter': 'modality',
-#     'subject_filter': 'subject',
-#     'date_filter': 'date'
-# })
 
 text_input = pn.widgets.AutocompleteInput(
     name="Search:",
@@ -218,12 +220,13 @@ dataframe_pane = pn.pane.DataFrame(
     watch=True,
 )
 def update_dataframe(*events):
+    """ Binding function to update the dataframe based on the search view"""
     text_input.options = options.active_names()
     dataframe_pane.object = searchview.df_filtered()
 
 
 def textinput_update(event):
-    print(event.new)
+    """ Update the dataframe based on the text input"""
     searchview.df_textinput(event.new)
     update_dataframe()
 

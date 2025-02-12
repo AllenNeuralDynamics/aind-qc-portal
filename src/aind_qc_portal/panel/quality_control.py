@@ -55,12 +55,15 @@ class QCPanel(param.Parameterized):
         self.update()
 
     def _update_modality_filter(self, event):
+        """ Update the modality filter """
         self.modality_filter = event.new
 
     def _update_stage_filter(self, event):
+        """ Update the stage filter """
         self.stage_filter = event.new
 
     def _update_tag_filter(self, event):
+        """ Update the tag filter """
         self.tag_filter = event.new
 
     def _init_submission(self):
@@ -203,6 +206,7 @@ class QCPanel(param.Parameterized):
 
     @param.depends("modality_filter", "stage_filter", "tag_filter", watch=True)
     def update_tabs_from_filters(self):
+        """ Update the tabs based on the current filters """
         objects = []
         for evaluation, filters in zip(self.evaluations, self.evaluation_filters):
             (stage, modality, tags) = filters
@@ -296,6 +300,7 @@ Return to <a href="/qc_project_app?project_name={self.project_name}">{self.proje
         failing_eval_str = ""
 
         def state_panel():  # pragma: no cover
+            """ Build the state panel """
             state_md = f"""
 <span style="font-size:12pt">Current state:</span>
 <span style="font-size:10pt">
@@ -352,6 +357,7 @@ Status: **{qc_status_html((self._data.status(date=datetime.now(tz=timezone.utc))
         )
 
         def update_active_evaluation(event):
+            """ Binding to update active evaluation"""
             self.active_evaluation = event.new
 
         self.tabs = pn.Tabs(

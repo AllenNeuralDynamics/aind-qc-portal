@@ -1,3 +1,5 @@
+""" ProjectView class definition """
+
 import panel as pn
 import altair as alt
 from datetime import datetime
@@ -14,13 +16,8 @@ from aind_qc_portal.projects.dataset import ALWAYS_COLUMNS
 class ProjectView:
     """Panel view of an entire project's assets"""
 
-    def __init__(self, project_name: str, dataset: ProjectDataset):
+    def __init__(self, dataset: ProjectDataset):
         """Create a new ProjectView object
-
-        Parameters
-        ----------
-        project_name : str
-            _description_
         """
         self.project_name = ""
         self.dataset = dataset
@@ -49,9 +46,11 @@ class ProjectView:
 
     @property
     def has_data(self):
+        """ Check if the dataset has data """
         return self.dataset.data is not None
 
     def get_asset_count(self):
+        """ Return the number of assets in the dataset """
         if not self.has_data:
             return 0
 
@@ -173,7 +172,7 @@ class ProjectView:
         type_filter,
         status_filter,
     ) -> pn.Column:
-        """Return panel object"""
+        """Helper function to construct the settings section of the panel object """
 
         self.dataset.subject_filter = subject_filter
         self.dataset.derived_filter = derived_filter
@@ -188,6 +187,7 @@ class ProjectView:
         return col
 
     def panel(self):
+        """ Return the panel object """
 
         return pn.Column(
             self.history_chart,

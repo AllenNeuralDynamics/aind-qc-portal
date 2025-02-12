@@ -16,6 +16,7 @@ format_css_background()
 
 # State sync
 class Settings(param.Parameterized):
+    """Top-level settings for QC app"""
     id = param.String(default="0ff3a040-b590-495a-825b-d2424b6ecacc")
 
 

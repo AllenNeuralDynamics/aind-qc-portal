@@ -1,3 +1,5 @@
+""" Panel objects for displaying a single metric and its reference media """
+
 import panel as pn
 from aind_data_schema.core.quality_control import Status, QCMetric, QCStatus
 from datetime import datetime
@@ -24,6 +26,7 @@ class QCMetricMediaPanel:
         self.value_callback = None
 
     def register_callback(self, value_callback):
+        """ Register a callback to update the metric value """
         self.value_callback = value_callback
 
     def panel(self):
@@ -52,6 +55,7 @@ class QCMetricValuePanel:
 
     @property
     def data(self):
+        """ Return the data object """
         return self._data
 
     def set_value(self, event):

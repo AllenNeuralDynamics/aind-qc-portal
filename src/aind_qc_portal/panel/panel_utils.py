@@ -1,4 +1,8 @@
-def _is_image(reference):
+""" Panel utilities """
+
+
+def reference_is_image(reference):
+    """ Check if the reference is an image """
     return (
         reference.endswith(".png")
         or reference.endswith(".jpg")  # noqa: W503
@@ -10,9 +14,11 @@ def _is_image(reference):
     )
 
 
-def _is_video(reference):
+def reference_is_video(reference):
+    """ Check if the reference is a video """
     return reference.endswith(".mp4") or reference.endswith(".avi") or reference.endswith(".webm")
 
 
-def _is_pdf(reference):
+def reference_is_pdf(reference):
+    """ Check if the reference is a pdf """
     return reference.endswith(".pdf")

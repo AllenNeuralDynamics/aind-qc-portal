@@ -1,3 +1,5 @@
+""" Database access functions for the AIND QC Portal."""
+
 import os
 from typing import Optional
 

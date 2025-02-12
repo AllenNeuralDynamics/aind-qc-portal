@@ -39,15 +39,18 @@ pn.config.raw_css.append(sticky_css)
 
 # Set up project name settings and sync to URL
 class Settings(param.Parameterized):
+    """ Settings for the project view """
     project_name = param.String(default="Learning mFISH-V1omFISH")
 
     def __init__(self, **params):
+        """ Initialize the settings """
         super().__init__(**params)
 
         self.project_name_selector = pn.widgets.Select(name="Project Name", options=get_project_names())
         self.project_name_selector.link(self, value="project_name")
 
     def panel(self):
+        """ Return the settings Panel object """
 
         header = pn.pane.Markdown("## Settings")
 
@@ -92,7 +95,7 @@ dataset.status_selector.value = dataset.status_filter
 
 
 def update_header(project_name):
-    # Build the header (depends on some project view data)
+    """ Update the header with the project name """
     md = f"""
     <h1 style="color:{AIND_COLORS["dark_blue"]};">
         {project_name}

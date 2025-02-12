@@ -1,3 +1,5 @@
+""" Media module for the AIND-QC Portal"""
+
 import tempfile
 import panel as pn
 from io import BytesIO
@@ -9,7 +11,7 @@ from panel.custom import JSComponent
 import requests
 import time
 import os
-from .panel_utils import _is_image, _is_video, _is_pdf
+from .panel_utils import reference_is_image, reference_is_video, reference_is_pdf
 
 s3_client = boto3.client("s3")
 MEDIA_TTL = 3600  # 1 hour
@@ -204,10 +206,12 @@ class Media:
         return _parse_type(reference, reference_data, self)
 
     def panel(self):  # pragma: no cover
+        """ Return the media object as a Panel object"""
         return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
 
 
 def _get_s3_file(url, ext):
+    """ Get an S3 file from the given URL"""
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -223,6 +227,7 @@ def _get_s3_file(url, ext):
 
 
 def _parse_rrd(reference, data):
+    """ Parse an RRD file and return the appropriate object"""
     if "_v" in reference:
         full_version = reference.split("_v")[1].split(".rrd")[0]
     else:
@@ -237,10 +242,12 @@ def _parse_rrd(reference, data):
 
 
 def _parse_sortingview(reference, data, media_obj):
+    """ Parse a sortingview URL and return the appropriate object"""
     iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
     curation_data = CurationData()
 
     def on_msg(event):
+        """ Handle messages from the sortingview iframe"""
         print(f"Received message: {event.data}")
         if not media_obj.value_callback:
             raise ValueError("No value callback set for sortingview object")
@@ -277,11 +284,11 @@ def _parse_type(reference, data, media_obj):
         if not data:
             return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
-    if _is_image(reference):
+    if reference_is_image(reference):
         return pn.pane.Image(data, sizing_mode="scale_width", max_width=1200)
-    elif _is_pdf(reference):
+    elif reference_is_pdf(reference):
         return pn.pane.PDF(data, sizing_mode="scale_width", max_width=1200, height=1000)
-    elif _is_video(reference):
+    elif reference_is_video(reference):
         # Return the Video pane using the temporary file
         return pn.pane.Video(
             data,
