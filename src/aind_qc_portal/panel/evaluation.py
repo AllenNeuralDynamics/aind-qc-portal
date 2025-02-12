@@ -35,12 +35,11 @@ class QCEvalPanel:
         self._data = qc_evaluation
 
         self.value_panels = []
-        self.media_panels = []
-        self.media_to_value_map = []
+        self.media_panels = {}
+        self.media_to_value_map = {}
 
         # We will split the metric value/reference data into their separate objects
         # We'll also keep a mapping so that metrics that share reference data can be combined
-        reference_groups = {}
 
         for metric in self._data.metrics:
             # Build panel objects
@@ -48,19 +47,18 @@ class QCEvalPanel:
             value_panel = QCMetricValuePanel(metric, self.parent)
             media_panel.register_callback(value_panel._set_value)
             # Register
-            self.media_panels.append(media_panel)
+            if metric.reference not in self.media_panels:
+                self.media_panels[metric.reference] = media_panel
             self.value_panels.append(value_panel)
             index = len(self.media_panels) - 1
             # Track mapping
-            if metric.reference not in reference_groups:
+            print(self.media_to_value_map)
+            if metric.reference not in self.media_to_value_map:
                 # Store the media_panel index in the reference_groups list
-                reference_groups[metric.reference] = index
+                self.media_to_value_map[metric.reference] = [index]
                 # Store the mapping
-                self.media_to_value_map.append([index])
             else:
-                self.media_to_value_map[
-                    reference_groups[metric.reference]
-                ].append(index)
+                self.media_to_value_map[metric.reference].append(index)
 
     @property
     def data(self):
@@ -78,9 +76,9 @@ class QCEvalPanel:
 
         objects = []
 
-        for i, group_indexes in enumerate(self.media_to_value_map):
-            group = [self.value_panels[index] for index in group_indexes]
-            objects.append(QCMetricPanel(group, self.media_panels[i]).panel())
+        for reference in self.media_to_value_map.keys():
+            group = [self.value_panels[index] for index in self.media_to_value_map[reference]]
+            objects.append(QCMetricPanel(group, self.media_panels[reference]).panel())
 
         allow_failing_str = (
             "Metrics are allowed to fail."
