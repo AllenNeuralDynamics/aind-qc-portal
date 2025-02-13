@@ -1,3 +1,5 @@
+"""Dataset class for a project"""
+
 from datetime import datetime
 import pandas as pd
 import panel as pn
