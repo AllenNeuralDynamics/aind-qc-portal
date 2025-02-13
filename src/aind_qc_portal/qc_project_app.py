@@ -76,7 +76,7 @@ project_name_original = settings.project_name
 
 # Build the project view
 dataset = ProjectDataset(project_name=settings.project_name)
-project_view = ProjectView(project_name=settings.project_name, dataset=dataset)
+project_view = ProjectView(dataset=dataset)
 
 pn.state.location.sync(
     dataset,
