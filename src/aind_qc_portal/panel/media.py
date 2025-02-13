@@ -1,3 +1,5 @@
+""" Media module for the AIND-QC Portal"""
+
 import tempfile
 import panel as pn
 from io import BytesIO
@@ -9,7 +11,7 @@ from panel.custom import JSComponent
 import requests
 import time
 import os
-from .panel_utils import _is_image, _is_video, _is_pdf
+from .panel_utils import reference_is_image, reference_is_video, reference_is_pdf
 
 s3_client = boto3.client("s3")
 MEDIA_TTL = 3600  # 1 hour
@@ -82,16 +84,19 @@ class Fullscreen(ReactiveHTML):
         """Build fullscreen object"""
         super().__init__(object=object, **params)
 
+    _path_str = "M4.5 11H3v4h4v-1.5H4.5V11zM3 7h1.5V4.5H7V3H3v4zm10.5 6.5H11V15h4v-4h-1.5v2.5zM11 3v1.5h2.5V7H15V3h-4z"
     _template = """
 <div id="pn-container" class="pn-container">
         <span id="button" class="fullscreen-button" onclick="${script('maximize')}">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 18">
-        <path d="M4.5 11H3v4h4v-1.5H4.5V11zM3 7h1.5V4.5H7V3H3v4zm10.5 6.5H11V15h4v-4h-1.5v2.5zM11 3v1.5h2.5V7H15V3h-4z"></path>
+                    <path d="{path_str}"></path>
                 </svg>
         </span>
         <div id="object_el" class="object-container">${object}</div>
 </div>
-"""
+""".replace(
+        "{path_str}", _path_str
+    )
     _stylesheets = [CSS]
     _scripts = {
         "maximize": """
@@ -197,36 +202,70 @@ class Media:
             )
 
         if not reference_data:
-            return pn.pane.Alert(
-                f"Failed to load asset: {reference}", alert_type="danger"
-            )
+            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
         # Step 2: parse the type and return the appropriate object
         return _parse_type(reference, reference_data, self)
 
-    def panel(self):
-        return Fullscreen(
-            self.object, sizing_mode="stretch_width", max_height=1200
-        )
+    def panel(self):  # pragma: no cover
+        """Return the media object as a Panel object"""
+        return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
 
 
 def _get_s3_file(url, ext):
+    """Get an S3 file from the given URL"""
     try:
         response = requests.get(url)
         if response.status_code == 200:
-            with tempfile.NamedTemporaryFile(
-                suffix=ext, delete=False
-            ) as temp_file:
+            with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
                 temp_file.write(response.content)
             return temp_file.name
         else:
-            print(
-                f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}"
-            )
+            print(f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}")
             return None
     except Exception as e:
         print(f"[ERROR] Failed to fetch asset {url}, error: {e}")
         return None
+
+
+def _parse_rrd(reference, data):
+    """Parse an RRD file and return the appropriate object"""
+    if "_v" in reference:
+        full_version = reference.split("_v")[1].split(".rrd")[0]
+    else:
+        full_version = "0.19.1"
+    src = f"https://app.rerun.io/version/{full_version}/index.html?url={data}"
+    iframe_html = f'<iframe src="{src}" style="height:100%; width:100%" frameborder="0"></iframe>'
+    return pn.pane.HTML(
+        iframe_html,
+        sizing_mode="stretch_width",
+        height=1000,
+    )
+
+
+def _parse_sortingview(reference, data, media_obj):
+    """Parse a sortingview URL and return the appropriate object"""
+    iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
+    curation_data = CurationData()
+
+    def on_msg(event):
+        """Handle messages from the sortingview iframe"""
+        print(f"Received message: {event.data}")
+        if not media_obj.value_callback:
+            raise ValueError("No value callback set for sortingview object")
+
+        media_obj.value_callback(event.data)
+        media_obj.parent.set_submit_dirty()
+
+    curation_data.on_msg(on_msg)
+    return pn.Column(
+        pn.pane.HTML(
+            iframe_html,
+            sizing_mode="stretch_width",
+            height=1000,
+        ),
+        curation_data,
+    )
 
 
 def _parse_type(reference, data, media_obj):
@@ -245,17 +284,13 @@ def _parse_type(reference, data, media_obj):
         data = _get_s3_file(data, os.path.splitext(reference)[1])
 
         if not data:
-            return pn.pane.Alert(
-                f"Failed to load asset: {reference}", alert_type="danger"
-            )
+            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
-    if _is_image(reference):
+    if reference_is_image(reference):
         return pn.pane.Image(data, sizing_mode="scale_width", max_width=1200)
-    elif _is_pdf(reference):
-        return pn.pane.PDF(
-            data, sizing_mode="scale_width", max_width=1200, height=1000
-        )
-    elif _is_video(reference):
+    elif reference_is_pdf(reference):
+        return pn.pane.PDF(data, sizing_mode="scale_width", max_width=1200, height=1000)
+    elif reference_is_video(reference):
         # Return the Video pane using the temporary file
         return pn.pane.Video(
             data,
@@ -264,40 +299,9 @@ def _parse_type(reference, data, media_obj):
         )
     elif "rrd" in reference:
         # files should be in the format name_vX.Y.Z.rrd
-        if "_v" in reference:
-            full_version = reference.split("_v")[1].split(".rrd")[0]
-        else:
-            full_version = "0.19.1"
-        src = f"https://app.rerun.io/version/{full_version}/index.html?url={data}"
-        iframe_html = f'<iframe src="{src}" style="height:100%; width:100%" frameborder="0"></iframe>'
-        return pn.pane.HTML(
-            iframe_html,
-            sizing_mode="stretch_width",
-            height=1000,
-        )
+        return _parse_rrd(reference, data)
     elif "sortingview" in reference:
-        iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
-        curation_data = CurationData()
-
-        def on_msg(event):
-            print(f"Received message: {event.data}")
-            if not media_obj.value_callback:
-                raise ValueError(
-                    "No value callback set for sortingview object"
-                )
-
-            media_obj.value_callback(event.data)
-            media_obj.parent.set_submit_dirty()
-
-        curation_data.on_msg(on_msg)
-        return pn.Column(
-            pn.pane.HTML(
-                iframe_html,
-                sizing_mode="stretch_width",
-                height=1000,
-            ),
-            curation_data,
-        )
+        return _parse_sortingview(reference, data, media_obj)
     elif "neuroglancer" in reference:
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(
@@ -306,9 +310,7 @@ def _parse_type(reference, data, media_obj):
             height=1000,
         )
     elif "http" in reference:
-        return pn.widgets.StaticText(
-            value=f'Reference: <a target="_blank" href="{reference}">link</a>'
-        )
+        return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
     else:
         return pn.widgets.StaticText(value=data)
 
@@ -365,7 +367,9 @@ def _get_kachery_cloud_url(hash: str):
 
     # print(f"Getting kachery-cloud URL for {hash}")
 
-    # take the full hash string, e.g. sha1://fb558dff5ed3c13751b6345af8a3128b25c4fa70?label=vid_side_camera_right_start_0_end_0.1.mp4 and just get the hash
+    # take the full hash string, e.g.
+    # sha1://fb558dff5ed3c13751b6345af8a3128b25c4fa70?label=vid_side_camera_right_start_0_end_0.1.mp4
+    # and just get the hash
     simplified_hash = hash.split("?")[0].split("://")[1]
 
     url = "https://kachery-gateway.figurl.org/api/gateway"
@@ -385,9 +389,7 @@ def _get_kachery_cloud_url(hash: str):
 
     response = requests.post(url, headers=headers, json=data)
     if response.status_code != 200:
-        return (
-            f"[ERROR] Failed to fetch asset {simplified_hash}: {response.text}"
-        )
+        return f"[ERROR] Failed to fetch asset {simplified_hash}: {response.text}"
 
     data = response.json()
 

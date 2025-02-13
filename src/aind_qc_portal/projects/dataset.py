@@ -1,3 +1,5 @@
+"""Dataset class for a project"""
+
 from datetime import datetime
 import pandas as pd
 import panel as pn
@@ -60,88 +62,93 @@ class ProjectDataset(param.Parameterized):
         ]
         self.type_selector.options = ["All"] + self.types
 
+    def _parse_session_type(self, record):
+        """ Parse the session type from the record"""
+        session_type = None
+        if record.get("session", {}):
+            session_type = record.get("session", {}).get("session_type")
+        elif record.get("acquisition", {}):
+            session_type = record.get("acquisition", {}).get(
+                "session_type"
+            )
+        return session_type
+
+    def _parse_asset(self, record):
+        """Parse the basic dataset columns from the records"""
+        subject_id = record.get("subject", {}).get("subject_id")
+        qc = None
+        start_time = None
+        session_type = self._parse_session_type(record)
+        processing_time = None
+
+        # rig, operator, QC notes get bubbled up? qc status,
+        # custom genotype mapping. Do this for learning-mfish
+
+        # reconstruct the QC object, if possible
+        qc = None
+        if record.get("quality_control"):
+            qc = QualityControl.model_validate(
+                record.get("quality_control")
+            )
+
+        operator_list = record.get("session", {}).get(
+            "experimenter_full_name"
+        )
+        if operator_list:
+            operator_list = list(operator_list)
+
+        if record.get("session", {}):
+            start_time = record.get("session", {}).get(
+                "session_start_time"
+            )
+        elif record.get("acquisition", {}):
+            start_time = record.get("acquisition", {}).get(
+                "session_start_time"
+            )
+
+        # parse processing time
+        try:
+            if record.get("processing", {}):
+                data_processes = (
+                    record.get("processing", {})
+                    .get("processing_pipeline", {})
+                    .get("data_processes", [])
+                )
+                if len(data_processes) > 0:
+                    # convert to datetime from 2025-02-08T00:06:31.973872Z
+                    processing_time = datetime.strptime(
+                        data_processes[-1].get("end_date_time"),
+                        "%Y-%m-%dT%H:%M:%S.%fZ",
+                    )
+        except Exception as e:
+            id = record.get("_id")
+            print(f"Error in {id} parsing processing time: {e}")
+
+        record_data = {
+            "_id": record.get("_id"),
+            "Raw Data": record.get("data_description", {}).get(
+                "data_level"
+            )
+            == "raw",
+            "project_name": record.get("data_description", {}).get(
+                "project_name"
+            ),
+            "location": record.get("location"),
+            "name": record.get("name"),
+            "session_start_time": start_time,
+            "Type": session_type,
+            "Subject ID": subject_id,
+            "operator": operator_list,
+            "QC Status": qc.status().value if qc else "No QC",
+            "Processing Time": processing_time,
+        }
+        return record_data
+
     def _get_assets(self):
         """Get all assets with this project name"""
         records = get_project_data(self.project_name)
 
-        data = []
-        for record in records:
-            subject_id = record.get("subject", {}).get("subject_id")
-
-            # rig, operator, QC notes get bubbled up? qc status,
-            # custom genotype mapping. Do this for learning-mfish
-
-            # reconstruct the QC object, if possible
-            if record.get("quality_control"):
-                qc = QualityControl.model_validate(
-                    record.get("quality_control")
-                )
-            else:
-                qc = None
-
-            operator_list = record.get("session", {}).get(
-                "experimenter_full_name"
-            )
-            if operator_list:
-                operator_list = list(operator_list)
-
-            if record.get("session", {}):
-                start_time = record.get("session", {}).get(
-                    "session_start_time"
-                )
-            elif record.get("acquisition", {}):
-                start_time = record.get("acquisition", {}).get(
-                    "session_start_time"
-                )
-            else:
-                start_time = None
-
-            if record.get("session", {}):
-                session_type = record.get("session", {}).get("session_type")
-            elif record.get("acquisition", {}):
-                session_type = record.get("acquisition", {}).get(
-                    "session_type"
-                )
-            else:
-                session_type = None
-
-            # parse processing time
-            processing_time = None
-            try:
-                if record.get("processing", {}):
-                    data_processes = (
-                        record.get("processing", {})
-                        .get("processing_pipeline", {})
-                        .get("data_processes", [])
-                    )
-                    if len(data_processes) > 0:
-                        # convert to datetime from 2025-02-08T00:06:31.973872Z
-                        processing_time = datetime.strptime(
-                            data_processes[-1].get("end_date_time"),
-                            "%Y-%m-%dT%H:%M:%S.%fZ",
-                        )
-            except Exception as e:
-                print(f"Error in {record["_id"]} parsing processing time: {e}")
-
-            record_data = {
-                "_id": record.get("_id"),
-                "Raw Data": record.get("data_description", {}).get(
-                    "data_level"
-                )
-                == "raw",
-                "project_name": record.get("data_description", {}).get(
-                    "project_name"
-                ),
-                "location": record.get("location"),
-                "name": record.get("name"),
-                "session_start_time": start_time,
-                "Type": session_type,
-                "Subject ID": subject_id,
-                "operator": operator_list,
-                "QC Status": qc.status().value if qc else "No QC",
-                "Processing Time": processing_time,
-            }
-            data.append(record_data)
+        data = [self._parse_asset(record) for record in records]
 
         if len(data) == 0:
             return
@@ -252,21 +259,25 @@ class ProjectDataset(param.Parameterized):
 
     @property
     def subjects(self):
+        """ Return the unique subject IDs"""
         return list(self._df["Subject ID"].unique())
 
     @property
     def timestamps(self):
+        """ Return the timestamps"""
         filtered_df = self._data_filtered
 
         return filtered_df[["timestamp"]]
 
     @property
     def columns(self):
+        """ Return the columns"""
         columns = ALWAYS_COLUMNS + DEFAULT_COLUMNS + list(self._df.columns)
         return list(set(columns))
 
     @property
     def types(self):
+        """ Return the unique session types"""
         return list(self._df["Type"].unique())
 
     def panel(self):

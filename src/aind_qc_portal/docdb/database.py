@@ -1,3 +1,5 @@
+""" Database access functions for the AIND QC Portal."""
+
 import os
 from typing import Optional
 
@@ -7,9 +9,7 @@ from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_schema.core.quality_control import QualityControl
 from aind_data_access_api.helpers.docdb import get_projection_by_id
 
-API_GATEWAY_HOST = os.getenv(
-    "API_GATEWAY_HOST", "api.allenneuraldynamics-test.org"
-)
+API_GATEWAY_HOST = os.getenv("API_GATEWAY_HOST", "api.allenneuraldynamics-test.org")
 DATABASE = os.getenv("DATABASE", "metadata_index")
 COLLECTION = os.getenv("COLLECTION", "data_assets")
 
@@ -108,9 +108,7 @@ def qc_update_to_id(id: str, qc: QualityControl):
     """
     print("Uploading QC")
     print(qc.model_dump())
-    response = client.upsert_one_docdb_record(
-        record={"_id": id, "quality_control": qc.model_dump()}
-    )
+    response = client.upsert_one_docdb_record(record={"_id": id, "quality_control": qc.model_dump()})
     return response
 
 
@@ -128,9 +126,7 @@ def get_name_from_id(id: str):
     str
         The name field from the record.
     """
-    response = client.aggregate_docdb_records(
-        pipeline=[{"$match": {"_id": id}}, {"$project": {"name": 1, "_id": 0}}]
-    )
+    response = client.aggregate_docdb_records(pipeline=[{"$match": {"_id": id}}, {"$project": {"name": 1, "_id": 0}}])
     return response[0]["name"]
 
 
@@ -148,9 +144,7 @@ def get_subj_from_id(id: str):
     str | None
         The subject ID if found, None otherwise.
     """
-    response = get_projection_by_id(
-        client=client, _id=id, projection={"subject.subject_id": 1}
-    )
+    response = get_projection_by_id(client=client, _id=id, projection={"subject.subject_id": 1})
     if response is not None:
         return response["subject"]["subject_id"]
     return None
@@ -191,9 +185,7 @@ def get_assets_by_name(asset_name: str):
         List of matching asset records.
     """
     raw_name = _raw_name_from_derived(asset_name)
-    response = client.retrieve_docdb_records(
-        filter_query={"name": {"$regex": raw_name, "$options": "i"}}, limit=0
-    )
+    response = client.retrieve_docdb_records(filter_query={"name": {"$regex": raw_name, "$options": "i"}}, limit=0)
     return response
 
 
@@ -210,9 +202,7 @@ def get_assets_by_subj(subj: str):
     list[dict]
         List of asset records associated with the subject.
     """
-    response = client.retrieve_docdb_records(
-        filter_query={"subject.subject_id": subj}, limit=0
-    )
+    response = client.retrieve_docdb_records(filter_query={"subject.subject_id": subj}, limit=0)
     return response
 
 
@@ -345,9 +335,7 @@ def get_sessions(subject_id):
         "subject.subject_id": str(subject_id),
         "session": {"$ne": "null"},
     }
-    response = client.retrieve_docdb_records(
-        filter_query=filter, projection={"_id": 0, "session": 1}
-    )
+    response = client.retrieve_docdb_records(filter_query=filter, projection={"_id": 0, "session": 1})
 
     sessions = []
     for data in response:

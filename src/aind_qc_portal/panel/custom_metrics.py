@@ -1,3 +1,5 @@
+""" Custom metric value class for handling custom metric values in the QC Portal UI"""
+
 from datetime import datetime, timezone
 import panel as pn
 import json
@@ -61,26 +63,18 @@ class CustomMetricValue:
                 try:
                     self._data = DropdownMetric.model_validate(data)
                 except Exception:
-                    self._data = DropdownMetric.model_validate(
-                        attempt_custom_repairs(data)
-                    )
+                    self._data = DropdownMetric.model_validate(attempt_custom_repairs(data))
                 self._auto_state = self._data.status is not None
                 self._dropdown_helper(data)
             elif data["type"] == "checkbox":
                 try:
                     self._data = CheckboxMetric.model_validate(data)
                 except Exception:
-                    self._data = CheckboxMetric.model_validate(
-                        attempt_custom_repairs(data)
-                    )
+                    self._data = CheckboxMetric.model_validate(attempt_custom_repairs(data))
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
-            elif (
-                data["type"] == "curation" or data["type"] == "ephys_curation"
-            ):
-                data["type"] = (
-                    "curation"  # todo: remove when EphysCurationMetric removed
-                )
+            elif data["type"] == "curation" or data["type"] == "ephys_curation":
+                data["type"] = "curation"  # todo: remove when EphysCurationMetric removed
                 self._data = CurationMetric.model_validate(data)
                 self._auto_state = False
                 self._curation_helper(data)
@@ -94,7 +88,17 @@ class CustomMetricValue:
             raise ValueError("Unknown custom metric value")
 
     @classmethod
-    def is_custom_metric(cls, data: Any):
+    def is_custom_metric(cls, data: Any) -> bool:
+        """Check if the data is a custom metric value
+
+        Parameters
+        ----------
+        data : Any
+
+        Returns
+        -------
+        bool
+        """
         if isinstance(data, dict):
             return "type" in data or "rule" in data
         else:
@@ -139,6 +143,7 @@ class CustomMetricValue:
 
     @property
     def data(self):
+        """Return the data object"""
         return self._data
 
     @property
@@ -163,10 +168,7 @@ class CustomMetricValue:
                     self._status_callback(Status.PENDING)
                 else:
                     if isinstance(self._data.value, list):
-                        values = [
-                            self._data.status[self._data.options.index(value)]
-                            for value in self._data.value
-                        ]
+                        values = [self._data.status[self._data.options.index(value)] for value in self._data.value]
                         if any(values == Status.FAIL for value in values):
                             self._status_callback(Status.FAIL)
                         elif any(values == Status.PENDING for value in values):
@@ -181,6 +183,7 @@ class CustomMetricValue:
                 self._status_callback(Status.PENDING)
 
     def _dropdown_helper(self, data: dict):
+        """Helper function for dropdown metric values"""
         self._panel = pn.widgets.Select(
             name="Value",
             options=[""] + data["options"],
@@ -194,6 +197,7 @@ class CustomMetricValue:
         self._panel.param.watch(self._callback_helper, "value")
 
     def _checkbox_helper(self, data: dict):
+        """Helper function for checkbox metric values"""
         self._panel = pn.widgets.MultiChoice(
             name="Value",
             options=data["options"],
@@ -212,6 +216,7 @@ class CustomMetricValue:
         self._panel.param.watch(self._callback_helper, "value")
 
     def _curation_helper(self, data: dict):
+        """Helper function for curation metric values"""
         self._panel = pn.widgets.JSONEditor(
             name="Value",
             value=data["curations"] if "curations" in data else {},
@@ -220,4 +225,5 @@ class CustomMetricValue:
         )
 
     def _rulebased_helper(self, data: dict):
+        """Helper function for rulebased metric values"""
         self._panel = pn.widgets.StaticText(value="Todo")

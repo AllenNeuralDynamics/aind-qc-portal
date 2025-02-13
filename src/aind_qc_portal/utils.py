@@ -1,3 +1,5 @@
+""" Utility functions for the AIND QC Portal """
+
 from datetime import timedelta
 import re
 
@@ -159,6 +161,7 @@ def qc_status_html(status: Status | str, text: str = ""):
 
 
 def qc_status_link_html(status: str, link: str, text: str = ""):
+    """Return a formatted <span> tag with the color of the QC status and a link"""
     return f'<span style="background-color:{_qc_status_color(status)};">{format_link(link, text)}</span>'
 
 
@@ -224,15 +227,15 @@ def timestamp_range(min_date, max_date):
         min_range = min_date - (TWO_YEARS - time_range) / 2
         max_range = max_date + (TWO_YEARS - time_range) / 2
     elif time_range < FIVE_YEARS:
-        min_range = min_date - (FIVE_YEARS - time_range) / 2
-        max_range = max_date + (FIVE_YEARS - time_range) / 2
+        min_range = min_date - THREE_MONTHS
+        max_range = max_date + THREE_MONTHS
     elif time_range < TEN_YEARS:
-        min_range = min_date - (TEN_YEARS - time_range) / 2
-        max_range = max_date + (TEN_YEARS - time_range) / 2
+        min_range = min_date - THREE_MONTHS
+        max_range = max_date + THREE_MONTHS
     else:
-        # Default to five years
-        min_range = min_date - (FIVE_YEARS - time_range) / 2
-        max_range = max_date + (FIVE_YEARS - time_range) / 2
+        # Default to ten years
+        min_range = min_date - THREE_MONTHS
+        max_range = max_date + THREE_MONTHS
 
     unit, format = range_unit_format(time_range)
 
@@ -274,6 +277,18 @@ def replace_markdown_with_html(font_size: int = 12, inner_str: str = ""):
     return f'<span style="font-size:{font_size}pt">{inner_str}</span>'
 
 
+def _get_scale_and_indices(v, bin, lim):
+    """Helper function for bincount2D"""
+    # if bin is a nonzero scalar, this is a bin size: create scale and indices
+    if np.isscalar(bin) and bin != 0:
+        scale = np.arange(lim[0], lim[1] + bin / 2, bin)
+        ind = (np.floor((v - lim[0]) / bin)).astype(np.int64)
+    # if bin == 0, aggregate over unique values
+    else:
+        scale, ind = np.unique(v, return_inverse=True)
+    return scale, ind
+
+
 def bincount2D(x, y, xbin=0, ybin=0, xlim=None, ylim=None, weights=None):
     """
     Copied from: https://github.com/int-brain-lab/iblutil/blob/main/iblutil/numerical.py
@@ -300,16 +315,6 @@ def bincount2D(x, y, xbin=0, ybin=0, xlim=None, ylim=None, weights=None):
         xlim = [np.min(x), np.max(x)]
     if ylim is None:
         ylim = [np.min(y), np.max(y)]
-
-    def _get_scale_and_indices(v, bin, lim):
-        # if bin is a nonzero scalar, this is a bin size: create scale and indices
-        if np.isscalar(bin) and bin != 0:
-            scale = np.arange(lim[0], lim[1] + bin / 2, bin)
-            ind = (np.floor((v - lim[0]) / bin)).astype(np.int64)
-        # if bin == 0, aggregate over unique values
-        else:
-            scale, ind = np.unique(v, return_inverse=True)
-        return scale, ind
 
     xscale, xind = _get_scale_and_indices(x, xbin, xlim)
     yscale, yind = _get_scale_and_indices(y, ybin, ylim)

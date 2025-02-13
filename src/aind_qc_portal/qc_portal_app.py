@@ -1,6 +1,5 @@
-# Searchbar
-# Generates a Panel row object that integrates with DocDB to get the subject/session/date of a record
-# Eventually we'll add an LLM summary of the
+"""QC Portal app"""
+
 import panel as pn
 import pandas as pd
 import param
@@ -14,7 +13,6 @@ from aind_qc_portal.docdb.database import (
     COLLECTION,
 )
 from aind_qc_portal.utils import (
-    ASSET_LINK_PREFIX,
     QC_LINK_PREFIX,
     qc_status_color_css,
     OUTER_STYLE,
@@ -30,6 +28,7 @@ format_css_background()
 
 
 class SearchOptions(param.Parameterized):
+    """Search options for portal"""
 
     def __init__(self):
         """Initialize a search options object"""
@@ -48,9 +47,7 @@ class SearchOptions(param.Parameterized):
                     # try to validate the QC object
 
                     try:
-                        qc = QualityControl.model_validate_json(
-                            json.dumps(record["quality_control"])
-                        )
+                        qc = QualityControl.model_validate_json(json.dumps(record["quality_control"]))
                         status = qc.status().value
                     except Exception as e:
                         print(f"QC object failed to validate: {e}")
@@ -72,9 +69,7 @@ class SearchOptions(param.Parameterized):
                     "subject_id": record_split[1],
                     "date": record_split[2],
                     "status": status,
-                    "qc_view": format_link(
-                        QC_LINK_PREFIX + record["_id"], "link"
-                    ),
+                    "qc_view": format_link(QC_LINK_PREFIX + record["_id"], "link"),
                 }
                 data.append(r)
             else:
@@ -105,17 +100,21 @@ class SearchOptions(param.Parameterized):
 
     @property
     def subject_ids(self):
+        """List of subject ids"""
         return self._subject_ids
 
     @property
     def modalities(self):
+        """List of modalities"""
         return self._modalities
 
     @property
     def dates(self):
+        """List of dates"""
         return self._dates
 
     def active(self, modality_filter, subject_filter, date_filter):
+        """Filter the dataframe based on the filters"""
         df = self.df.copy()
 
         if modality_filter != "":
@@ -145,9 +144,11 @@ class SearchOptions(param.Parameterized):
         return df
 
     def active_names(self):
+        """Return the active names, plus a clear option"""
         return ["Clear"] + self._active_names
 
     def all_names(self):
+        """Return all names"""
         return list(set(self.df["name"].values))
 
 
@@ -155,16 +156,15 @@ options = SearchOptions()
 
 
 class SearchView(param.Parameterized):
-    modality_filter = param.ObjectSelector(
-        default="", objects=options.modalities
-    )
-    subject_filter = param.ObjectSelector(
-        default="", objects=options.subject_ids
-    )
+    """Filtered view based on the search options"""
+
+    modality_filter = param.ObjectSelector(default="", objects=options.modalities)
+    subject_filter = param.ObjectSelector(default="", objects=options.subject_ids)
     date_filter = param.ObjectSelector(default="", objects=options.dates)
     text_filter = param.String(default="")
 
     def __init__(self, **params):
+        """Initialize the search view"""
         super().__init__(**params)
 
     def df_filtered(self):
@@ -172,22 +172,15 @@ class SearchView(param.Parameterized):
         if self.text_filter != "" and self.text_filter != "Clear":
             return options.df[options.df["name"] == self.text_filter]
 
-        df_filtered = options.active(
-            self.modality_filter, self.subject_filter, self.date_filter
-        )
+        df_filtered = options.active(self.modality_filter, self.subject_filter, self.date_filter)
         return df_filtered.style.map(qc_status_color_css, subset=["Status"])
 
     def df_textinput(self, value):
-        print(value)
+        """Filter the dataframe based on the text input"""
         self.text_filter = value
 
 
 searchview = SearchView()
-# pn.state.location.sync(searchview, {
-#     'modality_filter': 'modality',
-#     'subject_filter': 'subject',
-#     'date_filter': 'date'
-# })
 
 text_input = pn.widgets.AutocompleteInput(
     name="Search:",
@@ -229,12 +222,13 @@ dataframe_pane = pn.pane.DataFrame(
     watch=True,
 )
 def update_dataframe(*events):
+    """Binding function to update the dataframe based on the search view"""
     text_input.options = options.active_names()
     dataframe_pane.object = searchview.df_filtered()
 
 
 def textinput_update(event):
-    print(event.new)
+    """Update the dataframe based on the text input"""
     searchview.df_textinput(event.new)
     update_dataframe()
 
@@ -246,14 +240,14 @@ md = f"""
 <h1 style="color:{AIND_COLORS["dark_blue"]};">
     Allen Institute for Neural Dynamics - QC Portal
 </h1>
-This portal allows you to search all existing metadata and explore the <span style="color:{AIND_COLORS["dark_blue"]}"><b>quality control</b></span> file. Open the subject view to see the raw and derived assets related to a single record. Open the QC view to explore the quality control object for that record.
+This portal allows you to search all existing metadata and explore the <span style="color:{AIND_COLORS["dark_blue"]}">
+<b>quality control</b></span> file. Open the subject view to see the raw and derived assets related to a single record.
+Open the QC view to explore the quality control object for that record.
 Connected to: <span style="color:{AIND_COLORS["light_blue"]}">{API_GATEWAY_HOST}/{DATABASE}/{COLLECTION}</span>
 """
 header = pn.pane.Markdown(md)
 
-col = pn.Column(
-    header, left_col, dataframe_pane, min_width=700, styles=OUTER_STYLE
-)
+col = pn.Column(header, left_col, dataframe_pane, min_width=700, styles=OUTER_STYLE)
 
 display = pn.Row(pn.HSpacer(), col, pn.HSpacer())
 

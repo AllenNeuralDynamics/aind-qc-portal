@@ -1,3 +1,5 @@
+""" ProjectView class definition """
+
 import panel as pn
 import altair as alt
 from datetime import datetime
@@ -14,14 +16,8 @@ from aind_qc_portal.projects.dataset import ALWAYS_COLUMNS
 class ProjectView:
     """Panel view of an entire project's assets"""
 
-    def __init__(self, project_name: str, dataset: ProjectDataset):
-        """Create a new ProjectView object
-
-        Parameters
-        ----------
-        project_name : str
-            _description_
-        """
+    def __init__(self, dataset: ProjectDataset):
+        """Create a new ProjectView object"""
         self.project_name = ""
         self.dataset = dataset
 
@@ -49,9 +45,11 @@ class ProjectView:
 
     @property
     def has_data(self):
+        """Check if the dataset has data"""
         return self.dataset.data is not None
 
     def get_asset_count(self):
+        """Return the number of assets in the dataset"""
         if not self.has_data:
             return 0
 
@@ -67,22 +65,21 @@ class ProjectView:
     def history_panel(self):
         """Create a plot showing the history of this asset, showing how assets were derived from each other"""
         if not self.has_data:
-            return pn.widgets.StaticText(
-                value=f"No data found for project: {self.project_name}"
-            )
+            return pn.widgets.StaticText(value=f"No data found for project: {self.project_name}")
 
         data = self.dataset.data
 
         # Check that timestamp column has values
         if data["timestamp"].isnull().all():
             return pn.widgets.StaticText(
-                value="Data processing error: project is missing timestamp data in some assets. Please reach out to scientific computing for help repairing your metadata."
+                value=(
+                    "Data processing error: project is missing timestamp data in some assets."
+                    "Please reach out to scientific computing for help repairing your metadata."
+                )
             )
 
         # Calculate the time range to show on the x axis
-        (min_range, max_range, range_unit, format) = df_timestamp_range(
-            data[["timestamp"]]
-        )
+        (min_range, max_range, range_unit, format) = df_timestamp_range(data[["timestamp"]])
 
         chart = (
             alt.Chart(self.dataset.data)
@@ -120,21 +117,15 @@ class ProjectView:
     def selection_history_panel(self, selection):
         """Create a plot showing the history of the selected assets"""
         if not self.has_data:
-            return pn.widgets.StaticText(
-                value=f"No data found for project: {self.project_name}"
-            )
+            return pn.widgets.StaticText(value=f"No data found for project: {self.project_name}")
 
         data = self.dataset.data_filtered()
 
         if data.empty:
-            return pn.widgets.StaticText(
-                value="No data found for the selected filters"
-            )
+            return pn.widgets.StaticText(value="No data found for the selected filters")
 
         # Calculate the time range to show on the x axis
-        (min_range, max_range, range_unit, format) = df_timestamp_range(
-            self.dataset.timestamps
-        )
+        (min_range, max_range, range_unit, format) = df_timestamp_range(self.dataset.timestamps)
 
         if selection is None or selection == {}:
             data = data.head(0)
@@ -182,7 +173,7 @@ class ProjectView:
         type_filter,
         status_filter,
     ) -> pn.Column:
-        """Return panel object"""
+        """Helper function to construct the settings section of the panel object"""
 
         self.dataset.subject_filter = subject_filter
         self.dataset.derived_filter = derived_filter
@@ -197,6 +188,7 @@ class ProjectView:
         return col
 
     def panel(self):
+        """Return the panel object"""
 
         return pn.Column(
             self.history_chart,

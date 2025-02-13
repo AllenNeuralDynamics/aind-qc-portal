@@ -35,7 +35,6 @@ dev = [
     'flake8',
     'interrogate',
     'isort',
-    'Sphinx',
     'furo',
     'watchfiles'
 ]
@@ -47,8 +46,8 @@ where = ["src"]
 version = {attr = "aind_qc_portal.__version__"}
 
 [tool.black]
-line-length = 79
-target_version = ['py37']
+line-length = 120
+target_version = ['py310']
 exclude = '''
 
 (

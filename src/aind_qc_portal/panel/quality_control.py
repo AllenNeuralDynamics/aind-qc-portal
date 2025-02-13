@@ -36,9 +36,7 @@ class QCPanel(param.Parameterized):
         super().__init__(**params)
 
         # Sync evaluation with URL
-        pn.state.location.sync(
-            self, {"active_evaluation": "active_evaluation"}
-        )
+        pn.state.location.sync(self, {"active_evaluation": "active_evaluation"})
 
         # Setup minimal record information from DocDB
         self.id = id
@@ -57,12 +55,15 @@ class QCPanel(param.Parameterized):
         self.update()
 
     def _update_modality_filter(self, event):
+        """Update the modality filter"""
         self.modality_filter = event.new
 
     def _update_stage_filter(self, event):
+        """Update the stage filter"""
         self.stage_filter = event.new
 
     def _update_tag_filter(self, event):
+        """Update the tag filter"""
         self.tag_filter = event.new
 
     def _init_submission(self):
@@ -74,11 +75,7 @@ class QCPanel(param.Parameterized):
         self.changes = 0
         self.change_info = pn.widgets.StaticText(value="")
         self.submit_info = pn.widgets.StaticText(
-            value=(
-                f"Logged in as {pn.state.user}"
-                if pn.state.user != "guest"
-                else "Log in to submit changes"
-            )
+            value=(f"Logged in as {pn.state.user}" if pn.state.user != "guest" else "Log in to submit changes")
         )
         self.submit_error = pn.widgets.StaticText(value="")
         self.submit_col = pn.Column(
@@ -103,9 +100,7 @@ class QCPanel(param.Parameterized):
 
         # Attempt to validate
         try:
-            self._data = QualityControl.model_validate_json(
-                json.dumps(json_data["quality_control"])
-            )
+            self._data = QualityControl.model_validate_json(json.dumps(json_data["quality_control"]))
         except Exception as e:
             self._data = None
             self._has_data = False
@@ -141,17 +136,8 @@ class QCPanel(param.Parameterized):
         if not self._has_data:
             return
 
-        self.stages = list(
-            {evaluation.stage for evaluation in self._data.evaluations}
-        )
-        self.tags = list(
-            {
-                tag
-                for evaluation in self._data.evaluations
-                if evaluation.tags
-                for tag in evaluation.tags
-            }
-        )
+        self.stages = list({evaluation.stage for evaluation in self._data.evaluations})
+        self.tags = list({tag for evaluation in self._data.evaluations if evaluation.tags for tag in evaluation.tags})
 
         self.evaluations = []
         self.evaluation_filters = []
@@ -163,9 +149,7 @@ class QCPanel(param.Parameterized):
                     evaluation.tags,
                 )
             )
-            self.evaluations.append(
-                QCEvalPanel(parent=self, qc_evaluation=evaluation)
-            )
+            self.evaluations.append(QCEvalPanel(parent=self, qc_evaluation=evaluation))
 
     def _redirect_to_login(self):
         """Redirect users to the login page"""
@@ -224,28 +208,20 @@ class QCPanel(param.Parameterized):
 
     @param.depends("modality_filter", "stage_filter", "tag_filter", watch=True)
     def update_tabs_from_filters(self):
+        """Update the tabs based on the current filters"""
         objects = []
-        for evaluation, filters in zip(
-            self.evaluations, self.evaluation_filters
-        ):
+        for evaluation, filters in zip(self.evaluations, self.evaluation_filters):
             (stage, modality, tags) = filters
             if (
-                (
-                    self.modality_filter == "All"
-                    or modality == self.modality_filter
-                )
+                (self.modality_filter == "All" or modality == self.modality_filter)
                 and (self.stage_filter == "All" or stage == self.stage_filter)
-                and (
-                    not tags
-                    or self.tag_filter == "All"
-                    or any([self.tag_filter == tag for tag in tags])
-                )
+                and (not tags or self.tag_filter == "All" or any([self.tag_filter == tag for tag in tags]))
             ):
                 objects.append(evaluation.panel())
         self.tabs.objects = objects
         self.tabs.active = self.active_evaluation
 
-    def panel_status_table(self):
+    def panel_status_table(self):  # pragma: no cover
         """Build a Panel table that shows the current status of all evaluations"""
 
         # We'll loop over stage/modality/tabs to build a table
@@ -283,9 +259,7 @@ class QCPanel(param.Parameterized):
         df = pd.DataFrame(data, columns=["Group", "Stage", "Status"])
 
         # Reshape the DataFrame using pivot_table
-        df_squashed = df.pivot_table(
-            index="Stage", columns="Group", values="Status", aggfunc="first"
-        )
+        df_squashed = df.pivot_table(index="Stage", columns="Group", values="Status", aggfunc="first")
 
         # Optional: Clean up column names by flattening the MultiIndex if needed
         df_squashed.columns.name = None
@@ -293,18 +267,20 @@ class QCPanel(param.Parameterized):
 
         return pn.pane.DataFrame(df_squashed, index=False, escape=False)
 
-    def panel_header(self):
+    def panel_header(self):  # pragma: no cover
         """Build a Panel header for this QC object"""
         # build the header
         md = f"""
 <span style="font-size:14pt">Quality control for {self.asset_name}</span>
-<span style="font-size:10pt">Return to <a href="/qc_project_app?project_name={self.project_name}">{self.project_name} project</a></span>
+<span style="font-size:10pt">
+Return to <a href="/qc_project_app?project_name={self.project_name}">{self.project_name} project</a>
+</span>
 """
         header = pn.pane.Markdown(md)
 
         return header
 
-    def panel(self):
+    def panel(self):  # pragma: no cover
         """Build a Panel pane representing this QC object"""
 
         if not self._has_data or not self._data:
@@ -325,11 +301,14 @@ class QCPanel(param.Parameterized):
         # if any evaluations are failing, we'll show a warning
         failing_eval_str = ""
 
-        def state_panel():
+        def state_panel():  # pragma: no cover
+            """Build the state panel"""
             state_md = f"""
-    <span style="font-size:12pt">Current state:</span>
-    <span style="font-size:10pt">Status: **{qc_status_html((self._data.status(date=datetime.now(tz=timezone.utc))))}**</span>
-    <span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
+<span style="font-size:12pt">Current state:</span>
+<span style="font-size:10pt">
+Status: **{qc_status_html((self._data.status(date=datetime.now(tz=timezone.utc))))}**
+</span>
+<span style="font-size:10pt">Contains {len(self.evaluations)} evaluations. {failing_eval_str}</span>
     """
             return pn.pane.Markdown(state_md)
 
@@ -350,9 +329,7 @@ class QCPanel(param.Parameterized):
         quality_control_pane = pn.Column(self.panel_header(), state_row)
 
         # button
-        header_row = pn.Row(
-            quality_control_pane, pn.HSpacer(), self.submit_col
-        )
+        header_row = pn.Row(quality_control_pane, pn.HSpacer(), self.submit_col)
 
         # filters for modality and stage
         self.modality_selector = pn.widgets.Select(
@@ -371,21 +348,18 @@ class QCPanel(param.Parameterized):
             width=250,
         )
 
-        self.modality_selector.param.watch(
-            self._update_modality_filter, "value"
-        )
+        self.modality_selector.param.watch(self._update_modality_filter, "value")
         self.stage_selector.param.watch(self._update_stage_filter, "value")
         self.tag_selector.param.watch(self._update_tag_filter, "value")
 
         header_col = pn.Column(
             header_row,
-            pn.Row(
-                self.modality_selector, self.stage_selector, self.tag_selector
-            ),
+            pn.Row(self.modality_selector, self.stage_selector, self.tag_selector),
             styles=OUTER_STYLE,
         )
 
         def update_active_evaluation(event):
+            """Binding to update active evaluation"""
             self.active_evaluation = event.new
 
         self.tabs = pn.Tabs(

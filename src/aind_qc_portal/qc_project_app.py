@@ -39,17 +39,19 @@ pn.config.raw_css.append(sticky_css)
 
 # Set up project name settings and sync to URL
 class Settings(param.Parameterized):
+    """Settings for the project view"""
+
     project_name = param.String(default="Learning mFISH-V1omFISH")
 
     def __init__(self, **params):
+        """Initialize the settings"""
         super().__init__(**params)
 
-        self.project_name_selector = pn.widgets.Select(
-            name="Project Name", options=get_project_names()
-        )
+        self.project_name_selector = pn.widgets.Select(name="Project Name", options=get_project_names())
         self.project_name_selector.link(self, value="project_name")
 
     def panel(self):
+        """Return the settings Panel object"""
 
         header = pn.pane.Markdown("## Settings")
 
@@ -69,9 +71,7 @@ pn.state.location.sync(
     },
 )
 
-settings.project_name_selector.value = (
-    settings.project_name
-)  # also sync to dropdown value
+settings.project_name_selector.value = settings.project_name  # also sync to dropdown value
 project_name_original = settings.project_name
 
 # Build the project view
@@ -90,15 +90,13 @@ pn.state.location.sync(
 )
 dataset.subject_selector.value = dataset.subject_filter
 dataset.derived_selector.value = dataset.derived_filter
-dataset.columns_selector.value = [
-    column for column in dataset.columns_filter if column not in ALWAYS_COLUMNS
-]
+dataset.columns_selector.value = [column for column in dataset.columns_filter if column not in ALWAYS_COLUMNS]
 dataset.type_selector.value = dataset.type_filter
 dataset.status_selector.value = dataset.status_filter
 
 
 def update_header(project_name):
-    # Build the header (depends on some project view data)
+    """Update the header with the project name"""
     md = f"""
     <h1 style="color:{AIND_COLORS["dark_blue"]};">
         {project_name}
@@ -124,19 +122,13 @@ def refresh(project_name):
 project_names = get_project_names()
 
 interactive_header = pn.bind(update_header, settings.project_name_selector)
-header = pn.Row(
-    interactive_header, pn.HSpacer(), width=990, styles=OUTER_STYLE
-)
+header = pn.Row(interactive_header, pn.HSpacer(), width=990, styles=OUTER_STYLE)
 
 setting_panel = settings.panel()
 
-interactive_refresh = pn.bind(
-    refresh, project_name=settings.project_name_selector
-)
+interactive_refresh = pn.bind(refresh, project_name=settings.project_name_selector)
 
-main_col = pn.Column(
-    header, project_view.panel(), interactive_refresh, width=1000
-)
+main_col = pn.Column(header, project_view.panel(), interactive_refresh, width=1000)
 
 side_col = pn.Column(
     setting_panel,
