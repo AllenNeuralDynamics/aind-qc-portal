@@ -121,7 +121,8 @@ class ProjectDataset(param.Parameterized):
                         "%Y-%m-%dT%H:%M:%S.%fZ",
                     )
         except Exception as e:
-            print(f"Error in {record["_id"]} parsing processing time: {e}")
+            id = record.get("_id")
+            print(f"Error in {id} parsing processing time: {e}")
 
         record_data = {
             "_id": record.get("_id"),
