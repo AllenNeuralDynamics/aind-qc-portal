@@ -74,7 +74,7 @@ class ProjectDataset(param.Parameterized):
         return session_type
 
     def _parse_asset(self, record):
-        """Parse the basic dataset columns from the records"""            
+        """Parse the basic dataset columns from the records"""
         subject_id = record.get("subject", {}).get("subject_id")
         qc = None
         start_time = None
