@@ -60,12 +60,23 @@ class ProjectDataset(param.Parameterized):
         ]
         self.type_selector.options = ["All"] + self.types
 
+    def _parse_session_type(self, record):
+        """ Parse the session type from the record"""
+        session_type = None
+        if record.get("session", {}):
+            session_type = record.get("session", {}).get("session_type")
+        elif record.get("acquisition", {}):
+            session_type = record.get("acquisition", {}).get(
+                "session_type"
+            )
+        return session_type
+
     def _parse_asset(self, record):
         """Parse the basic dataset columns from the records"""            
         subject_id = record.get("subject", {}).get("subject_id")
         qc = None
         start_time = None
-        session_type = None
+        session_type = self._parse_session_type(record)
         processing_time = None
 
         # rig, operator, QC notes get bubbled up? qc status,
@@ -91,13 +102,6 @@ class ProjectDataset(param.Parameterized):
         elif record.get("acquisition", {}):
             start_time = record.get("acquisition", {}).get(
                 "session_start_time"
-            )
-
-        if record.get("session", {}):
-            session_type = record.get("session", {}).get("session_type")
-        elif record.get("acquisition", {}):
-            session_type = record.get("acquisition", {}).get(
-                "session_type"
             )
 
         # parse processing time
@@ -252,21 +256,25 @@ class ProjectDataset(param.Parameterized):
 
     @property
     def subjects(self):
+        """ Return the unique subject IDs"""
         return list(self._df["Subject ID"].unique())
 
     @property
     def timestamps(self):
+        """ Return the timestamps"""
         filtered_df = self._data_filtered
 
         return filtered_df[["timestamp"]]
 
     @property
     def columns(self):
+        """ Return the columns"""
         columns = ALWAYS_COLUMNS + DEFAULT_COLUMNS + list(self._df.columns)
         return list(set(columns))
 
     @property
     def types(self):
+        """ Return the unique session types"""
         return list(self._df["Type"].unique())
 
     def panel(self):
