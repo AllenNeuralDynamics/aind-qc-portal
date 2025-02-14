@@ -158,7 +158,6 @@ class ProjectDataset(param.Parameterized):
         self._df["timestamp"] = pd.to_datetime(
             self._df["session_start_time"], format="mixed", utc=True
         )
-        # replace None with NaT
         self._df["Acquisition Time"] = pd.to_datetime(
             self._df["session_start_time"], format="mixed",
         ).apply(
