@@ -85,7 +85,7 @@ class QCMetricValuePanel:
             status = Status(status)
         print(f"Updating metric status to: {status.value}")
 
-        if self.state_selector:
+        if self.state_selector and self.state_selector.value != status.value:
             self.state_selector.value = status.value
 
         given_name = pn.state.user_info.get("given_name", "")

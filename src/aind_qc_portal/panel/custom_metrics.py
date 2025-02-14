@@ -155,19 +155,18 @@ class CustomMetricValue:
         """Helper function for custom metric value callbacks, called by Panel event callback
         when the user changes the value of the metric
         """
-        # Update the value according to the t ype of custom metric
-        self.update_value(event.new)
-
         # Push the new value into the upstream QCMetric.value field
-        self._value_callback(self._data)
+        self._value_callback(event.new)
 
         # Handle state updates
         if self._auto_state:
             try:
                 if not self._data.value:
+                    print(f"Value is empty for {self._data}, setting state to PENDING")
                     self._status_callback(Status.PENDING)
                 else:
-                    if isinstance(self._data.value, list):
+                    # Check if we're dealing with a checkbox metric
+                    if isinstance(self._data, CheckboxMetric):
                         values = [self._data.status[self._data.options.index(value)] for value in self._data.value]
                         if any(values == Status.FAIL for value in values):
                             self._status_callback(Status.FAIL)
@@ -175,9 +174,12 @@ class CustomMetricValue:
                             self._status_callback(Status.PENDING)
                         else:
                             self._status_callback(Status.PASS)
-                    else:
+                    elif isinstance(self._data, DropdownMetric):
                         idx = self._data.options.index(self._data.value)
                         self._status_callback(self._data.status[idx])
+                    else:
+                        print(f"Unsupported metric type for auto state update: {self._data}")
+                        self._status_callback(Status.PENDING)
             except Exception as e:
                 print(e)
                 self._status_callback(Status.PENDING)
