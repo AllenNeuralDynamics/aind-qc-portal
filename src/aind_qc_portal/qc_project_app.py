@@ -47,7 +47,10 @@ class Settings(param.Parameterized):
         """Initialize the settings"""
         super().__init__(**params)
 
-        self.project_name_selector = pn.widgets.Select(name="Project Name", options=get_project_names())
+        project_names = get_project_names()
+        project_names = [x for x in project_names if x is not None]
+        project_names.sort()
+        self.project_name_selector = pn.widgets.Select(name="Project Name", options=project_names)
         self.project_name_selector.link(self, value="project_name")
 
     def panel(self):
@@ -119,8 +122,6 @@ def refresh(project_name):
 
 
 # Add the header project dropdown list
-project_names = get_project_names()
-
 interactive_header = pn.bind(update_header, settings.project_name_selector)
 header = pn.Row(interactive_header, pn.HSpacer(), width=990, styles=OUTER_STYLE)
 
