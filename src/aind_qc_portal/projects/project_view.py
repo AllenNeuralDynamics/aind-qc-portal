@@ -2,6 +2,7 @@
 
 import panel as pn
 import altair as alt
+import pandas as pd
 from datetime import datetime
 
 from aind_qc_portal.projects.dataset import ProjectDataset
@@ -13,16 +14,12 @@ from aind_qc_portal.utils import (
 from aind_qc_portal.projects.dataset import ALWAYS_COLUMNS
 
 
-class ProjectView:
-    """Panel view of an entire project's assets"""
+class DataframePanel:
+    """Panel view of a group of assets"""
 
-    def __init__(self, dataset: ProjectDataset):
-        """Create a new ProjectView object"""
-        self.project_name = ""
-        self.dataset = dataset
-
-        self.df_pane = pn.widgets.Tabulator(
-            self.dataset.data_filtered(),
+    def __init__(self, df: pd.DataFrame):
+        self._panel = pn.widgets.Tabulator(
+            pd.DataFrame(),
             width=950,
             show_index=False,
             disabled=True,
@@ -32,6 +29,24 @@ class ProjectView:
                 "S3 link": {"type": "html"},
             },
         )
+
+    def update(self, df: pd.DataFrame):
+        """Update the data in the panel"""
+        self._panel.value = df
+
+    def panel(self):
+        return self._panel
+
+
+class ProjectView:
+    """Panel view of an entire project's assets"""
+
+    def __init__(self, dataset: ProjectDataset):
+        """Create a new ProjectView object"""
+        self.project_name = ""
+        self.dataset = dataset
+
+        self.df_pane = DataframePanel(self.dataset.data_filtered())
 
         self.brush = alt.selection_interval(name="brush")
         self.history_chart = self.history_panel()
@@ -156,7 +171,7 @@ class ProjectView:
                 tooltip=[
                     alt.Tooltip("Subject ID:N", title="Subject ID"),
                     alt.Tooltip("name:Q", title="Asset name"),
-                    alt.Tooltip("session_type:Q", title="Session Type"),
+                    alt.Tooltip("Type:Q", title="Session Type"),
                     alt.Tooltip("Acquisition Time:T", title="Acquisition Time"),
                 ],
                 color=alt.Color("Subject ID:N"),
@@ -183,9 +198,9 @@ class ProjectView:
         self.dataset.type_filter = type_filter
         self.dataset.status_filter = status_filter
 
-        self.df_pane.value = self.dataset.data_filtered()
+        self.df_pane.update(self.dataset.data_filtered())
 
-        col = pn.Column(self.selection_history_chart, self.df_pane)
+        col = pn.Column(self.selection_history_chart, self.df_pane.panel())
 
         return col
 
