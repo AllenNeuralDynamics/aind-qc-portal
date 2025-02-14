@@ -179,7 +179,6 @@ class ProjectDataset(param.Parameterized):
             ),
             axis=1,
         )
-        print(self._df["QC Status"].values[0])
 
         self._df.drop(
             columns=["qc_link", "operator", "session_start_time", "location"]
@@ -215,7 +214,7 @@ class ProjectDataset(param.Parameterized):
 
         if self.status_filter != "All":
             filtered_df = filtered_df[
-                filtered_df["QC Status"] == self.status_filter
+                filtered_df["QC Status"].str.contains(self.status_filter, na=False)
             ]
 
         return filtered_df
