@@ -29,7 +29,6 @@ class DataframePanel:
                 "QC view": {"type": "html"},
                 "S3 link": {"type": "html"},
             },
-            styles=OUTER_STYLE,
         )
 
     def update(self, df: pd.DataFrame):
@@ -37,7 +36,7 @@ class DataframePanel:
         self._panel.value = df
 
     def panel(self):
-        return self._panel
+        return pn.Row(self._panel, styles=OUTER_STYLE)
 
 
 class DataframeGroupPanel:
@@ -221,8 +220,8 @@ class ProjectView:
         )
 
         return pn.pane.Vega(chart, sizing_mode="stretch_width")
-
-    def _panel(
+    
+    def _selection_history_panel(
         self,
         group_filter,
         subject_filter,
@@ -230,7 +229,26 @@ class ProjectView:
         columns_filter,
         type_filter,
         status_filter,
-    ) -> pn.Column:
+    ):
+        """Helper function to construct the selection history object"""
+        self.dataset.group_filter = group_filter
+        self.dataset.subject_filter = subject_filter
+        self.dataset.derived_filter = derived_filter
+        self.dataset.columns_filter = ALWAYS_COLUMNS + columns_filter
+        self.dataset.type_filter = type_filter
+        self.dataset.status_filter = status_filter
+
+        return self.selection_history_chart
+
+    def _dataframe_panel(
+        self,
+        group_filter,
+        subject_filter,
+        derived_filter,
+        columns_filter,
+        type_filter,
+        status_filter,
+    ):
         """Helper function to construct the settings section of the panel object"""
 
         self.dataset.group_filter = group_filter
@@ -242,23 +260,36 @@ class ProjectView:
 
         self.df_pane.update(self.dataset.data_filtered(), "Subject ID" in group_filter, "Data Level" in group_filter)
 
-        col = pn.Column(self.selection_history_chart, self.df_pane.panel())
-
-        return col
+        return pn.Column(self.df_pane.panel())
 
     def panel(self):
         """Return the panel object"""
 
+        selection_chart = pn.bind(
+            self._selection_history_panel,
+            group_filter=self.dataset.group_selector,
+            subject_filter=self.dataset.subject_selector,
+            derived_filter=self.dataset.derived_selector,
+            columns_filter=self.dataset.columns_selector,
+            type_filter=self.dataset.type_selector,
+            status_filter=self.dataset.status_selector,
+        )
+
+        data_col = pn.bind(
+            self._dataframe_panel,
+            group_filter=self.dataset.group_selector,
+            subject_filter=self.dataset.subject_selector,
+            derived_filter=self.dataset.derived_selector,
+            columns_filter=self.dataset.columns_selector,
+            type_filter=self.dataset.type_selector,
+            status_filter=self.dataset.status_selector,
+        )
+
         return pn.Column(
-            self.history_chart,
-            pn.bind(
-                self._panel,
-                group_filter=self.dataset.group_selector,
-                subject_filter=self.dataset.subject_selector,
-                derived_filter=self.dataset.derived_selector,
-                columns_filter=self.dataset.columns_selector,
-                type_filter=self.dataset.type_selector,
-                status_filter=self.dataset.status_selector,
+            pn.Column(
+                self.history_chart,
+                selection_chart,
+                styles=OUTER_STYLE,
             ),
-            styles=OUTER_STYLE,
+            data_col,
         )
