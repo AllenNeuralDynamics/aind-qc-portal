@@ -156,7 +156,7 @@ class ProjectDataset(param.Parameterized):
         # Rename some columns and add some additional helper columns
         self._df = pd.DataFrame(data)
         self._df["timestamp"] = pd.to_datetime(
-            self._df["session_start_time"], format="mixed", utc=True
+            self._df["session_start_time"], format="mixed"
         )
         self._df["Acquisition Time"] = self._df["timestamp"].dt.strftime(
             "%Y-%m-%d %H:%M:%S"
