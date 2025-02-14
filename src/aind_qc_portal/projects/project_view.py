@@ -18,8 +18,9 @@ class DataframePanel:
     """Panel view of a group of assets"""
 
     def __init__(self, df: pd.DataFrame):
+        """ Create a new DataframePanel object """
         self._panel = pn.widgets.Tabulator(
-            pd.DataFrame(),
+            df,
             width=950,
             show_index=False,
             disabled=True,
@@ -28,11 +29,52 @@ class DataframePanel:
                 "QC view": {"type": "html"},
                 "S3 link": {"type": "html"},
             },
+            styles=OUTER_STYLE,
         )
 
     def update(self, df: pd.DataFrame):
         """Update the data in the panel"""
         self._panel.value = df
+
+    def panel(self):
+        return self._panel
+
+
+class DataframeGroupPanel:
+    """Panel view of set of assets split into groups by subject or data level"""
+
+    def __init__(self, df: pd.DataFrame, group_by_subject: bool, group_by_asset: bool):
+        """Create a new DataframeGroupPanel object"""
+
+        self._panel = None
+        self.update(df, group_by_subject, group_by_asset)
+
+    def update(self, df: pd.DataFrame, group_by_subject: bool, group_by_level: bool):
+        """Update the data in the panel"""
+
+        if group_by_subject or group_by_level:
+            unique_columns = []
+
+            if group_by_subject:
+                unique_columns.append("Subject ID")
+
+            # if group_by_level:
+            #     unique_columns.append("Data Level")
+
+            unique_sets = df[unique_columns].drop_duplicates()
+
+            # Create a new panel for each unique set of columns
+            panels = []
+            for _, unique_set in unique_sets.iterrows():
+                unique_df = df
+                for column in unique_columns:
+                    unique_df = unique_df[unique_df[column] == unique_set[column]]
+
+                panels.append(DataframePanel(unique_df).panel())
+
+            self._panel = pn.Column(*panels)
+        else:
+            self._panel = DataframePanel(df).panel()
 
     def panel(self):
         return self._panel
@@ -46,7 +88,7 @@ class ProjectView:
         self.project_name = ""
         self.dataset = dataset
 
-        self.df_pane = DataframePanel(self.dataset.data_filtered())
+        self.df_pane = DataframeGroupPanel(pd.DataFrame(), False, False)
 
         self.brush = alt.selection_interval(name="brush")
         self.history_chart = self.history_panel()
@@ -95,8 +137,6 @@ class ProjectView:
 
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(data[["timestamp"]])
-
-        print(data.columns)
 
         chart = (
             alt.Chart(data)
@@ -184,6 +224,7 @@ class ProjectView:
 
     def _panel(
         self,
+        group_filter,
         subject_filter,
         derived_filter,
         columns_filter,
@@ -192,13 +233,14 @@ class ProjectView:
     ) -> pn.Column:
         """Helper function to construct the settings section of the panel object"""
 
+        self.dataset.group_filter = group_filter
         self.dataset.subject_filter = subject_filter
         self.dataset.derived_filter = derived_filter
         self.dataset.columns_filter = ALWAYS_COLUMNS + columns_filter
         self.dataset.type_filter = type_filter
         self.dataset.status_filter = status_filter
 
-        self.df_pane.update(self.dataset.data_filtered())
+        self.df_pane.update(self.dataset.data_filtered(), "Subject ID" in group_filter, "Data Level" in group_filter)
 
         col = pn.Column(self.selection_history_chart, self.df_pane.panel())
 
@@ -211,6 +253,7 @@ class ProjectView:
             self.history_chart,
             pn.bind(
                 self._panel,
+                group_filter=self.dataset.group_selector,
                 subject_filter=self.dataset.subject_selector,
                 derived_filter=self.dataset.derived_selector,
                 columns_filter=self.dataset.columns_selector,

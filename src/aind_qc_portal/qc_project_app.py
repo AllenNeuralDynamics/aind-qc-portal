@@ -84,6 +84,7 @@ project_view = ProjectView(dataset=dataset)
 pn.state.location.sync(
     dataset,
     {
+        "group_filter": "group_filter",
         "subject_filter": "subject_filter",
         "derived_filter": "derived_filter",
         "columns_filter": "columns_filter",
@@ -91,6 +92,7 @@ pn.state.location.sync(
         "status_filter": "status_filter",
     },
 )
+dataset.group_selector.value = dataset.group_filter
 dataset.subject_selector.value = dataset.subject_filter
 dataset.derived_selector.value = dataset.derived_filter
 dataset.columns_selector.value = [column for column in dataset.columns_filter if column not in ALWAYS_COLUMNS]

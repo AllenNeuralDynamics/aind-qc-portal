@@ -31,6 +31,7 @@ class ProjectDataset(param.Parameterized):
 
     subject_filter = param.List(default=[])
     columns_filter = param.List(default=ALWAYS_COLUMNS + DEFAULT_COLUMNS)
+    group_filter = param.List(default=[])
     derived_filter = param.String(default="All")
     type_filter = param.String(default="All")
     status_filter = param.String(default="All")
@@ -44,8 +45,12 @@ class ProjectDataset(param.Parameterized):
 
         self.subject_selector = pn.widgets.MultiChoice(name="Subject ID")
         self.columns_selector = pn.widgets.MultiChoice(name="Columns")
+        self.group_selector = pn.widgets.MultiChoice(
+            name="Group by",
+            options=["Subject ID"],
+        )
         self.derived_selector = pn.widgets.Select(
-            name="Derived", options=["All", "Raw", "Derived"]
+            name="Data Level", options=["All", "Raw", "Derived"]
         )
         self.type_selector = pn.widgets.Select(name="Type")
         self.status_selector = pn.widgets.Select(
@@ -126,10 +131,9 @@ class ProjectDataset(param.Parameterized):
 
         record_data = {
             "_id": record.get("_id"),
-            "Raw Data": record.get("data_description", {}).get(
+            "Data Level": record.get("data_description", {}).get(
                 "data_level"
-            )
-            == "raw",
+            ),
             "project_name": record.get("data_description", {}).get(
                 "project_name"
             ),
@@ -209,8 +213,8 @@ class ProjectDataset(param.Parameterized):
 
         if self.derived_filter != "All":
             filtered_df = filtered_df[
-                filtered_df["Raw Data"]
-                == (True if self.derived_filter == "Raw" else False)
+                filtered_df["Data Level"]
+                == ("raw" if self.derived_filter == "Raw" else "derived")
             ]
 
         if self.type_filter != "All":
@@ -287,6 +291,7 @@ class ProjectDataset(param.Parameterized):
         """Return the settings panel for this dataset"""
 
         col = pn.Column(
+            self.group_selector,
             self.subject_selector,
             self.columns_selector,
             self.derived_selector,
