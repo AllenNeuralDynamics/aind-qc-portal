@@ -163,7 +163,7 @@ class ProjectDataset(param.Parameterized):
             self._df["session_start_time"], format="mixed",
         ).apply(
             lambda x: x.strftime("%Y-%m-%d %H:%M:%S")
-            if x is x and not pd.NaT
+            if x is not None and x is not pd.NaT
             else None
         )
         self._df["S3 link"] = self._df["location"].apply(
