@@ -117,6 +117,9 @@ class QCEvalPanel:
         )
         accordion.active = [0]
 
-        col = pn.Column(header_row, accordion, name=self._data.name)
+        status = self.data.latest_status
+        # styled_name = qc_status_html(status, self._data.name)
+        styled_name = self._data.name + f" ({status.value})"
+        col = pn.Column(header_row, accordion, name=styled_name)
 
         return col
