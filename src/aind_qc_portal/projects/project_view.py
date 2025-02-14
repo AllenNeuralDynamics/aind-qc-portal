@@ -81,13 +81,15 @@ class ProjectView:
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(data[["timestamp"]])
 
+        print(data.columns)
+
         chart = (
-            alt.Chart(self.dataset.data)
+            alt.Chart(data)
             .mark_bar()
             .encode(
                 x=alt.X(
-                    "Date:T",
-                    title="Time",
+                    "Acquisition Time:T",
+                    title="Acquisition Time",
                     scale=alt.Scale(domain=[min_range, max_range]),
                     axis=alt.Axis(format=format, tickCount=range_unit),
                 ),
@@ -96,7 +98,7 @@ class ProjectView:
                     alt.Tooltip("Subject ID:N", title="Subject ID"),
                     alt.Tooltip("name:Q", title="Asset name"),
                     alt.Tooltip("session_type:Q", title="Session Type"),
-                    alt.Tooltip("Date:T", title="Date"),
+                    alt.Tooltip("Acquisition Time:T", title="Acquisition Time"),
                 ],
                 color=alt.condition(
                     self.brush,
@@ -132,12 +134,12 @@ class ProjectView:
         else:
             if selection.get("Subject ID") is not None:
                 data = data[data["Subject ID"].isin(selection["Subject ID"])]
-            if selection.get("Date") is not None:
-                min_range = datetime.fromtimestamp(selection["Date"][0] / 1000)
-                max_range = datetime.fromtimestamp(selection["Date"][1] / 1000)
+            if selection.get("Acquisition Time") is not None:
+                min_range = datetime.fromtimestamp(selection["Acquisition Time"][0] / 1000)
+                max_range = datetime.fromtimestamp(selection["Acquisition Time"][1] / 1000)
                 (range_unit, format) = range_unit_format(
-                    datetime.fromtimestamp(selection["Date"][1] / 1000)
-                    - datetime.fromtimestamp(selection["Date"][0] / 1000)
+                    datetime.fromtimestamp(selection["Acquisition Time"][1] / 1000)
+                    - datetime.fromtimestamp(selection["Acquisition Time"][0] / 1000)
                 )
 
         chart = (
@@ -145,7 +147,7 @@ class ProjectView:
             .mark_bar()
             .encode(
                 x=alt.X(
-                    "Date:T",
+                    "Acquisition Time:T",
                     title="Time",
                     scale=alt.Scale(domain=[min_range, max_range]),
                     axis=alt.Axis(format=format, tickCount=range_unit),
@@ -155,7 +157,7 @@ class ProjectView:
                     alt.Tooltip("Subject ID:N", title="Subject ID"),
                     alt.Tooltip("name:Q", title="Asset name"),
                     alt.Tooltip("session_type:Q", title="Session Type"),
-                    alt.Tooltip("Date:T", title="Date"),
+                    alt.Tooltip("Acquisition Time:T", title="Acquisition Time"),
                 ],
                 color=alt.Color("Subject ID:N"),
                 href=alt.Href("qc_link:N"),
