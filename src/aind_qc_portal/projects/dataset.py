@@ -156,10 +156,15 @@ class ProjectDataset(param.Parameterized):
         # Rename some columns and add some additional helper columns
         self._df = pd.DataFrame(data)
         self._df["timestamp"] = pd.to_datetime(
-            self._df["session_start_time"], format="mixed"
+            self._df["session_start_time"], format="mixed", utc=True
         )
-        self._df["Acquisition Time"] = self._df["timestamp"].dt.strftime(
-            "%Y-%m-%d %H:%M:%S"
+        # replace None with NaT
+        self._df["Acquisition Time"] = pd.to_datetime(
+            self._df["session_start_time"], format="mixed",
+        ).apply(
+            lambda x: x.strftime("%Y-%m-%d %H:%M:%S")
+            if x is not None and x is not pd.NaT
+            else None
         )
         self._df["S3 link"] = self._df["location"].apply(
             lambda x: format_link(x, text="S3 link")
