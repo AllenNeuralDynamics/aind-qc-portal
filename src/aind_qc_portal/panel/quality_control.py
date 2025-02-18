@@ -88,19 +88,17 @@ class QCPanel(param.Parameterized):
 
     def _get_data(self):
         """Get the data for this record from DocDB and validate as a QualityControl object"""
+        print(self.id)
         json_data = record_from_id(self.id)
 
         # Basic checks
-        if not json_data:
-            return
-        if "quality_control" in json_data:
-            self._has_data = True
-        else:
+        if not json_data or "quality_control" not in json_data:
             return
 
         # Attempt to validate
         try:
             self._data = QualityControl.model_validate_json(json.dumps(json_data["quality_control"]))
+            self._has_data = True
         except Exception as e:
             self._data = None
             self._has_data = False
@@ -122,10 +120,12 @@ class QCPanel(param.Parameterized):
 
         # Pull S3 location
         s3_location = json_data.get("location", None)
+        print(s3_location)
         if s3_location:
             s3_location = s3_location.replace("s3://", "")
             self.s3_bucket = s3_location.split("/")[0]
             self.s3_prefix = s3_location.split("/")[1]
+            print(f"Bucket: {self.s3_bucket}, Prefix: {self.s3_prefix}")
 
         # Pull asset name
         self.asset_name = json_data["name"]

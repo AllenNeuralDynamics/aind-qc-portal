@@ -10,6 +10,7 @@ from aind_qc_portal.utils import format_css_background
 
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
+pn.state.clear_caches()
 
 format_css_background()
 
@@ -18,11 +19,13 @@ format_css_background()
 class Settings(param.Parameterized):
     """Top-level settings for QC app"""
 
-    id = param.String(default="0ff3a040-b590-495a-825b-d2424b6ecacc")
+    id = param.String(default="")
 
 
 settings = Settings()
 pn.state.location.sync(settings, {"id": "id"})
+
+print(settings.id)
 
 qc_panel = QCPanel(id=settings.id)
 

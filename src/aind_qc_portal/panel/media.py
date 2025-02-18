@@ -1,10 +1,12 @@
 """ Media module for the AIND-QC Portal"""
 
+import logging
 import tempfile
 import panel as pn
 from io import BytesIO
 import param
 import boto3
+from botocore.exceptions import ClientError
 from pathlib import Path
 from panel.reactive import ReactiveHTML
 from panel.custom import JSComponent
@@ -182,13 +184,13 @@ class Media:
 
         # Step 1: get the data
         # possible sources are: http, s3, local data asset, figurl
-        if "http" in reference:
+        if "http:" in reference:
             reference_data = reference
-        elif "s3" in reference:
+        elif "s3:" in reference:
             bucket = reference.split("/")[2]
             key = "/".join(reference.split("/")[3:])
             reference_data = _get_s3_url(bucket, key)
-        elif "sha" in reference:
+        elif "sha:" in reference:
             reference_data = _get_kachery_cloud_url(reference)
         else:
             # assume local data asset_get_s3_asset
@@ -196,6 +198,8 @@ class Media:
             # if a user appends extra things up to results/, strip that
             if "results/" in reference:
                 reference = reference.split("results/")[1]
+            self.parent.s3_prefix = "2cff1bcb-bdd4-4c4c-979e-8f8e7713b0b7"
+            reference = "VISal_2/decrosstalk/VISal_2_decrosstalk_episodic_mean_fov.webm"
             reference_data = _get_s3_url(
                 self.parent.s3_bucket,
                 str(Path(self.parent.s3_prefix) / reference),
@@ -279,9 +283,10 @@ def _parse_type(reference, data, media_obj):
                     _description_
     """
     # print(f"Parsing type: {reference} with data: {data}")
+    extension = os.path.splitext(reference)[1]
 
     if "https://s3" in data:
-        data = _get_s3_file(data, os.path.splitext(reference)[1])
+        data = _get_s3_file(data, extension)
 
         if not data:
             return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
@@ -292,6 +297,8 @@ def _parse_type(reference, data, media_obj):
         return pn.pane.PDF(data, sizing_mode="scale_width", max_width=1200, height=1000)
     elif reference_is_video(reference):
         # Return the Video pane using the temporary file
+        print(reference)
+        print(data)
         return pn.pane.Video(
             data,
             sizing_mode="scale_width",
@@ -315,7 +322,7 @@ def _parse_type(reference, data, media_obj):
         return pn.widgets.StaticText(value=data)
 
 
-@pn.cache(ttl=MEDIA_TTL)
+# @pn.cache(ttl=MEDIA_TTL)
 def _get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
 
@@ -326,11 +333,18 @@ def _get_s3_url(bucket, key):
     key : str
         S3 key name
     """
-    return s3_client.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": bucket, "Key": key},
-        ExpiresIn=MEDIA_TTL,
-    )
+    print(f"Getting S3 URL for {bucket}/{key}")
+    try:
+        response = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=MEDIA_TTL,
+        )
+    except ClientError as e:
+        logging.error(e)
+        return None
+
+    return response
 
 
 @pn.cache()
