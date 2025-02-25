@@ -52,6 +52,7 @@ class QCPanel(param.Parameterized):
 
         # Get the actual data for this record
         self._has_data = False
+        self.lazy_load = False
         self.update()
 
     def _update_modality_filter(self, event):
