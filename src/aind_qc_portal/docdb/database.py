@@ -7,7 +7,7 @@ import numpy as np
 import panel as pn
 from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_schema.core.quality_control import QualityControl
-from aind_data_access_api.helpers.docdb import get_projection_by_id
+from aind_data_access_api.helpers.docdb import get_projection_by_id, get_id_from_name
 
 API_GATEWAY_HOST = os.getenv("API_GATEWAY_HOST", "api.allenneuraldynamics-test.org")
 DATABASE = os.getenv("DATABASE", "metadata_index")
@@ -22,6 +22,24 @@ client = MetadataDbClient(
     database=DATABASE,
     collection=COLLECTION,
 )
+
+
+@pn.cache()
+def id_from_name(name: str) -> Optional[str]:
+    """Get the unique identifier for a record with a given name.
+
+    Parameters
+    ----------
+    name : str
+        The name of the record.
+
+    Returns
+    -------
+    Optional[str]
+        The unique identifier if found, None otherwise.
+    """
+
+    return get_id_from_name(client=client, name=name)
 
 
 @pn.cache()
