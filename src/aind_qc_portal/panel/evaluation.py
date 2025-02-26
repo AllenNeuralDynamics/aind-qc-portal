@@ -1,4 +1,5 @@
 """ Evaluation Panel"""
+
 import panel as pn
 from datetime import datetime, timezone
 
@@ -13,7 +14,7 @@ from aind_qc_portal.utils import replace_markdown_with_html, qc_status_html
 
 
 class QCEvalPanel:
-    """ Evaluation Panel"""
+    """Evaluation Panel"""
 
     def __init__(self, parent, qc_evaluation: QCEvaluation):
         """Build an Evaluation object
@@ -63,14 +64,14 @@ class QCEvalPanel:
 
     @property
     def data(self):
-        """ Return the data object"""
+        """Return the data object"""
         # allow the metrics to update themselves before returning
         self._data.metrics = [metric.data for metric in self.value_panels]
 
         return self._data
 
     def set_notes(self, event):
-        """ Set the notes for this Evaluation"""
+        """Set the notes for this Evaluation"""
         self._data.notes = event.new
         self.parent.set_submit_dirty()
 
@@ -83,11 +84,7 @@ class QCEvalPanel:
             group = [self.value_panels[index] for index in self.media_to_value_map[reference]]
             objects.append(QCMetricPanel(group, self.media_panels[reference]).panel())
 
-        allow_failing_str = (
-            "Metrics are allowed to fail."
-            if self._data.allow_failed_metrics
-            else ""
-        )
+        allow_failing_str = "Metrics are allowed to fail." if self._data.allow_failed_metrics else ""
 
         now = datetime.now(tz=timezone.utc)
 
@@ -112,9 +109,7 @@ class QCEvalPanel:
 
         header_row = pn.Row(header, notes, max_height=1200)
 
-        accordion = pn.Accordion(
-            *objects, sizing_mode="stretch_width", max_height=1200
-        )
+        accordion = pn.Accordion(*objects, sizing_mode="stretch_width", max_height=1200)
         accordion.active = [0]
 
         status = self.data.latest_status
