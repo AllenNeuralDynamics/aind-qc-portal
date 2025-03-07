@@ -96,10 +96,17 @@ class ProjectDataset(param.Parameterized):
                 data_processes = record.get("processing", {}).get("processing_pipeline", {}).get("data_processes", [])
                 if len(data_processes) > 0:
                     # convert to datetime from 2025-02-08T00:06:31.973872Z
-                    processing_time = datetime.strptime(
-                        data_processes[-1].get("end_date_time"),
-                        "%Y-%m-%dT%H:%M:%S.%fZ",
-                    )
+                    end_date_time_str = data_processes[-1].get("end_date_time")
+                    try:
+                        processing_time = datetime.strptime(
+                            end_date_time_str,
+                            "%Y-%m-%dT%H:%M:%S.%fZ",
+                        )
+                    except ValueError:
+                        processing_time = datetime.strptime(
+                            end_date_time_str,
+                            "%Y-%m-%dT%H:%M:%S.%f",
+                        )
         except Exception as e:
             id = record.get("_id")
             print(f"Error in {id} parsing processing time: {e}")
