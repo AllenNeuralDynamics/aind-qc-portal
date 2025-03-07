@@ -24,7 +24,7 @@ client = MetadataDbClient(
 )
 
 
-@pn.cache()
+@pn.cache(max_items=1000, policy="LFU")
 def id_from_name(name: str) -> Optional[str]:
     """Get the unique identifier for a record with a given name.
 
@@ -42,7 +42,7 @@ def id_from_name(name: str) -> Optional[str]:
     return get_id_from_name(client=client, name=name)
 
 
-@pn.cache()
+@pn.cache(max_items=1)
 def get_project_names():
     """Get all unique project names from the database.
 
@@ -130,7 +130,7 @@ def qc_update_to_id(id: str, qc: QualityControl):
     return response
 
 
-@pn.cache()
+@pn.cache(max_items=1000, policy="LFU")
 def get_name_from_id(id: str):
     """Get the name field from a record with the given ID.
 
@@ -148,7 +148,7 @@ def get_name_from_id(id: str):
     return response[0]["name"]
 
 
-@pn.cache()
+@pn.cache(max_items=1000, policy="LFU")
 def get_subj_from_id(id: str):
     """Get the subject ID from a record with the given ID.
 
@@ -168,7 +168,7 @@ def get_subj_from_id(id: str):
     return None
 
 
-@pn.cache()
+@pn.cache(max_items=1000, policy="LFU")
 def _raw_name_from_derived(s):
     """Returns just the raw asset name from an asset that is derived, i.e. has >= 4 underscores
 
@@ -188,7 +188,7 @@ def _raw_name_from_derived(s):
     return s
 
 
-@pn.cache(ttl=TIMEOUT_1H)
+@pn.cache(max_items=100, policy="LFU", ttl=TIMEOUT_1H)
 def get_assets_by_name(asset_name: str):
     """Get all assets that match a given asset name pattern.
 
@@ -224,6 +224,7 @@ def get_assets_by_subj(subj: str):
     return response
 
 
+@pn.cache(max_items=1, ttl=TIMEOUT_24H)
 def get_meta():
     """Get metadata information for all records.
 
@@ -240,7 +241,7 @@ def get_meta():
     return response
 
 
-@pn.cache(ttl=TIMEOUT_24H)  # twenty-four hour cache
+@pn.cache(max_items=1, ttl=TIMEOUT_24H)  # twenty-four hour cache
 def get_all():
     """Get a limited set of all records from the database.
 
@@ -261,7 +262,7 @@ def get_all():
     return response
 
 
-@pn.cache(ttl=TIMEOUT_1H)
+@pn.cache(max_items=20, policy="LFU", ttl=TIMEOUT_1H)
 def get_project_data(project_name: str):
     """Get detailed data for all records associated with a specific project.
 
@@ -305,7 +306,7 @@ def get_project_data(project_name: str):
     return response
 
 
-@pn.cache
+@pn.cache(max_items=1, ttl=TIMEOUT_1H)
 def get_subjects():
     """Get a list of all unique subject IDs from the database.
 
@@ -335,7 +336,7 @@ def get_subjects():
     return np.unique(subjects).tolist()
 
 
-@pn.cache
+@pn.cache(max_items=100, policy="LFU")
 def get_sessions(subject_id):
     """Get all session information for a given subject.
 

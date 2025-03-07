@@ -315,7 +315,7 @@ def _parse_type(reference, data, media_obj):
         return pn.widgets.StaticText(value=data)
 
 
-@pn.cache(ttl=MEDIA_TTL)
+@pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
 def _get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
 
@@ -333,7 +333,7 @@ def _get_s3_url(bucket, key):
     )
 
 
-@pn.cache()
+@pn.cache(max_items=1000, policy="LFU")
 def _get_s3_data(bucket, key):
     """Get an S3 asset from the given bucket and key
 
@@ -354,7 +354,7 @@ def _get_s3_data(bucket, key):
         return f"[ERROR] Failed to fetch asset {bucket}/{key}: {e}"
 
 
-@pn.cache(ttl=3500)  # cache with slightly less than one hour timeout
+@pn.cache(max_items=1000, policy="LFU", ttl=3500)  # cache with slightly less than one hour timeout
 def _get_kachery_cloud_url(hash: str):
     """Generate a kachery-cloud URL for the given hash
 
