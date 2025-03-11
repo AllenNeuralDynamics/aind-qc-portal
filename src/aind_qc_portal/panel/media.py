@@ -240,7 +240,7 @@ def _parse_rrd(reference, data):
         full_version = reference.split("_v")[1].split(".rrd")[0]
     else:
         full_version = "0.19.1"
-    src = f"https://app.rerun.io/version/{full_version}/index.html?url={data}"
+    src = f"https://app.rerun.io/version/{full_version}/index.html?url={encode_url(data)}"
     iframe_html = f'<iframe src="{src}" style="height:100%; width:100%" frameborder="0"></iframe>'
     return pn.pane.HTML(
         iframe_html,
@@ -321,6 +321,14 @@ def _parse_type(reference, data, media_obj):
         return pn.widgets.StaticText(value=data)
 
 
+def encode_url(url):
+    """Encode a URL"""
+    base_url, query_string = url.split("?")
+    encoded_query_string = urllib.parse.quote(query_string, safe="")
+
+    return f"{base_url}?{encoded_query_string}"
+
+
 @pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
 def _get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
@@ -332,17 +340,11 @@ def _get_s3_url(bucket, key):
     key : str
         S3 key name
     """
-    url = s3_client.generate_presigned_url(
+    return s3_client.generate_presigned_url(
         "get_object",
         Params={"Bucket": bucket, "Key": key},
         ExpiresIn=MEDIA_TTL,
     )
-
-    # parse special characters
-    base_url, query_string = url.split("?")
-    encoded_query_string = urllib.parse.quote(query_string, safe="")
-
-    return f"{base_url}?{encoded_query_string}"
 
 
 @pn.cache(max_items=1000, policy="LFU")
