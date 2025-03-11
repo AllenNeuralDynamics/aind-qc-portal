@@ -6,6 +6,7 @@ from io import BytesIO
 import param
 import boto3
 from pathlib import Path
+import urllib.parse
 from panel.reactive import ReactiveHTML
 from panel.custom import JSComponent
 import requests
@@ -13,7 +14,12 @@ import time
 import os
 from .panel_utils import reference_is_image, reference_is_video, reference_is_pdf
 
-s3_client = boto3.client("s3")
+s3_client = boto3.client(
+    "s3",
+    region_name='us-west-2',
+    config=boto3.session.Config(signature_version="s3v4"),
+)
+
 MEDIA_TTL = 3600  # 1 hour
 KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 
@@ -326,11 +332,17 @@ def _get_s3_url(bucket, key):
     key : str
         S3 key name
     """
-    return s3_client.generate_presigned_url(
+    url = s3_client.generate_presigned_url(
         "get_object",
         Params={"Bucket": bucket, "Key": key},
         ExpiresIn=MEDIA_TTL,
     )
+
+    # parse special characters
+    base_url, query_string = url.split("?")
+    encoded_query_string = urllib.parse.quote(query_string, safe="")
+
+    return f"{base_url}?{encoded_query_string}"
 
 
 @pn.cache(max_items=1000, policy="LFU")
