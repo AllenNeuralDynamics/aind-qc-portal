@@ -8,7 +8,11 @@ import param
 from aind_qc_portal.panel.quality_control import QCPanel
 from aind_qc_portal.utils import format_css_background
 from aind_qc_portal.docdb.database import id_from_name
+import threading
 
+# List all active threads
+threads = threading.enumerate()
+print("Active threads:", len(threads))
 
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
