@@ -16,7 +16,7 @@ from .panel_utils import reference_is_image, reference_is_video, reference_is_pd
 
 s3_client = boto3.client(
     "s3",
-    region_name='us-west-2',
+    region_name="us-west-2",
     config=boto3.session.Config(signature_version="s3v4"),
 )
 

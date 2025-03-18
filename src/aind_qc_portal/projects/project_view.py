@@ -16,10 +16,11 @@ from aind_qc_portal.projects.dataset import ALWAYS_COLUMNS
 class ProjectView:
     """Panel view of an entire project's assets"""
 
-    def __init__(self, dataset: ProjectDataset):
+    def __init__(self, dataset: ProjectDataset, show_chart: bool = False):
         """Create a new ProjectView object"""
         self.project_name = ""
         self.dataset = dataset
+        self.show_chart = show_chart
 
         self.df_pane = pn.widgets.Tabulator(
             self.dataset.data_filtered(),
@@ -185,22 +186,35 @@ class ProjectView:
 
         self.df_pane.value = self.dataset.data_filtered()
 
-        col = pn.Column(self.selection_history_chart, self.df_pane)
+        if self.show_chart:
+            col = pn.Column(self.selection_history_chart, self.df_pane)
+        else:
+            col = pn.Column(self.df_pane)
 
         return col
 
     def panel(self):
         """Return the panel object"""
 
-        return pn.Column(
-            self.history_chart,
-            pn.bind(
+        if self.show_chart:
+            return pn.Column(
+                self.history_chart,
+                pn.bind(
+                    self._panel,
+                    subject_filter=self.dataset.subject_selector,
+                    derived_filter=self.dataset.derived_selector,
+                    columns_filter=self.dataset.columns_selector,
+                    type_filter=self.dataset.type_selector,
+                    status_filter=self.dataset.status_selector,
+                ),
+                styles=OUTER_STYLE,
+            )
+        else:
+            return pn.bind(
                 self._panel,
                 subject_filter=self.dataset.subject_selector,
                 derived_filter=self.dataset.derived_selector,
                 columns_filter=self.dataset.columns_selector,
                 type_filter=self.dataset.type_selector,
                 status_filter=self.dataset.status_selector,
-            ),
-            styles=OUTER_STYLE,
-        )
+            )
