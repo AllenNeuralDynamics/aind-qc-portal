@@ -82,8 +82,6 @@ class ProjectView:
         # Calculate the time range to show on the x axis
         (min_range, max_range, range_unit, format) = df_timestamp_range(data[["timestamp"]])
 
-        print(data.columns)
-
         chart = (
             alt.Chart(data)
             .mark_bar()
