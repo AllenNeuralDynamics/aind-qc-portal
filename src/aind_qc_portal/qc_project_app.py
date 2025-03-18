@@ -42,6 +42,7 @@ class Settings(param.Parameterized):
     """Settings for the project view"""
 
     project_name = param.String(default="Learning mFISH-V1omFISH")
+    asset_plot = param.Boolean(default=False)
 
     def __init__(self, **params):
         """Initialize the settings"""
@@ -53,6 +54,18 @@ class Settings(param.Parameterized):
         self.project_name_selector = pn.widgets.Select(name="Project Name", options=project_names)
         self.project_name_selector.link(self, value="project_name")
 
+        self.asset_plot_toggle = pn.widgets.Toggle(name="Show Asset Plot", value=False)
+        self.asset_plot_toggle.link(self, value="asset_plot")
+
+        def swap_text(target, event):
+            """Swap the asset plot toggle text depending on its state"""
+            if event.new:
+                target.name = "Hide Asset Plot"
+            else:
+                target.name = "Show Asset Plot"
+
+        self.asset_plot_toggle.link(self.asset_plot_toggle, callbacks={"value": swap_text})
+
     def panel(self):
         """Return the settings Panel object"""
 
@@ -61,6 +74,7 @@ class Settings(param.Parameterized):
         col = pn.Column(
             header,
             self.project_name_selector,
+            self.asset_plot_toggle,
         )
 
         return col
@@ -71,15 +85,17 @@ pn.state.location.sync(
     settings,
     {
         "project_name": "project_name",
+        "asset_plot": "asset_plot",
     },
 )
 
 settings.project_name_selector.value = settings.project_name  # also sync to dropdown value
+settings.asset_plot_toggle.value = settings.asset_plot
 project_name_original = settings.project_name
 
 # Build the project view
 dataset = ProjectDataset(project_name=settings.project_name)
-project_view = ProjectView(dataset=dataset)
+project_view = ProjectView(dataset=dataset, show_chart=settings.asset_plot)
 
 pn.state.location.sync(
     dataset,
@@ -121,6 +137,11 @@ def refresh(project_name):
     return hidden_html
 
 
+def force_refresh(event):
+    """Force a refresh of the project view"""
+    hidden_html.object = "<script>window.location.reload();</script>"
+
+
 # Add the header project dropdown list
 interactive_header = pn.bind(update_header, settings.project_name_selector)
 header = pn.Row(interactive_header, pn.HSpacer(), width=990, styles=OUTER_STYLE)
@@ -128,6 +149,7 @@ header = pn.Row(interactive_header, pn.HSpacer(), width=990, styles=OUTER_STYLE)
 setting_panel = settings.panel()
 
 interactive_refresh = pn.bind(refresh, project_name=settings.project_name_selector)
+settings.param.watch(force_refresh, "asset_plot")
 
 main_col = pn.Column(header, project_view.panel(), interactive_refresh, width=1000)
 
