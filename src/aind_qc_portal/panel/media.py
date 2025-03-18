@@ -149,29 +149,24 @@ toggleFullScreen()
     }
 
 
-class Media:
-    """A Media object that can display images, videos, and other media types."""
-    
-    data = param.Parameterized()
+class MediaData(param.Parameterized):
+    """ Media data attached to the Media object"""
 
-    def __init__(self, reference: str, parent, callback=None):
-        """Build a media object
+    data = param.Parameter()
 
-        Parameters
-        ----------
-        reference : string
-        parent : _type_
-        callback : _type_, optional
-        """
-
-        self.parent = parent
+    def __init__(self, reference: str, parent, media_obj):
+        """ Build data object """
         self.reference = reference
-        pn.state.onload(self.get_data)
-        self.value_callback = callback
+        self.parent = parent
+        self.media_obj = media_obj
 
     def get_data(self):
-        """Return the data object"""
+        """ Get data from the server """
+        print("Getting data")
         self.data = self.parse_reference(self.reference)
+        # self.param.update(data=self.parse_reference(self.reference))
+        self.param.trigger("data")
+        print("Got data")
 
     def parse_reference(self, reference: str):
         """Parse the reference string and return the appropriate media object
@@ -218,15 +213,41 @@ class Media:
             return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
         # Step 2: parse the type and return the appropriate object
-        return _parse_type(reference, reference_data, self)
+        return _parse_type(reference, reference_data, self.media_obj)
+
+
+class Media:
+    """A Media object that can display images, videos, and other media types."""
+
+    def __init__(self, reference: str, parent, callback=None):
+        """Build a media object
+
+        Parameters
+        ----------
+        reference : string
+        parent : _type_
+        callback : _type_, optional
+        """
+
+        self.parent = parent
+        self.reference = reference
+        self.value_callback = callback
+        self.data = MediaData(reference, parent, self)
+
+        # Defer loading data asynchronously
+        pn.state.onload(self.data.get_data)
 
     def _panel(self, data):  # pragma: no cover
         """Return the media object as a Panel object"""
+        print(f"Called with data: {data}")
+        if not data:
+            return pn.indicators.LoadingSpinner(value=True)
+
         return Fullscreen(data, sizing_mode="stretch_width", max_height=1200)
 
     def panel(self):  # pragma: no cover
         """Return the media object as a Panel object"""
-        return pn.bind(self._panel, data=self.param.data)
+        return pn.bind(self._panel, data=self.data.param.data)
 
 
 def _get_s3_file(url, ext):
