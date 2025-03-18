@@ -26,6 +26,7 @@ dependencies = [
     'boto3',
     's3fs',
     'aind-qcportal-schema',
+    'httpx',
 ]
 
 [project.optional-dependencies]

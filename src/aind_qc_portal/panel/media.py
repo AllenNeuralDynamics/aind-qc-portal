@@ -151,6 +151,8 @@ toggleFullScreen()
 
 class Media:
     """A Media object that can display images, videos, and other media types."""
+    
+    data = param.Parameterized()
 
     def __init__(self, reference: str, parent, callback=None):
         """Build a media object
@@ -163,8 +165,13 @@ class Media:
         """
 
         self.parent = parent
-        self.object = self.parse_reference(reference)
+        self.reference = reference
+        pn.state.onload(self.get_data)
         self.value_callback = callback
+
+    def get_data(self):
+        """Return the data object"""
+        self.data = self.parse_reference(self.reference)
 
     def parse_reference(self, reference: str):
         """Parse the reference string and return the appropriate media object
@@ -213,9 +220,13 @@ class Media:
         # Step 2: parse the type and return the appropriate object
         return _parse_type(reference, reference_data, self)
 
+    def _panel(self, data):  # pragma: no cover
+        """Return the media object as a Panel object"""
+        return Fullscreen(data, sizing_mode="stretch_width", max_height=1200)
+
     def panel(self):  # pragma: no cover
         """Return the media object as a Panel object"""
-        return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
+        return pn.bind(self._panel, data=self.param.data)
 
 
 def _get_s3_file(url, ext):
