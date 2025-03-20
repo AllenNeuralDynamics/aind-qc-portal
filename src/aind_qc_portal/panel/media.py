@@ -3,6 +3,7 @@
 import tempfile
 import panel as pn
 from io import BytesIO
+import httpx
 import param
 import boto3
 from pathlib import Path
@@ -160,7 +161,7 @@ class MediaData(param.Parameterized):
         self.parent = parent
         self.media_obj = media_obj
 
-    def get_data(self):
+    async def get_data(self):
         """ Get data from the server """
         print("Getting data")
         self.data = self.parse_reference(self.reference)
@@ -168,7 +169,7 @@ class MediaData(param.Parameterized):
         self.param.trigger("data")
         print("Got data")
 
-    def parse_reference(self, reference: str):
+    async def parse_reference(self, reference: str):
         """Parse the reference string and return the appropriate media object
 
         Parameters
@@ -213,7 +214,7 @@ class MediaData(param.Parameterized):
             return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
         # Step 2: parse the type and return the appropriate object
-        return _parse_type(reference, reference_data, self.media_obj)
+        return await _parse_type(reference, reference_data, self.media_obj)
 
 
 class Media:
@@ -250,7 +251,7 @@ class Media:
         return pn.bind(self._panel, data=self.data.param.data)
 
 
-def _get_s3_file(url, ext):
+async def _get_s3_file(url, ext):
     """Get an S3 file from the given URL"""
     try:
         response = requests.get(url)
@@ -306,7 +307,7 @@ def _parse_sortingview(reference, data, media_obj):
     )
 
 
-def _parse_type(reference, data, media_obj):
+async def _parse_type(reference, data, media_obj):
     """Interpret the media type from the reference string
 
     Parameters
@@ -319,7 +320,7 @@ def _parse_type(reference, data, media_obj):
     # print(f"Parsing type: {reference} with data: {data}")
 
     if "https://s3" in data:
-        data = _get_s3_file(data, os.path.splitext(reference)[1])
+        data = await _get_s3_file(data, os.path.splitext(reference)[1])
 
         if not data:
             return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
