@@ -233,10 +233,14 @@ def get_meta():
     list[dict]
         List of records containing ID, name, and quality control information.
     """
-    response = client.aggregate_docdb_records(
-        pipeline=[
-            {"$project": {"_id": 1, "name": 1, "quality_control": 1}},
-        ]
+    response = client.retrieve_docdb_records(
+        filter_query={},
+        projection={
+            "_id": 1,
+            "name": 1,
+            "quality_control": 1,
+        },
+        limit=0,
     )
     return response
 
