@@ -180,9 +180,7 @@ class Media(param.Parameterized):
 
     def on_load(self):
         # asyncio.create_task(self.parse_reference())
-        pn.state.curdoc.add_next_tick_callback(
-            lambda: asyncio.ensure_future(self.parse_reference())
-        )
+        pn.state.curdoc.add_next_tick_callback(lambda: asyncio.ensure_future(self.parse_reference()))
 
     async def parse_reference(self):
         """Parse the reference string and return the appropriate media object
@@ -196,10 +194,12 @@ class Media(param.Parameterized):
 
         # Deal with swipe panels first
         if ";" in reference:
-            self.set_media_object(pn.layout.Swipe(
-                self.parse_reference(reference.split(";")[0]),
-                self.parse_reference(reference.split(";")[1]),
-            ))
+            self.set_media_object(
+                pn.layout.Swipe(
+                    self.parse_reference(reference.split(";")[0]),
+                    self.parse_reference(reference.split(";")[1]),
+                )
+            )
             return
 
         # Strip slashes at the start of the reference
@@ -284,7 +284,7 @@ async def _get_s3_file(url, ext):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
-            
+
         if response.status_code == 200:
             with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
                 temp_file.write(response.content)
@@ -351,7 +351,6 @@ def _parse_sortingview(reference, data, media_obj):
         ),
         curation_data,
     )
-
 
 
 def encode_url(url):
