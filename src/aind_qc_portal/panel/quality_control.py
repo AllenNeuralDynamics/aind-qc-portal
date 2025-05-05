@@ -52,6 +52,7 @@ class QCPanel(param.Parameterized):
 
         # Get the actual data for this record
         self._has_data = False
+        self.lazy_load = False
         self.update()
 
     def _update_modality_filter(self, event):
@@ -135,6 +136,14 @@ class QCPanel(param.Parameterized):
 
         if not self._has_data:
             return
+
+        # Count metrics so we can set whether to lazy load objects
+        self.metric_count = 0
+        for evaluation in self._data.evaluations:
+            self.metric_count += len(evaluation.metrics)
+
+        if self.metric_count > 50:
+            self.lazy_load = True
 
         self.stages = list({evaluation.stage for evaluation in self._data.evaluations})
         self.tags = list({tag for evaluation in self._data.evaluations if evaluation.tags for tag in evaluation.tags})
@@ -366,6 +375,7 @@ Status: **{qc_status_html((self._data.status(date=datetime.now(tz=timezone.utc))
             sizing_mode="stretch_width",
             styles=OUTER_STYLE,
             tabs_location="left",
+            dynamic=self.lazy_load,
         )
         self.tabs.param.watch(update_active_evaluation, ["active"])
         self.update_tabs_from_filters()

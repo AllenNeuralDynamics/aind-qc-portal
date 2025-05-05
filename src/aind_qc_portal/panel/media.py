@@ -3,9 +3,12 @@
 import tempfile
 import panel as pn
 from io import BytesIO
+import asyncio
 import param
 import boto3
+import httpx
 from pathlib import Path
+import urllib.parse
 from panel.reactive import ReactiveHTML
 from panel.custom import JSComponent
 import requests
@@ -13,7 +16,12 @@ import time
 import os
 from .panel_utils import reference_is_image, reference_is_video, reference_is_pdf
 
-s3_client = boto3.client("s3")
+s3_client = boto3.client(
+    "s3",
+    region_name="us-west-2",
+    config=boto3.session.Config(signature_version="s3v4"),
+)
+
 MEDIA_TTL = 3600  # 1 hour
 KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 
@@ -143,8 +151,11 @@ toggleFullScreen()
     }
 
 
-class Media:
+class Media(param.Parameterized):
     """A Media object that can display images, videos, and other media types."""
+
+    reference = param.String(default="")
+    reference_data = param.String(default=None, allow_None=True)
 
     def __init__(self, reference: str, parent, callback=None):
         """Build a media object
@@ -157,24 +168,39 @@ class Media:
         """
 
         self.parent = parent
-        self.object = self.parse_reference(reference)
+        self.reference = reference
         self.value_callback = callback
 
-    def parse_reference(self, reference: str):
+        self.spinner = pn.indicators.LoadingSpinner(value=True, size=50, name="Loading...")
+        self.content = pn.Column(
+            self.spinner,
+        )
+
+        pn.state.onload(self.on_load)
+
+    def on_load(self):
+        # asyncio.create_task(self.parse_reference())
+        pn.state.curdoc.add_next_tick_callback(lambda: asyncio.ensure_future(self.parse_reference()))
+
+    async def parse_reference(self):
         """Parse the reference string and return the appropriate media object
 
         Parameters
         ----------
         reference : str
         """
-        print(f"Parsing reference: {reference}")
+        print(f"Parsing reference: {self.reference}")
+        reference = self.reference
 
         # Deal with swipe panels first
         if ";" in reference:
-            return pn.layout.Swipe(
-                self.parse_reference(reference.split(";")[0]),
-                self.parse_reference(reference.split(";")[1]),
+            self.set_media_object(
+                pn.layout.Swipe(
+                    self.parse_reference(reference.split(";")[0]),
+                    self.parse_reference(reference.split(";")[1]),
+                )
             )
+            return
 
         # Strip slashes at the start of the reference
         if reference.startswith("/"):
@@ -183,39 +209,82 @@ class Media:
         # Step 1: get the data
         # possible sources are: http, s3, local data asset, figurl
         if "http" in reference:
-            reference_data = reference
+            self.reference_data = reference
         elif "s3" in reference:
             bucket = reference.split("/")[2]
             key = "/".join(reference.split("/")[3:])
-            reference_data = _get_s3_url(bucket, key)
+            self.reference_data = _get_s3_url(bucket, key)
         elif "sha" in reference:
-            reference_data = _get_kachery_cloud_url(reference)
+            self.reference_data = _get_kachery_cloud_url(reference)
         else:
             # assume local data asset_get_s3_asset
 
             # if a user appends extra things up to results/, strip that
             if "results/" in reference:
                 reference = reference.split("results/")[1]
-            reference_data = _get_s3_url(
+            self.reference_data = _get_s3_url(
                 self.parent.s3_bucket,
                 str(Path(self.parent.s3_prefix) / reference),
             )
 
-        if not reference_data:
-            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
+        if not self.reference_data:
+            self.set_media_object(pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger"))
+            return
 
-        # Step 2: parse the type and return the appropriate object
-        return _parse_type(reference, reference_data, self)
+        # print(f"Parsing type: {reference} with data: {data}")
+
+        if self.reference_data and "https://s3" in self.reference_data:
+            self.reference_data = await _get_s3_file(self.reference_data, os.path.splitext(reference)[1])
+
+            if not self.reference_data:
+                obj = pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
+
+        if reference_is_image(reference):
+            obj = pn.pane.Image(self.reference_data, sizing_mode="scale_width", max_width=1200)
+        elif reference_is_pdf(reference):
+            obj = pn.pane.PDF(self.reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
+        elif reference_is_video(reference):
+            # Return the Video pane using the temporary file
+            obj = pn.pane.Video(
+                self.reference_data,
+                sizing_mode="scale_width",
+                max_width=1200,
+            )
+        elif "rrd" in reference:
+            # files should be in the format name_vX.Y.Z.rrd
+            obj = _parse_rrd(reference, self.reference_data)
+        elif "sortingview" in reference:
+            obj = _parse_sortingview(reference, self.reference_data, self)
+        elif "neuroglancer" in reference:
+            iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
+            obj = pn.pane.HTML(
+                iframe_html,
+                sizing_mode="stretch_width",
+                height=1000,
+            )
+        elif "http" in reference:
+            obj = pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
+        else:
+            obj = pn.widgets.StaticText(value=self.reference_data)
+
+        self.set_media_object(obj)
+
+    def set_media_object(self, obj):
+        """Set the media object to the given object"""
+        self.spinner.visible = False
+        self.content.append(obj)
 
     def panel(self):  # pragma: no cover
         """Return the media object as a Panel object"""
-        return Fullscreen(self.object, sizing_mode="stretch_width", max_height=1200)
+        return Fullscreen(self.content, sizing_mode="stretch_width", max_height=1200)
 
 
-def _get_s3_file(url, ext):
-    """Get an S3 file from the given URL"""
+async def _get_s3_file(url, ext):
+    """Get an S3 file from the given URL asynchronously"""
     try:
-        response = requests.get(url)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+
         if response.status_code == 200:
             with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
                 temp_file.write(response.content)
@@ -228,13 +297,29 @@ def _get_s3_file(url, ext):
         return None
 
 
+# def _get_s3_file(url, ext):
+#     """Get an S3 file from the given URL"""
+#     try:
+#         response = requests.get(url)
+#         if response.status_code == 200:
+#             with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
+#                 temp_file.write(response.content)
+#             return temp_file.name
+#         else:
+#             print(f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}")
+#             return None
+#     except Exception as e:
+#         print(f"[ERROR] Failed to fetch asset {url}, error: {e}")
+#         return None
+
+
 def _parse_rrd(reference, data):
     """Parse an RRD file and return the appropriate object"""
     if "_v" in reference:
         full_version = reference.split("_v")[1].split(".rrd")[0]
     else:
         full_version = "0.19.1"
-    src = f"https://app.rerun.io/version/{full_version}/index.html?url={data}"
+    src = f"https://app.rerun.io/version/{full_version}/index.html?url={encode_url(data)}"
     iframe_html = f'<iframe src="{src}" style="height:100%; width:100%" frameborder="0"></iframe>'
     return pn.pane.HTML(
         iframe_html,
@@ -268,54 +353,15 @@ def _parse_sortingview(reference, data, media_obj):
     )
 
 
-def _parse_type(reference, data, media_obj):
-    """Interpret the media type from the reference string
+def encode_url(url):
+    """Encode a URL"""
+    base_url, query_string = url.split("?")
+    encoded_query_string = urllib.parse.quote(query_string, safe="")
 
-    Parameters
-    ----------
-    reference : _type_
-                    _description_
-    data : _type_
-                    _description_
-    """
-    # print(f"Parsing type: {reference} with data: {data}")
-
-    if "https://s3" in data:
-        data = _get_s3_file(data, os.path.splitext(reference)[1])
-
-        if not data:
-            return pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
-
-    if reference_is_image(reference):
-        return pn.pane.Image(data, sizing_mode="scale_width", max_width=1200)
-    elif reference_is_pdf(reference):
-        return pn.pane.PDF(data, sizing_mode="scale_width", max_width=1200, height=1000)
-    elif reference_is_video(reference):
-        # Return the Video pane using the temporary file
-        return pn.pane.Video(
-            data,
-            sizing_mode="scale_width",
-            max_width=1200,
-        )
-    elif "rrd" in reference:
-        # files should be in the format name_vX.Y.Z.rrd
-        return _parse_rrd(reference, data)
-    elif "sortingview" in reference:
-        return _parse_sortingview(reference, data, media_obj)
-    elif "neuroglancer" in reference:
-        iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
-        return pn.pane.HTML(
-            iframe_html,
-            sizing_mode="stretch_width",
-            height=1000,
-        )
-    elif "http" in reference:
-        return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
-    else:
-        return pn.widgets.StaticText(value=data)
+    return f"{base_url}?{encoded_query_string}"
 
 
-@pn.cache(ttl=MEDIA_TTL)
+@pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
 def _get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
 
@@ -333,7 +379,7 @@ def _get_s3_url(bucket, key):
     )
 
 
-@pn.cache()
+@pn.cache(max_items=1000, policy="LFU")
 def _get_s3_data(bucket, key):
     """Get an S3 asset from the given bucket and key
 
@@ -354,7 +400,7 @@ def _get_s3_data(bucket, key):
         return f"[ERROR] Failed to fetch asset {bucket}/{key}: {e}"
 
 
-@pn.cache(ttl=3500)  # cache with slightly less than one hour timeout
+@pn.cache(max_items=1000, policy="LFU", ttl=3500)  # cache with slightly less than one hour timeout
 def _get_kachery_cloud_url(hash: str):
     """Generate a kachery-cloud URL for the given hash
 
