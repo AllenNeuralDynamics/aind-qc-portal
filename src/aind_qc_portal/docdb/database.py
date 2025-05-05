@@ -224,8 +224,8 @@ def get_assets_by_subj(subj: str):
     return response
 
 
-@pn.cache(max_items=1, ttl=TIMEOUT_24H)
-def get_meta():
+@pn.cache(max_items=2, ttl=TIMEOUT_24H)
+def get_meta(limit: int = 1000):
     """Get metadata information for all records.
 
     Returns
@@ -240,7 +240,7 @@ def get_meta():
             "name": 1,
             "quality_control": 1,
         },
-        limit=0,
+        limit=limit,
     )
     return response
 

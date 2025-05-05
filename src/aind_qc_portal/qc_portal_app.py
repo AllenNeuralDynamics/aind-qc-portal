@@ -27,14 +27,24 @@ pn.extension()
 format_css_background()
 
 
+class LimitSettings(param.Parameterized):
+    limit = param.Boolean(default=False)
+
+
+limit_setings = LimitSettings()
+pn.state.location.sync(
+    limit_setings, {"limit": "unlimited"}
+)
+
+
 class SearchOptions(param.Parameterized):
     """Search options for portal"""
 
-    def __init__(self):
+    def __init__(self, unlimited: bool = False):
         """Initialize a search options object"""
 
         data = []
-        meta_list = get_meta()
+        meta_list = get_meta(limit=0 if unlimited else 1000)
 
         self.shame = []
 
@@ -152,7 +162,7 @@ class SearchOptions(param.Parameterized):
         return list(set(self.df["name"].values))
 
 
-options = SearchOptions()
+options = SearchOptions(unlimited=limit_setings.limit)
 
 
 class SearchView(param.Parameterized):

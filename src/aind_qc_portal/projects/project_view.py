@@ -82,10 +82,11 @@ class DataframeGroupPanel:
 class ProjectView:
     """Panel view of an entire project's assets"""
 
-    def __init__(self, dataset: ProjectDataset):
+    def __init__(self, dataset: ProjectDataset, show_chart: bool = False):
         """Create a new ProjectView object"""
         self.project_name = ""
         self.dataset = dataset
+        self.show_chart = show_chart
 
         self.df_pane = DataframeGroupPanel(pd.DataFrame(), False, False)
 
@@ -220,7 +221,7 @@ class ProjectView:
         )
 
         return pn.pane.Vega(chart, sizing_mode="stretch_width")
-    
+
     def _selection_history_panel(
         self,
         group_filter,
@@ -265,16 +266,6 @@ class ProjectView:
     def panel(self):
         """Return the panel object"""
 
-        selection_chart = pn.bind(
-            self._selection_history_panel,
-            group_filter=self.dataset.group_selector,
-            subject_filter=self.dataset.subject_selector,
-            derived_filter=self.dataset.derived_selector,
-            columns_filter=self.dataset.columns_selector,
-            type_filter=self.dataset.type_selector,
-            status_filter=self.dataset.status_selector,
-        )
-
         data_col = pn.bind(
             self._dataframe_panel,
             group_filter=self.dataset.group_selector,
@@ -285,11 +276,25 @@ class ProjectView:
             status_filter=self.dataset.status_selector,
         )
 
-        return pn.Column(
-            pn.Column(
-                self.history_chart,
-                selection_chart,
-                styles=OUTER_STYLE,
-            ),
-            data_col,
-        )
+        if self.show_chart:
+
+            selection_chart = pn.bind(
+                self._selection_history_panel,
+                group_filter=self.dataset.group_selector,
+                subject_filter=self.dataset.subject_selector,
+                derived_filter=self.dataset.derived_selector,
+                columns_filter=self.dataset.columns_selector,
+                type_filter=self.dataset.type_selector,
+                status_filter=self.dataset.status_selector,
+            )
+
+            return pn.Column(
+                pn.Column(
+                    self.history_chart,
+                    selection_chart,
+                    styles=OUTER_STYLE,
+                ),
+                data_col,
+            )
+        else:
+            return data_col
