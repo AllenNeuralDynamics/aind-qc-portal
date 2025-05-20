@@ -3,12 +3,12 @@
 import tempfile
 import panel as pn
 from io import BytesIO
-import asyncio
 import param
 import boto3
 import httpx
 from pathlib import Path
 import urllib.parse
+import asyncio
 from panel.reactive import ReactiveHTML
 from panel.custom import JSComponent
 from tornado.ioloop import IOLoop
@@ -179,22 +179,25 @@ class Media(param.Parameterized):
 
         IOLoop.current().add_callback(self.parse_reference)
 
-    async def parse_reference(self):
+    async def parse_reference(self, reference=None):
         """Parse the reference string and return the appropriate media object
 
         Parameters
         ----------
         reference : str
         """
+        if not reference:
+            reference = self.reference
         print(f"Parsing reference: {self.reference}")
-        reference = self.reference
+
+        await asyncio.sleep(5)
 
         # Deal with swipe panels first
         if ";" in reference:
             self.set_media_object(
                 pn.layout.Swipe(
-                    self.parse_reference(reference.split(";")[0]),
-                    self.parse_reference(reference.split(";")[1]),
+                    await self.parse_reference(reference.split(";")[0]),
+                    await self.parse_reference(reference.split(";")[1]),
                 )
             )
             return
@@ -398,7 +401,7 @@ def _get_s3_data(bucket, key):
 
 
 @pn.cache(max_items=1000, policy="LFU", ttl=3500)  # cache with slightly less than one hour timeout
-def _get_kachery_cloud_url(hash: str):
+async def _get_kachery_cloud_url(hash: str):
     """Generate a kachery-cloud URL for the given hash
 
     Parameters
@@ -430,7 +433,9 @@ def _get_kachery_cloud_url(hash: str):
         }
     }
 
-    response = requests.post(url, headers=headers, json=data)
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers=headers, json=data)
+
     if response.status_code != 200:
         return f"[ERROR] Failed to fetch asset {simplified_hash}: {response.text}"
 
