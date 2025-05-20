@@ -11,6 +11,7 @@ from pathlib import Path
 import urllib.parse
 from panel.reactive import ReactiveHTML
 from panel.custom import JSComponent
+from tornado.ioloop import IOLoop
 import requests
 import time
 import os
@@ -176,11 +177,7 @@ class Media(param.Parameterized):
             self.spinner,
         )
 
-        pn.state.onload(self.on_load)
-
-    def on_load(self):
-        # asyncio.create_task(self.parse_reference())
-        pn.state.curdoc.add_next_tick_callback(lambda: asyncio.ensure_future(self.parse_reference()))
+        IOLoop.current().add_callback(self.parse_reference)
 
     async def parse_reference(self):
         """Parse the reference string and return the appropriate media object
