@@ -3,7 +3,6 @@
 import tempfile
 import panel as pn
 from io import BytesIO
-import asyncio
 import param
 import boto3
 import httpx
