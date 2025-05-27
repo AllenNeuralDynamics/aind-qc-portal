@@ -92,9 +92,7 @@ class QCPanel(param.Parameterized):
         json_data = record_from_id(self.id)
 
         # Basic checks
-        if not json_data:
-            return
-        if "quality_control" in json_data:
+        if json_data and "quality_control" in json_data:
             self._has_data = True
         else:
             return
