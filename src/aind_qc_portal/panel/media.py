@@ -272,6 +272,7 @@ class Media(param.Parameterized):
     def set_media_object(self, obj):
         """Set the media object to the given object"""
         self.spinner.visible = False
+        self.content.clear()
         self.content.append(obj)
 
     def panel(self):  # pragma: no cover
