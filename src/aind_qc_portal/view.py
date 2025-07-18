@@ -20,11 +20,11 @@ format_css_background()
 class Settings(param.Parameterized):
     """Top-level settings for QC app"""
 
-    id = param.String(default="0ff3a040-b590-495a-825b-d2424b6ecacc")
+    name = param.String(default="0ff3a040-b590-495a-825b-d2424b6ecacc", allow_None=True)
 
 
 settings = Settings()
-pn.state.location.sync(settings, {"id": "id"})
+pn.state.location.sync(settings, {"location": "location"})
 
 # Check if the user passed a name instead of an id
 if pn.state.location.query_params.get("name"):
