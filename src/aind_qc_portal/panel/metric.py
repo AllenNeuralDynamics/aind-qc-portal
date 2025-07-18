@@ -56,6 +56,8 @@ class QCMetricValuePanel:
     @property
     def data(self):
         """Return the data object"""
+        if self._data.reference and "__empty__" in self._data.reference:
+            self._data.reference = None
         return self._data
 
     def set_value(self, event):
