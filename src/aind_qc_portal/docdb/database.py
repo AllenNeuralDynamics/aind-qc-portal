@@ -1,6 +1,5 @@
 """ Database access functions for the AIND QC Portal."""
 
-import os
 from typing import Optional
 
 import numpy as np
@@ -9,18 +8,13 @@ from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_schema.core.quality_control import QualityControl
 from aind_data_access_api.helpers.docdb import get_projection_by_id, get_id_from_name
 
-API_GATEWAY_HOST = os.getenv("API_GATEWAY_HOST", "api.allenneuraldynamics-test.org")
-DATABASE = os.getenv("DATABASE", "metadata_index")
-COLLECTION = os.getenv("COLLECTION", "data_assets")
-
 TIMEOUT_1M = 60
 TIMEOUT_1H = 60 * 60
 TIMEOUT_24H = 60 * 60 * 24
 
 client = MetadataDbClient(
-    host=API_GATEWAY_HOST,
-    database=DATABASE,
-    collection=COLLECTION,
+    host="api.allenneuraldynamics.org",
+    version="v2",
 )
 
 
