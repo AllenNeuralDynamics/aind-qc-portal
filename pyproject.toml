@@ -18,14 +18,14 @@ dynamic = ["version"]
 
 dependencies = [
     'pydantic',
-    'aind-data-schema',
+    'aind-data-schema>=2.0.0',
     'aind-data-access-api[docdb]',
-    'panel>=1.6.1',
+    'panel>=1.7.4',
     'altair',
     'matplotlib',
     'boto3',
     's3fs',
-    'aind-qcportal-schema',
+    'aind-qcportal-schema>=0.5.0',
     'httpx',
 ]
 
