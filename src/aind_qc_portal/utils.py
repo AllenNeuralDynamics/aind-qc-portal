@@ -136,7 +136,7 @@ def qc_status_color_css(status):
     str
         CSS style string
     """
-    return f"background-color: {_qc_status_color(status)}"
+    return f"background-color: {_qc_status_color(status)}; color: white;"
 
 
 def qc_status_html(status: Status | str, text: str = ""):

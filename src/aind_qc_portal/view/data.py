@@ -69,6 +69,24 @@ class ViewData(param.Parameterized):
 
         return QualityControl(**quality_control)
 
+    @property
+    def default_grouping(self):
+        """Get the default grouping for this record"""
+        qc = self.get_quality_control()
+        return qc.default_grouping
+
+    @property
+    def grouping_options(self):
+        """Get the grouping options for this record: all modalities and tags"""
+
+        qc = self.get_quality_control()
+
+        # Get all the modalities and tags
+        modalities = [m.abbreviation for m in qc.modalities]
+        tags = qc.default_grouping
+
+        return modalities + tags
+
     @pn.depends("dataframe", watch=True)
     def _compute_status(self):
         """Compute the status for modalities, stages, and default_grouping tags"""
@@ -90,23 +108,26 @@ class ViewData(param.Parameterized):
                 )
                 statuses.append({
                     "stage": stage,
-                    "tag": modality,
-                    "status": cstatus,
+                    "tag": modality.abbreviation,
+                    "status": cstatus.value,
                 })
 
             for tag in default_grouping:
                 cstatus = qc.evaluate_status(
-                    stage=None,
+                    stage=stage,
                     modality=None,
                     tag=tag,
                 )
                 statuses.append({
-                    "stage": None,
+                    "stage": stage,
                     "tag": tag,
-                    "status": cstatus,
+                    "status": cstatus.value,
                 })
 
-        self.status = pd.DataFrame(statuses)
+        # Re-organize the DataFrame from long form to wide, with stage as rows and tags as columns
+        self.status = pd.DataFrame(statuses).pivot(index="stage", columns="tag", values="status")
+        self.status.columns.name = None
+        self.status.reset_index(inplace=True)
 
     # @pn.cache(max_items=1000, policy="LFU")
     def _load_record(self):
