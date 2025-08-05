@@ -18,13 +18,13 @@ client = MetadataDbClient(
 
 
 @pn.cache(max_items=1000, policy="LFU")
-def get_qc_df_from_id(id: str) -> tuple[dict, Optional[pd.DataFrame]]:
-    """Get a QualityControl object from the database by its unique identifier.
+def get_qc_df_from_name(name: str) -> tuple[dict, Optional[pd.DataFrame]]:
+    """Get a QualityControl object from the database by its name.
 
     Parameters
     ----------
-    id : str
-        The unique identifier of the QualityControl record.
+    name : str
+        The name field of the record.
 
     Returns
     -------
@@ -33,7 +33,7 @@ def get_qc_df_from_id(id: str) -> tuple[dict, Optional[pd.DataFrame]]:
     """
     records = client.retrieve_docdb_records(
         filter_query={
-            "_id": id,
+            "name": name,
         },
         projection={"quality_control": 1},
     )
