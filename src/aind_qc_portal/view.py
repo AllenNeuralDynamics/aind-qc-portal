@@ -6,7 +6,7 @@ import param
 
 # Setup Panel and Altair
 from aind_qc_portal.utils import format_css_background
-from aind_qc_portal.view.database import ViewData
+from aind_qc_portal.view.data import ViewData
 from aind_qc_portal.view.panel import QCPanel
 
 
@@ -28,6 +28,6 @@ pn.state.location.sync(settings, {"name": "name"})
 
 data = ViewData(name=settings.name)
 
-qc_panel = QCPanel(name=settings.name, data=data)
+qc_panel = QCPanel(record_name=settings.name, data=data)
 
 qc_panel.__panel__().servable(title="AIND QC - View")
