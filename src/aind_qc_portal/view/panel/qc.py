@@ -4,6 +4,22 @@ import param
 import pandas as pd
 
 
+
+import pandas as pd
+
+
+class DataAsset():
+    
+    def __init__(self, name: str, description: str, data: pd.DataFrame):
+        self.name = name
+        self.description = description
+        self.data = data
+
+    def analyze(self):
+        """Perform analysis on the data asset"""
+        # Placeholder for analysis logic
+    
+
 class Metric(PyComponent):
     """Panel for displaying a single metric"""
     
@@ -38,7 +54,7 @@ class MetricValue(PyComponent):
     name = param.String(default="")
     value = param.String(default="")
 
-    def __init__(self, name: str, value: str):
+    def __init__(self, name: str, value: str, value_callback, status_callback):
         super().__init__()
         self.name = name
         self.value = value
