@@ -18,7 +18,7 @@ dynamic = ["version"]
 
 dependencies = [
     'pydantic',
-    'aind-data-schema',
+    'aind-data-schema<2.0.0',
     'aind-data-access-api[docdb]',
     'panel>=1.6.1',
     'altair',
