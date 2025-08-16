@@ -23,9 +23,10 @@ class ViewData(param.Parameterized):
 
     name = param.String(default="")
     record = param.Dict(default=None, allow_None=True)
-    dataframe = param.DataFrame(default=pd.DataFrame(), allow_None=True)
+    dataframe = param.DataFrame(default=pd.DataFrame())
     status = param.DataFrame(default=None, allow_None=True)
 
+    changes = param.DataFrame(default=pd.DataFrame(columns=["metric_name", "column_name", "value"]),)
     dirty = param.Integer(default=0, doc="Number of unsaved changes")
 
     def __init__(self, name: str, client: MetadataDbClient = client):
@@ -34,6 +35,23 @@ class ViewData(param.Parameterized):
         self.name = name
 
         self._load_record()
+
+    def _add_change(self, metric_name: str, column_name: str, value: str):
+        """Add a change to the changes DataFrame"""
+        self.changes = self.changes.append({
+            "metric_name": metric_name,
+            "column_name": column_name,
+            "value": value,
+        }, ignore_index=True)
+        self._dirty += 1
+
+    def _remove_change(self, metric_name: str, column_name: str):
+        """Remove a change from the changes DataFrame"""
+        if not self.changes.empty:
+            self.changes = self.changes[
+                ~((self.changes["metric_name"] == metric_name) & (self.changes["column_name"] == column_name))
+            ]
+            self._dirty -= 1
 
     def submit_change(self, metric_name: str, column_name: str, value: str):
         """Submit a change to the database"""
@@ -47,10 +65,26 @@ class ViewData(param.Parameterized):
         if column_name not in self.dataframe.columns:
             raise ValueError(f"Column {column_name} not found in dataframe")
 
-        # Only update if the value has changed
-        if value != self.dataframe.loc[self.dataframe["name"] == metric_name, column_name].values[0]:
-            self.dataframe.loc[self.dataframe["name"] == metric_name, column_name] = value
-            self._dirty += 1
+        # Only update if the value is different from the original value
+        original_value = self.dataframe.loc[self.dataframe["name"] == metric_name, column_name].values[0]
+        if value != original_value:
+            # Check if the value is already in the changes DataFrame
+            if not self.changes.empty:
+                existing_change = self.changes[
+                    (self.changes["metric_name"] == metric_name) & (self.changes["column_name"] == column_name)
+                ]
+                if not existing_change.empty:
+                    # Update the existing change
+                    self.changes.loc[existing_change.index[0], "value"] = value
+                else:
+                    self._add_change(metric_name, column_name, value)
+        else:
+            # If the value is the same, remove the change if it exists
+            if not self.changes.empty:
+                if not self.changes[
+                    (self.changes["metric_name"] == metric_name) & (self.changes["column_name"] == column_name)
+                ].empty:
+                    self._remove_change(metric_name, column_name)
 
     def get_quality_control(self):
         """Get the quality control data from the database."""

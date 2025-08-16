@@ -30,4 +30,4 @@ data = ViewData(name=settings.name)
 
 qc_panel = QCPanel(record_name=settings.name, data=data)
 
-qc_panel.__panel__().servable(title="AIND QC - View")
+qc_panel.__panel__().servable(title=f"QC View: {settings.name}")
