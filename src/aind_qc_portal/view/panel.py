@@ -1,13 +1,13 @@
-""" Panel objects for the View app """
+""" Main Panel object for the view app
 
-from typing import Callable
-import pandas as pd
+This only builds the columns/rows of the main layout. It shouldn't use the OUTER_STYLE styling anywhere.
+"""
+
 import panel as pn
 import param
 from panel.custom import PyComponent
 
 from aind_qc_portal.view.data import ViewData
-from aind_qc_portal.utils import OUTER_STYLE, qc_status_color_css
 from aind_qc_portal.view.panels.header import Header
 from aind_qc_portal.view.panels.settings import Settings
 from aind_qc_portal.view.panels.metrics import Metrics
@@ -28,6 +28,7 @@ class QCPanel(PyComponent):
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
         self.settings = Settings(default_grouping=self._data.default_grouping, grouping_options=self._data.grouping_options)
+        # Other panels have a dependency on settings
         self.header = Header(data=self._data.record, status=self._data.status, settings=self.settings)
         self.metrics = Metrics(data=self._data, settings=self.settings, callback=self._data.submit_change)
 

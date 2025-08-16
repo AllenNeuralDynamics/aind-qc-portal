@@ -9,7 +9,6 @@ import httpx
 from pathlib import Path
 import urllib.parse
 import asyncio
-from panel.reactive import ReactiveHTML
 from panel.custom import JSComponent
 from tornado.ioloop import IOLoop
 import requests
@@ -26,40 +25,6 @@ s3_client = boto3.client(
 MEDIA_TTL = 3600  # 1 hour
 KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 
-CSS = """
-:not(:root):fullscreen::backdrop {
-        background: white;
-}
-.fullscreen-button {
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    width: 24px;
-    height: 24px;
-    z-index: 10000;
-    opacity: 1;
-    color: gray;
-    transition-delay: 0.5s;
-    transition: 0.5s;
-    cursor: pointer;
-    border-radius:4px;
-}
-
-.fullscreen-button:hover {
-    transition: 0.5s;
-    color: white;
-    background-color: black;
-}
-
-.fullscreen-button:focus {
-    color: white;
-    background-color: black;
-}
-.pn-container, .object-container {
-        height: 100%;
-        width: 100%;
-}
-"""
 
 
 class CurationData(JSComponent):
@@ -82,74 +47,6 @@ class CurationData(JSComponent):
         return ""
     }
 """
-
-
-class Fullscreen(ReactiveHTML):
-    """A Fullscreen component that allows the user to toggle fullscreen mode."""
-
-    object = param.Parameter()
-
-    def __init__(self, object, **params):
-        """Build fullscreen object"""
-        super().__init__(object=object, **params)
-
-    _path_str = "M4.5 11H3v4h4v-1.5H4.5V11zM3 7h1.5V4.5H7V3H3v4zm10.5 6.5H11V15h4v-4h-1.5v2.5zM11 3v1.5h2.5V7H15V3h-4z"
-    _template = """
-<div id="pn-container" class="pn-container">
-        <span id="button" class="fullscreen-button" onclick="${script('maximize')}">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 18">
-                    <path d="{path_str}"></path>
-                </svg>
-        </span>
-        <div id="object_el" class="object-container">${object}</div>
-</div>
-""".replace(
-        "{path_str}", _path_str
-    )
-    _stylesheets = [CSS]
-    _scripts = {
-        "maximize": """
-function isFullScreen() {
-    return (
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement ||
-        document.msFullscreenElement
-    )
-}
-function exitFullScreen() {
-    if (document.exitFullscreen) {
-        document.exitFullscreen()
-    } else if (document.mozCancelFullScreen) {
-        document.mozCancelFullScreen()
-    } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen()
-    } else if (document.msExitFullscreen) {
-        document.msExitFullscreen()
-    }
-}
-function requestFullScreen(element) {
-    if (element.requestFullscreen) {
-        element.requestFullscreen()
-    } else if (element.mozRequestFullScreen) {
-        element.mozRequestFullScreen()
-    } else if (element.webkitRequestFullscreen) {
-        element.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT)
-    } else if (element.msRequestFullscreen) {
-        element.msRequestFullscreen()
-    }
-}
-
-function toggleFullScreen() {
-    if (isFullScreen()) {
-        exitFullScreen()
-    } else {
-        requestFullScreen(button.parentElement)
-    }
-}
-toggleFullScreen()
-"""
-    }
 
 
 class Media(param.Parameterized):
