@@ -190,8 +190,6 @@ class Media(param.Parameterized):
             reference = self.reference
         print(f"Parsing reference: {self.reference}")
 
-        await asyncio.sleep(5)
-
         # Deal with swipe panels first
         if ";" in reference:
             self.set_media_object(
