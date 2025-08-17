@@ -21,6 +21,7 @@ class Media(PyComponent):
         parent : _type_
         callback : _type_, optional
         """
+        super().__init__()
 
         self.parent = parent
         self.reference = reference

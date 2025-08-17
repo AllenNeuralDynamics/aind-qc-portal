@@ -1,6 +1,4 @@
-from datetime import datetime, timezone
 import panel as pn
-import json
 from typing import Any, Callable
 
 from aind_qcportal_schema.metric_value import (
@@ -8,7 +6,6 @@ from aind_qcportal_schema.metric_value import (
     DropdownMetric,
 )
 from aind_data_schema.core.quality_control import Status
-from aind_qc_portal.utils import get_user_name
 
 
 class CustomMetricValue:
