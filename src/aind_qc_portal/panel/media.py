@@ -16,37 +16,9 @@ import time
 import os
 from .panel_utils import reference_is_image, reference_is_video, reference_is_pdf
 
-s3_client = boto3.client(
-    "s3",
-    region_name="us-west-2",
-    config=boto3.session.Config(signature_version="s3v4"),
-)
-
-MEDIA_TTL = 3600  # 1 hour
-KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 
 
 
-class CurationData(JSComponent):
-    """A CurationData component that allows the user to toggle curation data."""
-
-    curation_json = param.Dict()
-
-    _esm = """
-    export function render({ model }) {
-        window.addEventListener('message', (event) => {
-            // Check if the message is from the expected origin
-            if (!event.origin.match(/^https?:\/\/(.*\.)?figurl\.org$/)) {
-                console.warn('Received message from unexpected origin:', event.origin);
-                return;
-            }
-
-            model.curation_json = event.data.curation;
-            model.send_msg(model.curation_json);
-        });
-        return ""
-    }
-"""
 
 
 class Media(param.Parameterized):
@@ -175,24 +147,6 @@ class Media(param.Parameterized):
         return Fullscreen(self.content, sizing_mode="stretch_width", max_height=1200)
 
 
-async def _get_s3_file(url, ext):
-    """Get an S3 file from the given URL asynchronously"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-
-        if response.status_code == 200:
-            with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
-                temp_file.write(response.content)
-            return temp_file.name
-        else:
-            print(f"[ERROR] Failed to fetch asset {url}: {response.status_code} / {response.text}")
-            return None
-    except Exception as e:
-        print(f"[ERROR] Failed to fetch asset {url}, error: {e}")
-        return None
-
-
 # def _get_s3_file(url, ext):
 #     """Get an S3 file from the given URL"""
 #     try:
@@ -209,44 +163,6 @@ async def _get_s3_file(url, ext):
 #         return None
 
 
-def _parse_rrd(reference, data):
-    """Parse an RRD file and return the appropriate object"""
-    if "_v" in reference:
-        full_version = reference.split("_v")[1].split(".rrd")[0]
-    else:
-        full_version = "0.19.1"
-    src = f"https://app.rerun.io/version/{full_version}/index.html?url={encode_url(data)}"
-    iframe_html = f'<iframe src="{src}" style="height:100%; width:100%" frameborder="0"></iframe>'
-    return pn.pane.HTML(
-        iframe_html,
-        sizing_mode="stretch_width",
-        height=1000,
-    )
-
-
-def _parse_sortingview(reference, data, media_obj):
-    """Parse a sortingview URL and return the appropriate object"""
-    iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
-    curation_data = CurationData()
-
-    def on_msg(event):
-        """Handle messages from the sortingview iframe"""
-        print(f"Received message: {event.data}")
-        if not media_obj.value_callback:
-            raise ValueError("No value callback set for sortingview object")
-
-        media_obj.value_callback(event.data)
-        media_obj.parent.set_submit_dirty()
-
-    curation_data.on_msg(on_msg)
-    return pn.Column(
-        pn.pane.HTML(
-            iframe_html,
-            sizing_mode="stretch_width",
-            height=1000,
-        ),
-        curation_data,
-    )
 
 
 def encode_url(url):
@@ -255,24 +171,6 @@ def encode_url(url):
     encoded_query_string = urllib.parse.quote(query_string, safe="")
 
     return f"{base_url}?{encoded_query_string}"
-
-
-@pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
-def _get_s3_url(bucket, key):
-    """Get a presigned URL to an S3 asset
-
-    Parameters
-    ----------
-    bucket : str
-        S3 bucket name
-    key : str
-        S3 key name
-    """
-    return s3_client.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": bucket, "Key": key},
-        ExpiresIn=MEDIA_TTL,
-    )
 
 
 @pn.cache(max_items=1000, policy="LFU")
