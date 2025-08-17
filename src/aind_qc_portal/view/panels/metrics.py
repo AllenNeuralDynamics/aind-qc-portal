@@ -130,9 +130,11 @@ class MetricTab(PyComponent):
             value_col,
             self.metric_media,
             sizing_mode="stretch_width",
+            name=self.metric_name,
         )
 
         return tab_content
+
 
 class Metrics(PyComponent):
     """Panel for displaying the metrics"""
@@ -165,7 +167,7 @@ class Metrics(PyComponent):
         for i, row in data.dataframe.iterrows():
             reference = row['reference']
             print(row)
-            for tag in row['tags']:
+            for tag in row['tags'] + [row['modality']['abbreviation']]:
                 if tag not in self.tag_to_reference:
                     self.tag_to_reference[tag] = [reference]
                 else:
@@ -174,13 +176,16 @@ class Metrics(PyComponent):
             # Handle the metric media
             media_panel = MetricMedia(reference)
             self.reference_to_media[reference] = media_panel
+        
+        print(self.tag_to_reference)
 
-    def _populate_metrics(self, event = None):
+    def _populate_metrics(self, event=None):
         """Populate the metrics tabs with data
 
         Use the group_by tags to pull together which references will be shown
         Then group all the value panels by their media reference
         """
+        active_list = self.tabs.active
         self.tabs.clear()
 
         print(f"Populating metrics with group_by: {self.settings.group_by}")
@@ -190,14 +195,16 @@ class Metrics(PyComponent):
             references = self.tag_to_reference.get(tag, [])
 
             # Build the accordion contents
-            tag_accordion = pn.Accordion(name=tag)
+            tag_accordion = pn.Accordion(name=tag, active=[0])
             for reference in references:
                 media_panel = self.reference_to_media[reference]
                 tab = MetricTab(name=tag, metric_media=media_panel, metric_values=[])
 
                 tag_accordion.append(tab)
-            
+
             self.tabs.append(tag_accordion)
+
+        self.tabs.active = active_list is not None and active_list < len(self.tabs) and active_list or 0
 
     def __panel__(self):
         """Create and return the metrics panel"""
