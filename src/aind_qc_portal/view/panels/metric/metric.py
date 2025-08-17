@@ -6,9 +6,6 @@ from typing import Any, Callable
 from aind_qcportal_schema.metric_value import (
     CheckboxMetric,
     DropdownMetric,
-    RulebasedMetric,
-    CurationMetric,
-    CurationHistory,
 )
 from aind_data_schema.core.quality_control import Status
 from aind_qc_portal.utils import get_user_name
@@ -17,7 +14,7 @@ from aind_qc_portal.utils import get_user_name
 class CustomMetricValue:
     """This class is really ugly because of how it handles multiple types... please refactor me"""
 
-    def __init__(self, data: dict, callback: Callable):
+    def __init__(self, data: dict, value_callback: Callable, status_callback: Callable):
         """Build a new CustomMetricValue object from a metric's value
 
         Parameters
@@ -28,7 +25,8 @@ class CustomMetricValue:
 
         self._panel = None
         self._auto_state = False
-        self.callback = callback  
+        self._value_callback = value_callback
+        self._status_callback = status_callback  
         self.type = None
 
         if "type" in data:
@@ -40,17 +38,8 @@ class CustomMetricValue:
                 self._data = CheckboxMetric.model_validate(data)
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
-            elif data["type"] == "curation" or data["type"] == "ephys_curation":
-                data["type"] = "curation"  # todo: remove when EphysCurationMetric removed
-                self._data = CurationMetric.model_validate(data)
-                self._auto_state = False
-                self._curation_helper(data)
             else:
                 raise ValueError("Unknown type for custom metric value")
-        elif "rule" in data:
-            self._data = RulebasedMetric.model_validate_json(json.dumps(data))
-            self._auto_state = True
-            self._rulebased_helper(data)
         else:
             raise ValueError("Unknown custom metric value")
 
@@ -74,8 +63,6 @@ class CustomMetricValue:
                 (
                     DropdownMetric,
                     CheckboxMetric,
-                    CurationMetric,
-                    RulebasedMetric,
                 ),
             )
 
@@ -89,15 +76,6 @@ class CustomMetricValue:
         elif isinstance(self._data, CheckboxMetric):
             print(f"Updating checkbox value to {value}")
             self._data.value = value
-        elif isinstance(self._data, CurationMetric):
-            print(f"Updating curation value to {value}")
-            self._data.curations.append(json.dumps(value))
-            self._data.curation_history.append(
-                CurationHistory(
-                    curator=get_user_name(),
-                    timestamp=datetime.now(timezone.utc),
-                )
-            )
         else:
             print(f"Updating dictionary value to {value}")
             self._data.value = value
@@ -123,7 +101,7 @@ class CustomMetricValue:
         when the user changes the value of the metric
         """
         # Push the new value into the upstream QCMetric.value field
-        self.callback(event.new, "value")
+        self._value_callback(event.new)
 
         # Handle state updates
         if self._auto_state:
@@ -183,16 +161,3 @@ class CustomMetricValue:
 
         # watch the selector and pass event updates back through the callback
         self._panel.param.watch(self._callback_helper, "value")
-
-    def _curation_helper(self, data: dict):
-        """Helper function for curation metric values"""
-        self._panel = pn.widgets.JSONEditor(
-            name="Value",
-            value=data["curations"] if "curations" in data else {},
-            sizing_mode="stretch_width",
-            disabled=True,
-        )
-
-    def _rulebased_helper(self, data: dict):
-        """Helper function for rulebased metric values"""
-        self._panel = pn.widgets.StaticText(value="Todo")

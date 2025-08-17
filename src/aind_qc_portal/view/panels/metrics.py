@@ -1,7 +1,7 @@
 import pandas as pd
 import panel as pn
 from panel.custom import PyComponent
-from typing import Callable
+from typing import Any, Callable
 
 from aind_qc_portal.view.data import ViewData
 from aind_qc_portal.view.panels.media.media import Media
@@ -18,14 +18,25 @@ class MetricMedia(PyComponent):
         self.media = Media(reference, self)
 
 
-class MetricValue(PyComponent):
-    """TODO"""
+class MetricValue(PyComponent):    
 
-    def __init__(self, name: str, description: str, value: str):
+    def __init__(self, name: str, description: str, value: Any, status: Any, callback: Callable):
         super().__init__()
         self.name = name
         self.description = description
         self.value = value
+        self.status = status
+        self.callback = callback
+
+    def set_value(self, new_value):
+        """Set the value of the metric and trigger the callback"""
+        self.value = new_value
+        self.callback(metric_name=self.name, column_name="value", value=new_value)
+    
+    def set_status(self, new_status):
+        """Set the status of the metric and trigger the callback"""
+        self.status = new_status
+        self.callback(metric_name=self.name, column_name="status", value=new_status)
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
@@ -34,22 +45,22 @@ class MetricValue(PyComponent):
         self.auto_state = False
 
         if isinstance(self.value, bool):
-            self.content = pn.widgets.Checkbox(name=name)
+            self.value_widget = pn.widgets.Checkbox(name=name)
         elif not self.value or isinstance(self.value, str):
-            self.content = pn.widgets.TextInput(name=name)
+            self.value_widget = pn.widgets.TextInput(name=name)
         elif isinstance(self.value, float):
-            self.content = pn.widgets.FloatInput(name=name)
+            self.value_widget = pn.widgets.FloatInput(name=name)
         elif isinstance(self.value, int):
-            self.content = pn.widgets.IntInput(name=name)
+            self.value_widget = pn.widgets.IntInput(name=name)
         elif isinstance(self.value, list):
             df = pd.DataFrame({"values": self.value})
-            self.content = pn.pane.DataFrame(df)
+            self.value_widget = pn.pane.DataFrame(df)
             self.auto_value = True
         elif isinstance(self.value, dict):
             if CustomMetricValue.is_custom_metric(self.value):
                 self.value = CustomMetricValue(self.value, self._set_value, self._set_status)
                 self.auto_value = True
-                self.content = self.value.panel()
+                self.value_widget = self.value.panel()
             else:
                 # first, check if every key/value pair has the same length, if so coerce to a dataframe
                 if all([isinstance(v, list) for v in self.value.values()]) and all(
@@ -57,16 +68,18 @@ class MetricValue(PyComponent):
                 ):
                     self.auto_value = True
                     df = pd.DataFrame(df_scalar_to_list(self.value))
-                    self.content = pn.pane.DataFrame(df)
+                    self.value_widget = pn.pane.DataFrame(df)
                 # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
                 elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in self.value.values()]):
                     self.auto_value = True
                     df = pd.DataFrame(df_scalar_to_list(self.value))
-                    self.content = pn.pane.DataFrame(df)
+                    self.value_widget = pn.pane.DataFrame(df)
                 else:
-                    self.content = pn.widgets.JSONEditor(name=name)
+                    self.value_widget = pn.widgets.JSONEditor(name=name)
         else:
-            self.content = pn.widgets.StaticText(value=f"Can't deal with type {type(self.value)}")
+            self.value_widget = pn.widgets.StaticText(value=f"Can't deal with type {type(self.value)}")
+
+        self.value_widget.link(self, value="value", bidirectional=True)
 
     def __panel__(self):
         """Create and return the MetricValue panel"""
@@ -77,14 +90,14 @@ class MetricValue(PyComponent):
 """
 
         if pn.state.user == "guest":
-            self.content.disabled = True
+            self.value_widget.disabled = True
 
         if not auto_value:
-            self.content.value = value
-            self.content.param.watch(self.set_value, "value")
+            self.value_widget.value = value
+            self.value_widget.param.watch(self.set_value, "value")
 
 
-        return self.content
+        return self.value_widget
 
 
 class MetricTab(PyComponent):
