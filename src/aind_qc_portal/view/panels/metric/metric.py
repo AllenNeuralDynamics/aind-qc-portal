@@ -1,9 +1,7 @@
-""" Custom metric value class for handling custom metric values in the QC Portal UI"""
-
 from datetime import datetime, timezone
 import panel as pn
 import json
-from typing import Any
+from typing import Any, Callable
 
 from aind_qcportal_schema.metric_value import (
     CheckboxMetric,
@@ -16,34 +14,10 @@ from aind_data_schema.core.quality_control import Status
 from aind_qc_portal.utils import get_user_name
 
 
-def attempt_custom_repairs(data: dict) -> dict:
-    """Attempt to repair a custom metric value that has been corrupted
-
-    [todo: this should be removed]
-
-    Parameters
-    ----------
-    data : dict
-
-    Returns
-    -------
-    dict
-    """
-    # Usually this is caused by a value field that doesn't match the allowed defaults
-    if data["type"] == "dropdown":
-        if "value" not in data or data["value"] not in data["options"]:
-            data["value"] = ""
-    elif data["type"] == "checkbox":
-        if "value" not in data or not isinstance(data["value"], list):
-            data["value"] = []
-
-    return data
-
-
 class CustomMetricValue:
     """This class is really ugly because of how it handles multiple types... please refactor me"""
 
-    def __init__(self, data: dict, value_callback, status_callback):
+    def __init__(self, data: dict, callback: Callable):
         """Build a new CustomMetricValue object from a metric's value
 
         Parameters
@@ -54,23 +28,16 @@ class CustomMetricValue:
 
         self._panel = None
         self._auto_state = False
-        self._value_callback = value_callback
-        self._status_callback = status_callback
+        self.callback = callback  
         self.type = None
 
         if "type" in data:
             if data["type"] == "dropdown":
-                try:
-                    self._data = DropdownMetric.model_validate(data)
-                except Exception:
-                    self._data = DropdownMetric.model_validate(attempt_custom_repairs(data))
+                self._data = DropdownMetric.model_validate(data)
                 self._auto_state = self._data.status is not None
                 self._dropdown_helper(data)
             elif data["type"] == "checkbox":
-                try:
-                    self._data = CheckboxMetric.model_validate(data)
-                except Exception:
-                    self._data = CheckboxMetric.model_validate(attempt_custom_repairs(data))
+                self._data = CheckboxMetric.model_validate(data)
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
             elif data["type"] == "curation" or data["type"] == "ephys_curation":
@@ -156,7 +123,7 @@ class CustomMetricValue:
         when the user changes the value of the metric
         """
         # Push the new value into the upstream QCMetric.value field
-        self._value_callback(event.new)
+        self.callback(event.new, "value")
 
         # Handle state updates
         if self._auto_state:

@@ -275,3 +275,8 @@ def replace_markdown_with_html(font_size: int = 12, inner_str: str = ""):
         )
     # Apply the font size as a span element
     return f'<span style="font-size:{font_size}pt">{inner_str}</span>'
+
+
+def df_scalar_to_list(data: dict):
+    """Convert a dictionary of scalars to a dictionary of lists"""
+    return {k: [v] if not isinstance(v, list) else v for k, v in data.items()}
