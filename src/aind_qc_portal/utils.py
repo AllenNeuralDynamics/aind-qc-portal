@@ -4,28 +4,10 @@ import re
 
 import panel as pn
 from aind_data_schema.core.quality_control import Status
+from aind_qc_portal.layout import AIND_COLORS
 
-ASSET_LINK_PREFIX = "/qc_asset_app?id="
-QC_LINK_PREFIX = "/qc_app?id="
+VIEW_PREFIX = "/qc_app?id="
 PROJECT_LINK_PREFIX = "/qc_project_app?project="
-
-AIND_COLORS = colors = {
-    "dark_blue": "#003057",
-    "light_blue": "#2A7DE1",
-    "green": "#1D8649",
-    "yellow": "#FFB71B",
-    "grey": "#7C7C7F",
-    "red": "#FF5733",
-}
-
-OUTER_STYLE = {
-    "background": "#ffffff",
-    "border-radius": "5px",
-    "border": "2px solid black",
-    "padding": "10px",
-    "box-shadow": "5px 5px 5px #bcbcbc",
-    "margin": "5px",
-}
 
 
 def get_user_name() -> str:

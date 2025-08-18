@@ -12,7 +12,7 @@ from aind_qc_portal.view.panels.header import Header
 from aind_qc_portal.view.panels.settings import Settings
 from aind_qc_portal.view.panels.metrics import Metrics
 
-from aind_qc_portal.utils import OUTER_STYLE
+from aind_qc_portal.layout import OUTER_STYLE
 
 
 class QCPanel(PyComponent):

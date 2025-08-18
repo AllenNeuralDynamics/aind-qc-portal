@@ -10,8 +10,8 @@ from aind_qc_portal.view.panels.media.media import Media
 from aind_qc_portal.view.panels.metric.metric import CustomMetricValue
 from aind_qc_portal.view.panels.settings import Settings
 
-from aind_qc_portal.utils import OUTER_STYLE, df_scalar_to_list, replace_markdown_with_html
-from aind_qc_portal.layout import METRIC_VALUE_WIDTH, MARGIN
+from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
+from aind_qc_portal.layout import METRIC_VALUE_WIDTH, MARGIN, OUTER_STYLE
 
 
 class MetricMedia(PyComponent):

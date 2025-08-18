@@ -4,7 +4,8 @@ import param
 import pandas as pd
 
 from aind_qc_portal.view.panels.settings import Settings
-from aind_qc_portal.utils import OUTER_STYLE, qc_status_color_css
+from aind_qc_portal.utils import qc_status_color_css
+from aind_qc_portal.layout import OUTER_STYLE
 
 
 class Header(PyComponent):
