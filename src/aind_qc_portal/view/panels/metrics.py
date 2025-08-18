@@ -16,10 +16,14 @@ from aind_qc_portal.layout import METRIC_VALUE_WIDTH, MARGIN, OUTER_STYLE
 
 class MetricMedia(PyComponent):
 
-    def __init__(self, reference: str):
+    def __init__(self, reference: str, s3_bucket: str, s3_prefix: str):
         super().__init__()
         self.reference = reference
-        self.media = Media(reference, self)
+
+        if self.reference:
+            self.media = Media(reference, s3_bucket=s3_bucket, s3_prefix=s3_prefix)
+        else:
+            self.media = None
 
     def __panel__(self):
         """Create and return the MetricMedia panel"""
@@ -108,7 +112,8 @@ class MetricValue(PyComponent):
         else:
             self.value_widget = pn.widgets.StaticText(value=f"Can't deal with type {type(self.value)}", width=widget_width)
 
-        self.value_widget.link(self, value="value", bidirectional=True)
+        if not self.auto_value:
+            self.value_widget.link(self, value="value", bidirectional=True)
 
     def __panel__(self):
         """Create and return the MetricValue panel"""
@@ -169,14 +174,18 @@ class MetricTab(PyComponent):
 class Metrics(PyComponent):
     """Panel for displaying the metrics"""
 
+    active_tab = param.Integer(default=0)
+
     def __init__(self, data: ViewData, settings: Settings, callback: Callable):
         super().__init__()
         self.callback = callback
 
+        pn.state.location.sync(self, {"active_tab": "active_tab"})
+
         # Initialize some helpers we'll use to map between tags/references/metrics
-        self.tag_to_reference = {}
+        self.tag_to_value = {}
+        self.value_to_reference = {}
         self.reference_to_media = {}
-        self.reference_to_value = {}
 
         self._init_panel_objects()
         self._construct_metrics(data)
@@ -196,18 +205,6 @@ class Metrics(PyComponent):
         """Build all MetricValue/MetricMedia panels"""
 
         for _, row in data.dataframe.iterrows():
-            reference = row['reference']
-            print(row)
-            for tag in row['tags'] + [row['modality']['abbreviation']]:
-                if tag not in self.tag_to_reference:
-                    self.tag_to_reference[tag] = [reference]
-                else:
-                    self.tag_to_reference[tag].append(reference)
-
-            # Handle the metric media
-            media_panel = MetricMedia(reference)
-            self.reference_to_media[reference] = media_panel
-            
             # Handle the metric value
             value_panel = MetricValue(
                 name=row['name'],
@@ -216,11 +213,24 @@ class Metrics(PyComponent):
                 status=row['status_history'][-1]['status'],
                 callback=self.callback
             )
-            
-            if reference not in self.reference_to_value:
-                self.reference_to_value[reference] = [value_panel]
-            else:
-                self.reference_to_value[reference].append(value_panel)
+
+            # Populate the tag -> value dictionary
+            for tag in row['tags'] + [row['modality']['abbreviation']]:
+                if tag not in self.tag_to_value:
+                    self.tag_to_value[tag] = [value_panel]
+                else:
+                    self.tag_to_value[tag].append(value_panel)
+
+            reference = row['reference']
+            # Populate the value -> reference dictionary
+            self.value_to_reference[value_panel] = reference
+
+            # Only re-construct the MediaPanel if it doesn't already exist
+            if reference not in self.reference_to_media:
+                location = data.record["location"].replace("s3://", "")
+                s3_bucket, s3_prefix = location.split("/", 1)
+                media_panel = MetricMedia(reference, s3_bucket=s3_bucket, s3_prefix=s3_prefix)
+                self.reference_to_media[reference] = media_panel
 
     def _populate_metrics(self, event=None):
         """Populate the metrics tabs with data
@@ -234,14 +244,22 @@ class Metrics(PyComponent):
         print(f"Populating metrics with group_by: {self.settings.group_by}")
 
         for tag in self.settings.group_by:
-            # Get the references for this tag
-            references = self.tag_to_reference.get(tag, [])
+            # Get the value panels, references, and media panels for this tag
+            value_panels = self.tag_to_value.get(tag, [])
+
+            # Invert the reference mapping, i.e. calculate the reference_to_value mapping for the subset of values we are using
+            reference_to_value = {}
+            for value_panel in value_panels:
+                reference = self.value_to_reference.get(value_panel, None)
+                if reference not in reference_to_value:
+                    reference_to_value[reference] = []
+                reference_to_value[reference].append(value_panel)
 
             # Build the accordion contents
             tag_accordion = pn.Accordion(name=tag, active=[0])
-            for reference in references:
+            for reference in reference_to_value.keys():
                 media_panel = self.reference_to_media[reference]
-                value_panels = self.reference_to_value.get(reference, [])
+                value_panels = reference_to_value[reference]
                 tab = MetricTab(name=tag, metric_media=media_panel, metric_values=value_panels)
 
                 tag_accordion.append(tab)
