@@ -51,7 +51,6 @@ class QCPanel(PyComponent):
             return pn.Row(pn.HSpacer(), self.no_content, pn.HSpacer(), sizing_mode="stretch_width")
 
         header_submit_row = pn.Row(self.header, self.submit_panel, sizing_mode="stretch_width")
-        print(len(header_submit_row.objects))
         content_row = pn.Row(
             self.metrics,
             sizing_mode="stretch_width",
