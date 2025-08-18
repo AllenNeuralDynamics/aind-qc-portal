@@ -1,9 +1,7 @@
 """ Utility functions for the AIND QC Portal """
 
-from datetime import timedelta
 import re
 
-import numpy as np
 import panel as pn
 from aind_data_schema.core.quality_control import Status
 
@@ -28,16 +26,6 @@ OUTER_STYLE = {
     "box-shadow": "5px 5px 5px #bcbcbc",
     "margin": "5px",
 }
-
-
-# Define minimum ranges based on your criteria
-ONE_WEEK = timedelta(weeks=1)
-ONE_MONTH = timedelta(days=30)
-THREE_MONTHS = timedelta(days=90)
-ONE_YEAR = timedelta(days=365)
-TWO_YEARS = timedelta(days=730)
-FIVE_YEARS = timedelta(days=1825)
-TEN_YEARS = timedelta(days=3650)
 
 
 def get_user_name() -> str:
@@ -163,103 +151,6 @@ def qc_status_html(status: Status | str, text: str = ""):
 def qc_status_link_html(status: str, link: str, text: str = ""):
     """Return a formatted <span> tag with the color of the QC status and a link"""
     return f'<span style="background-color:{_qc_status_color(status)};">{format_link(link, text)}</span>'
-
-
-def range_unit_format(time_range):
-    """Compute the altair plot axis unit and format for displaying a time range"""
-    if time_range < ONE_WEEK:
-        unit = "day"
-        format = "%b %d"
-    elif time_range < ONE_MONTH:
-        unit = "week"
-        format = "%b %d"
-    elif time_range < THREE_MONTHS:
-        unit = "week"
-        format = "%b %d"
-    elif time_range < ONE_YEAR:
-        unit = "month"
-        format = "%b"
-    elif time_range < TWO_YEARS:
-        unit = "year"
-        format = "%b"
-    elif time_range < FIVE_YEARS:
-        unit = "year"
-        format = "%Y"
-    elif time_range < TEN_YEARS:
-        unit = "year"
-        format = "%Y"
-    else:
-        # Default to five years
-        unit = "year"
-        format = "%Y"
-
-    return unit, format
-
-
-def timestamp_range(min_date, max_date):
-    """Compute the min/max range of a set of timestamps
-
-    Parameters
-    ----------
-    min : datetime.timestamp
-        _description_
-    max : datetime.timestamp
-        _description_
-    """
-
-    # Compute the time difference
-    time_range = max_date - min_date
-
-    # Determine the minimum range
-    if time_range < ONE_WEEK:
-        min_range = min_date - (ONE_WEEK - time_range) / 2
-        max_range = max_date + (ONE_WEEK - time_range) / 2
-    elif time_range < ONE_MONTH:
-        min_range = min_date - (ONE_MONTH - time_range) / 2
-        max_range = max_date + (ONE_MONTH - time_range) / 2
-    elif time_range < THREE_MONTHS:
-        min_range = min_date - (THREE_MONTHS - time_range) / 2
-        max_range = max_date + (THREE_MONTHS - time_range) / 2
-    elif time_range < ONE_YEAR:
-        min_range = min_date - (ONE_YEAR - time_range) / 2
-        max_range = max_date + (ONE_YEAR - time_range) / 2
-    elif time_range < TWO_YEARS:
-        min_range = min_date - (TWO_YEARS - time_range) / 2
-        max_range = max_date + (TWO_YEARS - time_range) / 2
-    elif time_range < FIVE_YEARS:
-        min_range = min_date - THREE_MONTHS
-        max_range = max_date + THREE_MONTHS
-    elif time_range < TEN_YEARS:
-        min_range = min_date - THREE_MONTHS
-        max_range = max_date + THREE_MONTHS
-    else:
-        # Default to ten years
-        min_range = min_date - THREE_MONTHS
-        max_range = max_date + THREE_MONTHS
-
-    unit, format = range_unit_format(time_range)
-
-    return min_range, max_range, unit, format
-
-
-def df_timestamp_range(df, column="timestamp"):
-    """Compute the min/max range of a timestamp column in a DataFrame
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Must include a "timestamp" column
-
-    Returns
-    -------
-    (min, max, time_unit, time_format)
-        Minimum of range, maximum of range, and timestep unit and format
-    """
-    # Calculate min and max dates in the timestamp column
-    min_date = df[column].min()
-    max_date = df[column].max()
-
-    return timestamp_range(min_date, max_date)
 
 
 def replace_markdown_with_html(font_size: int = 12, inner_str: str = ""):

@@ -117,7 +117,7 @@ class MetricValue(PyComponent):
         col = pn.Column(
             pn.pane.Markdown(md),
             self.value_widget,
-            width=240,
+            width=300,
             styles=OUTER_STYLE,
         )
         return col
