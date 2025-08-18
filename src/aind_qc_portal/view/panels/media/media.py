@@ -1,9 +1,10 @@
 """Media class and associated helpers for the View app"""
 
+from pathlib import Path
 from panel.custom import PyComponent
 import panel as pn
 import param
-from aind_qc_portal.view.panels.media.utils import reference_is_image, reference_is_pdf, reference_is_video, Fullscreen, _get_s3_file
+from aind_qc_portal.view.panels.media.utils import reference_is_image, reference_is_pdf, reference_is_video, Fullscreen, _get_s3_file, _get_s3_url
 
 
 class Media(PyComponent):
@@ -12,23 +13,26 @@ class Media(PyComponent):
     reference = param.String(default="")
     reference_data = param.String(default=None, allow_None=True)
 
-    def __init__(self, reference: str, parent, callback=None):
+    def __init__(self, reference: str, s3_bucket: str, s3_prefix: str):
         """Build a media object
 
         Parameters
         ----------
         reference : string
         parent : _type_
-        callback : _type_, optional
         """
         super().__init__()
 
-        self.parent = parent
+        self.s3_bucket = s3_bucket
+        self.s3_prefix = s3_prefix
         self.reference = reference
-        self.value_callback = callback
-        
-        self.content = pn.Column()
+
+        self._init_panel_objects()
         self.parse_reference(reference)
+
+    def _init_panel_objects(self):
+        """Initialize empty panel objects"""
+        self.content = pn.Column()
 
     def parse_reference(self, reference=None):
         """Parse the reference string and return the appropriate media object
@@ -72,8 +76,8 @@ class Media(PyComponent):
             if "results/" in reference:
                 reference = reference.split("results/")[1]
             self.reference_data = _get_s3_url(
-                self.parent.s3_bucket,
-                str(Path(self.parent.s3_prefix) / reference),
+                self.s3_bucket,
+                str(Path(self.s3_prefix) / reference),
             )
 
         if not self.reference_data:
