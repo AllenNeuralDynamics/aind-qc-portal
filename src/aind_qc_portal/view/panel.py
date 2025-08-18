@@ -1,6 +1,7 @@
 """ Main Panel object for the view app
 
-This only builds the columns/rows of the main layout. It shouldn't use the OUTER_STYLE styling anywhere.
+This only builds the columns/rows of the main layout. It shouldn't use the OUTER_STYLE styling in the layout
+(except for handling errors).
 """
 
 import panel as pn
@@ -11,6 +12,7 @@ from aind_qc_portal.view.data import ViewData
 from aind_qc_portal.view.panels.header import Header
 from aind_qc_portal.view.panels.settings import Settings
 from aind_qc_portal.view.panels.metrics import Metrics
+from aind_qc_portal.view.panels.submit import SubmitPanel
 
 from aind_qc_portal.layout import OUTER_STYLE
 
@@ -35,6 +37,8 @@ class QCPanel(PyComponent):
             return
 
         self.settings = Settings(default_grouping=self._data.default_grouping, grouping_options=self._data.grouping_options)
+        self.submit_panel = SubmitPanel(data=self._data)
+
         # Other panels have a dependency on settings
         self.header = Header(data=self._data.record, status=self._data.status, settings=self.settings)
         self.metrics = Metrics(data=self._data, settings=self.settings, callback=self._data.submit_change)
@@ -46,7 +50,8 @@ class QCPanel(PyComponent):
         if self._data.dataframe.empty:
             return pn.Row(pn.HSpacer(), self.no_content, pn.HSpacer(), sizing_mode="stretch_width")
 
-        header_submit_row = pn.Row(self.header, sizing_mode="stretch_width")
+        header_submit_row = pn.Row(self.header, self.submit_panel, sizing_mode="stretch_width")
+        print(len(header_submit_row.objects))
         content_row = pn.Row(
             self.metrics,
             sizing_mode="stretch_width",
