@@ -3,6 +3,8 @@ import panel as pn
 from panel.custom import PyComponent
 from typing import Any, Callable
 
+import param
+
 from aind_qc_portal.view.data import ViewData
 from aind_qc_portal.view.panels.media.media import Media
 from aind_qc_portal.view.panels.metric.metric import CustomMetricValue
@@ -23,7 +25,9 @@ class MetricMedia(PyComponent):
         return self.media
 
 
-class MetricValue(PyComponent):    
+class MetricValue(PyComponent):
+
+    value = param.Parameter()
 
     def __init__(self, name: str, description: str, value: Any, status: Any, callback: Callable):
         super().__init__()
@@ -32,16 +36,23 @@ class MetricValue(PyComponent):
         self.value = value
         self.status = status
         self.callback = callback
+        
+        self._init_panel_objects()
 
     def set_value(self, new_value):
         """Set the value of the metric and trigger the callback"""
         self.value = new_value
-        self.callback(metric_name=self.metric_name, column_name="value", value=new_value)
-    
+        self.callback(metric_name=self.metric_name, column_name="value", value=self.value)
+
     def set_status(self, new_status):
         """Set the status of the metric and trigger the callback"""
         self.status = new_status
         self.callback(metric_name=self.metric_name, column_name="status", value=new_status)
+
+    # @param.depends('value', watch=True)
+    # def _update_value(self):
+    #     """Update the value widget when the value changes"""
+    #     self.callback(metric_name=self.metric_name, column_name="value", value=self.value)
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
@@ -104,9 +115,10 @@ class MetricValue(PyComponent):
             self.value_widget.param.watch(self.set_value, "value")
 
         col = pn.Column(
-            pn.pane.Markdown(md, styles=OUTER_STYLE),
+            pn.pane.Markdown(md),
             self.value_widget,
-            sizing_mode="stretch_width",
+            width=240,
+            styles=OUTER_STYLE,
         )
         return col
 
@@ -123,7 +135,7 @@ class MetricTab(PyComponent):
     def __panel__(self):
         """Create and return the MetricTab panel"""
 
-        value_col = pn.Column(*self.metric_values, sizing_mode="stretch_width")
+        value_col = pn.Column(*self.metric_values, width=250)
 
         # Combine them into a single column
         tab_content = pn.Row(
@@ -141,6 +153,7 @@ class Metrics(PyComponent):
 
     def __init__(self, data: ViewData, settings: Settings, callback: Callable):
         super().__init__()
+        self.callback = callback
 
         # Initialize some helpers we'll use to map between tags/references/metrics
         self.tag_to_reference = {}
@@ -164,7 +177,7 @@ class Metrics(PyComponent):
     def _construct_metrics(self, data: ViewData):
         """Build all MetricValue/MetricMedia panels"""
 
-        for i, row in data.dataframe.iterrows():
+        for _, row in data.dataframe.iterrows():
             reference = row['reference']
             print(row)
             for tag in row['tags'] + [row['modality']['abbreviation']]:
@@ -176,8 +189,20 @@ class Metrics(PyComponent):
             # Handle the metric media
             media_panel = MetricMedia(reference)
             self.reference_to_media[reference] = media_panel
-        
-        print(self.tag_to_reference)
+            
+            # Handle the metric value
+            value_panel = MetricValue(
+                name=row['name'],
+                description=row['description'],
+                value=row['value'],
+                status=row['status_history'][-1],
+                callback=self.callback
+            )
+            
+            if reference not in self.reference_to_value:
+                self.reference_to_value[reference] = [value_panel]
+            else:
+                self.reference_to_value[reference].append(value_panel)
 
     def _populate_metrics(self, event=None):
         """Populate the metrics tabs with data
@@ -198,7 +223,8 @@ class Metrics(PyComponent):
             tag_accordion = pn.Accordion(name=tag, active=[0])
             for reference in references:
                 media_panel = self.reference_to_media[reference]
-                tab = MetricTab(name=tag, metric_media=media_panel, metric_values=[])
+                value_panels = self.reference_to_value.get(reference, [])
+                tab = MetricTab(name=tag, metric_media=media_panel, metric_values=value_panels)
 
                 tag_accordion.append(tab)
 
