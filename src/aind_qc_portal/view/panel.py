@@ -33,10 +33,14 @@ class QCPanel(PyComponent):
         """Initialize empty panel objects"""
 
         if self._data.dataframe.empty:
-            self.no_content = pn.widgets.StaticText(value=f"No data available for record: {self.record_name}", styles=OUTER_STYLE)
+            self.no_content = pn.widgets.StaticText(
+                value=f"No data available for record: {self.record_name}", styles=OUTER_STYLE
+            )
             return
 
-        self.settings = Settings(default_grouping=self._data.default_grouping, grouping_options=self._data.grouping_options)
+        self.settings = Settings(
+            default_grouping=self._data.default_grouping, grouping_options=self._data.grouping_options
+        )
         self.submit_panel = SubmitPanel(data=self._data)
 
         # Other panels have a dependency on settings

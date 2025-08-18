@@ -23,11 +23,11 @@ class Header(PyComponent):
         self.settings = settings
 
         # Watch for changes in settings.group_by
-        self.settings.param.watch(self._update_status_panel, 'group_by')
+        self.settings.param.watch(self._update_status_panel, "group_by")
 
     def _update_status_panel(self, event):
         """Trigger update when group_by changes"""
-        self.param.trigger('status')
+        self.param.trigger("status")
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
@@ -60,7 +60,11 @@ Return to [{self.record.get("data_description", {}).get("project_name")}](todo) 
             if hasattr(self, "settings"):
                 new_columns = [self.status.columns[0]]
                 new_columns += [col for col in self.status.columns if col in self.settings.group_by]
-                new_columns += [col for col in self.status.columns if col not in self.settings.group_by and col != self.status.columns[0]]
+                new_columns += [
+                    col
+                    for col in self.status.columns
+                    if col not in self.settings.group_by and col != self.status.columns[0]
+                ]
                 status_copy = status_copy[new_columns]
 
             def apply_styling(x):
@@ -72,16 +76,19 @@ Return to [{self.record.get("data_description", {}).get("project_name")}](todo) 
                     elif col_name in self.settings.group_by:
                         styles.append(qc_status_color_css(val))
                     elif col_name not in self.settings.group_by:
-                        styles.append('color: #999; background-color: #f5f5f5')
+                        styles.append("color: #999; background-color: #f5f5f5")
                 return styles
 
-            styled_df = status_copy.style.apply(
-                apply_styling,
-                axis=1
-            ).hide(axis="index").set_table_styles([
-                {'selector': 'table', 'props': [('border-collapse', 'collapse')]},
-                {'selector': 'th, td', 'props': [('border', '1px solid #ddd'), ('padding', '8px')]},
-            ])
+            styled_df = (
+                status_copy.style.apply(apply_styling, axis=1)
+                .hide(axis="index")
+                .set_table_styles(
+                    [
+                        {"selector": "table", "props": [("border-collapse", "collapse")]},
+                        {"selector": "th, td", "props": [("border", "1px solid #ddd"), ("padding", "8px")]},
+                    ]
+                )
+            )
 
             self.status_table.object = styled_df
         else:
@@ -93,10 +100,6 @@ Return to [{self.record.get("data_description", {}).get("project_name")}](todo) 
         """Create and return the header layout"""
 
         full_column = pn.Column(
-            self._header_panel(),
-            self._status_panel(),
-            self.settings,
-            styles=OUTER_STYLE,
-            sizing_mode="stretch_width"
+            self._header_panel(), self._status_panel(), self.settings, styles=OUTER_STYLE, sizing_mode="stretch_width"
         )
         return full_column

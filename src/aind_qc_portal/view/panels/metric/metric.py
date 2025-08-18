@@ -23,7 +23,7 @@ class CustomMetricValue:
         self._panel = None
         self._auto_state = False
         self._value_callback = value_callback
-        self._status_callback = status_callback  
+        self._status_callback = status_callback
         self.type = None
 
         if "type" in data:

@@ -26,7 +26,9 @@ class ViewData(param.Parameterized):
     dataframe = param.DataFrame(default=pd.DataFrame())
     status = param.DataFrame(default=None, allow_None=True)
 
-    changes = param.DataFrame(default=pd.DataFrame(columns=["metric_name", "column_name", "value"]),)
+    changes = param.DataFrame(
+        default=pd.DataFrame(columns=["metric_name", "column_name", "value"]),
+    )
     dirty = param.Integer(default=0, doc="Number of unsaved changes")
 
     def __init__(self, name: str, client: MetadataDbClient = client):
@@ -38,11 +40,14 @@ class ViewData(param.Parameterized):
 
     def _add_change(self, metric_name: str, column_name: str, value: str):
         """Add a change to the changes DataFrame"""
-        self.changes = self.changes.append({
-            "metric_name": metric_name,
-            "column_name": column_name,
-            "value": value,
-        }, ignore_index=True)
+        self.changes = self.changes.append(
+            {
+                "metric_name": metric_name,
+                "column_name": column_name,
+                "value": value,
+            },
+            ignore_index=True,
+        )
         self._dirty += 1
 
     def _remove_change(self, metric_name: str, column_name: str):
@@ -170,11 +175,13 @@ class ViewData(param.Parameterized):
                     stage=stage,
                     modality=modality,
                 )
-                statuses.append({
-                    "stage": stage,
-                    "tag": modality.abbreviation,
-                    "status": cstatus.value,
-                })
+                statuses.append(
+                    {
+                        "stage": stage,
+                        "tag": modality.abbreviation,
+                        "status": cstatus.value,
+                    }
+                )
 
             for tag in default_grouping:
                 cstatus = qc.evaluate_status(
@@ -182,11 +189,13 @@ class ViewData(param.Parameterized):
                     modality=None,
                     tag=tag,
                 )
-                statuses.append({
-                    "stage": stage,
-                    "tag": tag,
-                    "status": cstatus.value,
-                })
+                statuses.append(
+                    {
+                        "stage": stage,
+                        "tag": tag,
+                        "status": cstatus.value,
+                    }
+                )
 
         # Re-organize the DataFrame from long form to wide, with stage as rows and tags as columns
         self.status = pd.DataFrame(statuses).pivot(index="stage", columns="tag", values="status")
@@ -195,8 +204,7 @@ class ViewData(param.Parameterized):
 
     # @pn.cache(max_items=1000, policy="LFU")
     def _load_record(self):
-        """Get a QualityControl object from the database by its name.
-        """
+        """Get a QualityControl object from the database by its name."""
         records = client.retrieve_docdb_records(
             filter_query={
                 "name": self.name,
@@ -216,4 +224,6 @@ class ViewData(param.Parameterized):
         self.record = records[0]
         quality_control = self.record.get("quality_control", {})
 
-        self.dataframe = pd.DataFrame(quality_control["metrics"]) if quality_control and "metrics" in quality_control else None
+        self.dataframe = (
+            pd.DataFrame(quality_control["metrics"]) if quality_control and "metrics" in quality_control else None
+        )

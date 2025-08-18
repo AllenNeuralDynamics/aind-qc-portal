@@ -103,14 +103,18 @@ class MetricValue(PyComponent):
                     df = pd.DataFrame(df_scalar_to_list(self.value))
                     self.value_widget = pn.pane.DataFrame(df)
                 # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
-                elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in self.value.values()]):
+                elif all(
+                    [isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in self.value.values()]
+                ):
                     self.auto_value = True
                     df = pd.DataFrame(df_scalar_to_list(self.value))
                     self.value_widget = pn.pane.DataFrame(df)
                 else:
                     self.value_widget = pn.widgets.JSONEditor(name=self.metric_name, width=widget_width)
         else:
-            self.value_widget = pn.widgets.StaticText(value=f"Can't deal with type {type(self.value)}", width=widget_width)
+            self.value_widget = pn.widgets.StaticText(
+                value=f"Can't deal with type {type(self.value)}", width=widget_width
+            )
 
         if not self.auto_value:
             self.value_widget.link(self, value="value", bidirectional=True)
@@ -154,7 +158,7 @@ class MetricTab(PyComponent):
         self.metric_name = name
         self.metric_media = metric_media
         self.metric_values = metric_values
-    
+
     def __panel__(self):
         """Create and return the MetricTab panel"""
 
@@ -191,13 +195,13 @@ class Metrics(PyComponent):
         self._construct_metrics(data)
 
         self.settings = settings
-        self.settings.param.watch(self._populate_metrics, 'group_by')
+        self.settings.param.watch(self._populate_metrics, "group_by")
         self._populate_metrics()
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
         self.tabs = pn.Tabs(
-            styles=OUTER_STYLE, 
+            styles=OUTER_STYLE,
             tabs_location="left",
         )
 
@@ -207,21 +211,21 @@ class Metrics(PyComponent):
         for _, row in data.dataframe.iterrows():
             # Handle the metric value
             value_panel = MetricValue(
-                name=row['name'],
-                description=row['description'],
-                value=row['value'],
-                status=row['status_history'][-1]['status'],
-                callback=self.callback
+                name=row["name"],
+                description=row["description"],
+                value=row["value"],
+                status=row["status_history"][-1]["status"],
+                callback=self.callback,
             )
 
             # Populate the tag -> value dictionary
-            for tag in row['tags'] + [row['modality']['abbreviation']]:
+            for tag in row["tags"] + [row["modality"]["abbreviation"]]:
                 if tag not in self.tag_to_value:
                     self.tag_to_value[tag] = [value_panel]
                 else:
                     self.tag_to_value[tag].append(value_panel)
 
-            reference = row['reference']
+            reference = row["reference"]
             # Populate the value -> reference dictionary
             self.value_to_reference[value_panel] = reference
 

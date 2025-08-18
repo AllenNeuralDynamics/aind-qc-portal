@@ -20,7 +20,9 @@ format_css_background()
 class Settings(param.Parameterized):
     """Top-level settings for QC app"""
 
-    name = param.String(default="unknown")  # for testing: SmartSPIM_753888_2025-05-23_20-10-58_stitched_2025-05-25_00-43-44
+    name = param.String(
+        default="unknown"
+    )  # for testing: SmartSPIM_753888_2025-05-23_20-10-58_stitched_2025-05-25_00-43-44
 
 
 settings = Settings()

@@ -4,7 +4,14 @@ from pathlib import Path
 from panel.custom import PyComponent
 import panel as pn
 import param
-from aind_qc_portal.view.panels.media.utils import reference_is_image, reference_is_pdf, reference_is_video, Fullscreen, _get_s3_file, _get_s3_url
+from aind_qc_portal.view.panels.media.utils import (
+    reference_is_image,
+    reference_is_pdf,
+    reference_is_video,
+    Fullscreen,
+    _get_s3_file,
+    _get_s3_url,
+)
 
 
 class Media(PyComponent):
