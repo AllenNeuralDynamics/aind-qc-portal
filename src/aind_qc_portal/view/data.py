@@ -86,6 +86,31 @@ class ViewData(param.Parameterized):
                 ].empty:
                     self._remove_change(metric_name, column_name)
 
+    def upsert_quality_control(self):
+        """Upsert the quality control data to the database including all pending changes."""
+
+        # Write the pending changes
+        for _, change in self.changes.iterrows():
+            metric_name = change["metric_name"]
+            column_name = change["column_name"]
+            value = change["value"]
+
+            # Update the dataframe with the new value
+            self.dataframe.loc[self.dataframe["name"] == metric_name, column_name] = value
+
+        self.changes.clear()
+
+        # Unwrap the dataframe back into a QualityControl object
+        qc = self.get_quality_control()
+
+        # Upsert
+        client.upsert_one_docdb_record(
+            record={
+                "_id": self.record["_id"],
+                "quality_control": qc.model_dump(),
+            }
+        )
+
     def get_quality_control(self):
         """Get the quality control data from the database."""
         if self.dataframe.empty:
@@ -180,6 +205,7 @@ class ViewData(param.Parameterized):
                 "_id": 1,
                 "quality_control": 1,
                 "name": 1,
+                "location": 1,
             },
         )
 
