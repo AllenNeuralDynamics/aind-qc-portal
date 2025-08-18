@@ -1,20 +1,29 @@
 # QC Portal
 
-The [QC Portal](https://qc.allenneuraldynamics.org/qc_portal_app) is a browser application that allows users to view and interact with the AIND QC metadata and to annotate ``PENDING`` metrics with qualitative evaluations. The portal is currently maintained by Dan Birman in scientific computing, reach out with any questions or concerns.
+The [QC Portal](https://qc.allenneuraldynamics.org/) is a browser application to view and interact with the AIND QC metadata and to annotate ``PENDING`` metrics with qualitative evaluations. The portal is currently maintained by Dan Birman in scientific computing, reach out with any questions or concerns.
 
 The portal works by pulling the metadata from the Document Database (DocDB) and pulling reference figures from Code Ocean (CO) data assets, or from storage in Kachery Cloud.
 
 The portal allows users to annotate `PENDING` metrics. Logged in users can modify the value, state, and notes on metrics. When you make changes the **submit** button will be enabled. Submitting pushes your updates to DocDB along with a timestamp and your name.
 
-For general documentation about the QC metadata, go [here](https://aind-data-schema.readthedocs.io/en/latest/quality_control.html).
+[General documentation about the QC metadata](https://aind-data-schema.readthedocs.io/en/latest/quality_control.html).
 
 **IMPORTANT:** The QC Portal relies on certain fields in the metadata being set correctly. These include all files in the `data_description` file. You *must* generate valid metadata or the QC portal will mangle displaying your data assets.
+
+## Metric or Curation?
+
+At AIND we separate our quality control process into two steps:
+
+1. Quality control of each modality in a data asset, i.e. we answer the question: "Can the data in this asset be used for analysis?"
+2. Curation of the individual parts of an asset, i.e. we answer the question: "Can each neuron in this data asset be used for analysis?"
+
+`QCMetric` is designed to store information about the former, while the `CurationMetric` should be used for the latter.
 
 ## Defining metrics for the QC portal
 
 Metrics should have actionable `value` fields. Either the value should be a number that a rule can be applied to (e.g. a threshold) or it should refer to the state of the reference (e.g. "high drift" when linked to a drift map, or "acceptable contrast" when linked to a video).
 
-Almost all metrics should have a `reference` image, figure, or video attached. The `reference` can be shared across multiple metrics in the same evaluation if you want these to be grouped together on the QC portal page. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers, keep in mind that the portal is a public-facing resource! References can also embed linked pages in an iframe. You can currently point to Neuroglancer, FigURL, Rerun, and SortingView.
+Almost all metrics should have a `reference` image, figure, or video attached. Often the `reference` should be shared across multiple metrics. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers, keep in mind that the portal is a public-facing resource! References can also embed linked pages in an iframe. Embedded links can point to Neuroglancer, FigURL, Rerun, and SortingView.
 
 **Q: `QCMetric.value` has type `Any`, what types are acceptable?**
 
@@ -30,7 +39,13 @@ We expect the value to refer to a quantitative or qualitative assessment of some
 | CheckboxMetric | Checkboxes | [Checkbox](https://panel.holoviz.org/reference/widgets/Checkbox.html) | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) |
 | CurationMetric | Custom view | | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) |
 
-**Q: How does the `QCMetric.reference` get pulled into the QC Portal?**
+**Q: `CurationMetric.value` has type `Any`, what types are acceptable?**
+
+In general you should put a dictionary mapping from an identifier (neuron ID, for example) to the properties of that object. Work with Dan to develop a custom Panel for your curation. The properties you provide can be used to display anything you want in your Panel app, but often you'll want a reference for every object so that you can flip through the images.
+
+Note that in most situations a `CurationMetric` should always be set to pass.
+
+**Q: How does the `reference` get pulled into the QC Portal?**
 
 There are two aspects to references: (1) the type of the reference data, and (2) where the data is stored. These are independent.
 
