@@ -266,7 +266,10 @@ class Metrics(PyComponent):
 
             self.tabs.append(tag_accordion)
 
-        self.tabs.active = active_list is not None and active_list < len(self.tabs) and active_list or 0
+        if len(self.tabs.objects) == 0:
+            self.tabs.active = -1
+        else:
+            self.tabs.active = active_list is not None and active_list < len(self.tabs) and active_list or 0
 
     def __panel__(self):
         """Create and return the metrics panel"""

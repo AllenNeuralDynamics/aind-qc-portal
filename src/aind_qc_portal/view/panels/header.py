@@ -11,14 +11,14 @@ from aind_qc_portal.layout import OUTER_STYLE
 class Header(PyComponent):
     """Header for the QC view application"""
 
-    data: param.Dict = param.Dict(default={})
+    record: param.Dict = param.Dict(default={})
     status: param.DataFrame = param.DataFrame(default=pd.DataFrame())
 
-    def __init__(self, data: dict, status: dict, settings: Settings):
+    def __init__(self, record: dict, status: dict, settings: Settings):
         super().__init__()
         self._init_panel_objects()
 
-        self.data = data
+        self.record = record
         self.status = status
         self.settings = settings
 
@@ -31,10 +31,11 @@ class Header(PyComponent):
             escape=False,
         )
 
-    @pn.depends("data", watch=True)
+    @pn.depends("record", watch=True)
     def _header_panel(self):
         header_md = f"""
-## QC for {self.data["name"]}
+## {self.record["name"]}
+Return to [{self.record.get("data_description", {}).get("project_name")}](todo) | [S3 Link]({self.record.get("location")})
 """
         self.header_text.object = header_md
 

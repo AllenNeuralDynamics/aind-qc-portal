@@ -206,6 +206,7 @@ class ViewData(param.Parameterized):
                 "quality_control": 1,
                 "name": 1,
                 "location": 1,
+                "data_description.project_name": 1,
             },
         )
 

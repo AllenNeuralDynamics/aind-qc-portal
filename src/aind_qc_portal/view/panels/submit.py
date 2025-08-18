@@ -67,6 +67,7 @@ class SubmitPanel(PyComponent):
         return pn.Column(
             self.submit_button,
             self.change_info,
+            self.hidden_html,
             # self.submit_info,
             # self.submit_error,
             styles=OUTER_STYLE,
