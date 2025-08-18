@@ -89,7 +89,7 @@ class ViewData(param.Parameterized):
     def get_quality_control(self):
         """Get the quality control data from the database."""
         if self.dataframe.empty:
-            raise ValueError("Dataframe is not loaded")
+            return None
 
         # Each row in the dataframe should be rebuilt as either a QCMetric or CurationMetric
         # This can happen automatically if we turn everything back into dictionaries
@@ -104,14 +104,19 @@ class ViewData(param.Parameterized):
         return QualityControl(**quality_control)
 
     @property
-    def default_grouping(self):
+    def default_grouping(self) -> list:
         """Get the default grouping for this record"""
+        if self.dataframe.empty:
+            return []
+
         qc = self.get_quality_control()
         return qc.default_grouping
 
     @property
-    def grouping_options(self):
+    def grouping_options(self) -> list:
         """Get the grouping options for this record: all modalities and tags"""
+        if self.dataframe.empty:
+            return []
 
         qc = self.get_quality_control()
 
@@ -179,7 +184,7 @@ class ViewData(param.Parameterized):
         )
 
         if not records:
-            raise ValueError(f"No records found for name: {self.name}")
+            return
 
         self.record = records[0]
         quality_control = self.record.get("quality_control", {})

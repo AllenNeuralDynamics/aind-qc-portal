@@ -12,6 +12,8 @@ from aind_qc_portal.view.panels.header import Header
 from aind_qc_portal.view.panels.settings import Settings
 from aind_qc_portal.view.panels.metrics import Metrics
 
+from aind_qc_portal.utils import OUTER_STYLE
+
 
 class QCPanel(PyComponent):
     """Panel for displaying QC data"""
@@ -27,6 +29,11 @@ class QCPanel(PyComponent):
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
+
+        if self._data.dataframe.empty:
+            self.no_content = pn.widgets.StaticText(value=f"No data available for record: {self.record_name}", styles=OUTER_STYLE)
+            return
+
         self.settings = Settings(default_grouping=self._data.default_grouping, grouping_options=self._data.grouping_options)
         # Other panels have a dependency on settings
         self.header = Header(data=self._data.record, status=self._data.status, settings=self.settings)
@@ -35,6 +42,9 @@ class QCPanel(PyComponent):
     def __panel__(self):
         """Create and return the Panel layout"""
         # Assuming that the QCPanel class has a method to create the panel layout
+
+        if self._data.dataframe.empty:
+            return pn.Row(pn.HSpacer(), self.no_content, pn.HSpacer(), sizing_mode="stretch_width")
 
         header_submit_row = pn.Row(self.header, sizing_mode="stretch_width")
         content_row = pn.Row(
