@@ -11,6 +11,7 @@ from aind_qc_portal.view.panels.metric.metric import CustomMetricValue
 from aind_qc_portal.view.panels.settings import Settings
 
 from aind_qc_portal.utils import OUTER_STYLE, df_scalar_to_list, replace_markdown_with_html
+from aind_qc_portal.layout import METRIC_VALUE_WIDTH, MARGIN
 
 
 class MetricMedia(PyComponent):
@@ -28,6 +29,7 @@ class MetricMedia(PyComponent):
 class MetricValue(PyComponent):
 
     value = param.Parameter()
+    status = param.String()
 
     def __init__(self, name: str, description: str, value: Any, status: Any, callback: Callable):
         super().__init__()
@@ -36,41 +38,51 @@ class MetricValue(PyComponent):
         self.value = value
         self.status = status
         self.callback = callback
-        
+
         self._init_panel_objects()
 
     def set_value(self, new_value):
         """Set the value of the metric and trigger the callback"""
         self.value = new_value
-        self.callback(metric_name=self.metric_name, column_name="value", value=self.value)
 
     def set_status(self, new_status):
         """Set the status of the metric and trigger the callback"""
         self.status = new_status
-        self.callback(metric_name=self.metric_name, column_name="status", value=new_status)
 
-    # @param.depends('value', watch=True)
-    # def _update_value(self):
-    #     """Update the value widget when the value changes"""
-    #     self.callback(metric_name=self.metric_name, column_name="value", value=self.value)
+    def _update_value(self):
+        """Update the value widget when the value changes"""
+        self.callback(metric_name=self.metric_name, column_name="value", value=self.value)
+
+    def _update_status(self):
+        """Update the status widget when the status changes"""
+        self.callback(metric_name=self.metric_name, column_name="status", value=self.status)
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
+
+        widget_width = METRIC_VALUE_WIDTH - MARGIN * 4
+
+        self.state_selector = pn.widgets.Select.from_param(
+            self.param.status,
+            options=["Pass", "Fail", "Pending"],
+            name="Metric status",
+            width=widget_width,
+        )
 
         self.auto_value = False
         self.auto_state = False
 
         if isinstance(self.value, bool):
-            self.value_widget = pn.widgets.Checkbox(name=self.metric_name)
+            self.value_widget = pn.widgets.Checkbox(name=self.metric_name, width=widget_width)
         elif not self.value or isinstance(self.value, str):
-            self.value_widget = pn.widgets.TextInput(name=self.metric_name)
+            self.value_widget = pn.widgets.TextInput(name=self.metric_name, width=widget_width)
         elif isinstance(self.value, float):
-            self.value_widget = pn.widgets.FloatInput(name=self.metric_name)
+            self.value_widget = pn.widgets.FloatInput(name=self.metric_name, width=widget_width)
         elif isinstance(self.value, int):
-            self.value_widget = pn.widgets.IntInput(name=self.metric_name)
+            self.value_widget = pn.widgets.IntInput(name=self.metric_name, width=widget_width)
         elif isinstance(self.value, list):
             df = pd.DataFrame({"values": self.value})
-            self.value_widget = pn.pane.DataFrame(df)
+            self.value_widget = pn.pane.DataFrame(df, width=widget_width)
             self.auto_value = True
         elif isinstance(self.value, dict):
             if CustomMetricValue.is_custom_metric(self.value):
@@ -92,9 +104,9 @@ class MetricValue(PyComponent):
                     df = pd.DataFrame(df_scalar_to_list(self.value))
                     self.value_widget = pn.pane.DataFrame(df)
                 else:
-                    self.value_widget = pn.widgets.JSONEditor(name=self.metric_name)
+                    self.value_widget = pn.widgets.JSONEditor(name=self.metric_name, width=widget_width)
         else:
-            self.value_widget = pn.widgets.StaticText(value=f"Can't deal with type {type(self.value)}")
+            self.value_widget = pn.widgets.StaticText(value=f"Can't deal with type {type(self.value)}", width=widget_width)
 
         self.value_widget.link(self, value="value", bidirectional=True)
 
@@ -109,6 +121,11 @@ class MetricValue(PyComponent):
         if pn.state.user == "guest":
             self.value_widget.disabled = True
 
+        if pn.state.user == "guest":
+            self.state_selector.disabled = True
+        elif self.auto_state:
+            self.state_selector.disabled = True
+
         if not self.auto_value:
             # The value will not automatically update, so we need to watch for changes
             self.value_widget.value = self.value
@@ -117,7 +134,8 @@ class MetricValue(PyComponent):
         col = pn.Column(
             pn.pane.Markdown(md),
             self.value_widget,
-            width=300,
+            self.state_selector,
+            width=METRIC_VALUE_WIDTH,
             styles=OUTER_STYLE,
         )
         return col
@@ -135,7 +153,7 @@ class MetricTab(PyComponent):
     def __panel__(self):
         """Create and return the MetricTab panel"""
 
-        value_col = pn.Column(*self.metric_values, width=250)
+        value_col = pn.Column(*self.metric_values, width=METRIC_VALUE_WIDTH + MARGIN)
 
         # Combine them into a single column
         tab_content = pn.Row(
@@ -195,7 +213,7 @@ class Metrics(PyComponent):
                 name=row['name'],
                 description=row['description'],
                 value=row['value'],
-                status=row['status_history'][-1],
+                status=row['status_history'][-1]['status'],
                 callback=self.callback
             )
             
