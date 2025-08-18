@@ -1,6 +1,6 @@
-from panel.custom import PyComponent
-import param
 import panel as pn
+import param
+from panel.custom import PyComponent
 
 
 class Settings(PyComponent):

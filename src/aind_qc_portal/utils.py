@@ -4,6 +4,7 @@ import re
 
 import panel as pn
 from aind_data_schema.core.quality_control import Status
+
 from aind_qc_portal.layout import AIND_COLORS
 
 VIEW_PREFIX = "/qc_app?id="

@@ -1,10 +1,10 @@
 """Login and submit panels"""
 
-from panel.custom import PyComponent
 import panel as pn
+from panel.custom import PyComponent
 
-from aind_qc_portal.view.data import ViewData
 from aind_qc_portal.layout import OUTER_STYLE
+from aind_qc_portal.view.data import ViewData
 
 
 class SubmitPanel(PyComponent):

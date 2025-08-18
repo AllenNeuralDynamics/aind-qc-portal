@@ -1,17 +1,16 @@
-import pandas as pd
-import panel as pn
-from panel.custom import PyComponent
 from typing import Any, Callable
 
+import pandas as pd
+import panel as pn
 import param
+from panel.custom import PyComponent
 
+from aind_qc_portal.layout import MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE
+from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
 from aind_qc_portal.view.data import ViewData
 from aind_qc_portal.view.panels.media.media import Media
 from aind_qc_portal.view.panels.metric.metric import CustomMetricValue
 from aind_qc_portal.view.panels.settings import Settings
-
-from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
-from aind_qc_portal.layout import METRIC_VALUE_WIDTH, MARGIN, OUTER_STYLE
 
 
 class MetricMedia(PyComponent):

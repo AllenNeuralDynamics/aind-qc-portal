@@ -1,11 +1,8 @@
-import panel as pn
 from typing import Any, Callable
 
-from aind_qcportal_schema.metric_value import (
-    CheckboxMetric,
-    DropdownMetric,
-)
+import panel as pn
 from aind_data_schema.core.quality_control import Status
+from aind_qcportal_schema.metric_value import CheckboxMetric, DropdownMetric
 
 
 class CustomMetricValue:

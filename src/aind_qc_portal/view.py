@@ -9,7 +9,6 @@ from aind_qc_portal.utils import format_css_background
 from aind_qc_portal.view.data import ViewData
 from aind_qc_portal.view.panel import QCPanel
 
-
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor")
 

@@ -1,12 +1,12 @@
 import os
 import tempfile
+
 import boto3
 import httpx
 import panel as pn
-from panel.reactive import ReactiveHTML
-from panel.custom import JSComponent
 import param
-
+from panel.custom import JSComponent
+from panel.reactive import ReactiveHTML
 
 s3_client = boto3.client(
     "s3",
