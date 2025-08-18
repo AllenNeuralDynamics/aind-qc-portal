@@ -16,6 +16,10 @@ class Settings(PyComponent):
 
         pn.state.location.sync(self, {"group_by": "group_by"})
 
+    def _clear_grouping(self, *event):
+        """Clear the grouping selection"""
+        self.group_by = []
+
     def __panel__(self):
         """Create and return the settings panel"""
         multichoice = pn.widgets.MultiChoice.from_param(
@@ -24,5 +28,11 @@ class Settings(PyComponent):
             options=self.grouping_options,
             sizing_mode="stretch_width",
         )
+        clear = pn.widgets.Button(
+            name="Clear",
+            button_type="danger",
+            width=80,
+            on_click=self._clear_grouping,
+        )
 
-        return pn.Column(multichoice)
+        return pn.Row(multichoice, clear)
