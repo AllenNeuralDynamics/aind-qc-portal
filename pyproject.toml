@@ -25,6 +25,7 @@ dependencies = [
     's3fs',
     'aind-qcportal-schema>=0.6.1',
     'httpx',
+    'altair',
 ]
 
 [project.optional-dependencies]
