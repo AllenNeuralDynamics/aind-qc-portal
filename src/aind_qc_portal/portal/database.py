@@ -9,15 +9,18 @@ page load times for users looking at large numbers of records.
 from datetime import datetime
 from typing import Optional
 from aind_data_access_api.document_db import MetadataDbClient
+import panel as pn
 
 client = MetadataDbClient(
-    host="https://allenneuraldynamics.org",
+    host="api.allenneuraldynamics.org",
     version="v2",
 )
 
 FIELDS = [
     "name",
 ]
+
+TTL_DAY = 24 * 60 * 60
 
 
 class Database:
@@ -72,4 +75,37 @@ class Database:
             return records
         except Exception as e:
             print(f"Error fetching records: {e}")
+            return []
+
+    @pn.cache()
+    def get_unique_project_names(self):
+        """Get unique project names from the database"""
+
+        try:
+            unique_projects = client.aggregate_docdb_records(
+                pipeline=[
+                    {"$group": {"_id": "$data_description.project_name"}},
+                    {"$project": {"project_name": "$_id", "_id": 0}}
+                ],
+            )
+            return [project["project_name"] for project in unique_projects]
+        except Exception as e:
+            print(f"Error fetching unique project names: {e}")
+            return []
+
+    @pn.cache()
+    def get_subject_ids(self, project_names: list[str]):
+        """Get unique subject IDs for the given project names"""
+
+        try:
+            subject_ids = client.aggregate_docdb_records(
+                pipeline=[
+                    {"$match": {"data_description.project_name": {"$in": project_names}}},
+                    {"$group": {"_id": "$subject.subject_id"}},
+                    {"$project": {"subject_id": "$_id", "_id": 0}}
+                ],
+            )
+            return [subject["subject_id"] for subject in subject_ids]
+        except Exception as e:
+            print(f"Error fetching subject IDs: {e}")
             return []
