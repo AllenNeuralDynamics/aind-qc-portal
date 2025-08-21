@@ -1,10 +1,14 @@
 """Panels for the Portal app"""
 
+from datetime import datetime
+from dateutil import tz
 import panel as pn
 from panel.custom import PyComponent
-import param
 from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.portal.database import Database
+
+
+AIND_LAUNCH_DATETIME = datetime(2021, 11, 4, 0, 0, 0, tzinfo=tz.UTC)
 
 
 class Portal(PyComponent):
@@ -29,13 +33,20 @@ class Portal(PyComponent):
             options=[],
             disabled=True,
         )
+        self.time_selector = pn.widgets.DatetimeRangePicker(
+            name="acquisition.acquisition_start/end_time",
+            value=(AIND_LAUNCH_DATETIME, datetime.now(tz=tz.UTC)),
+            disabled=True,
+        )
 
         # Watch for changes in project_selector and trigger update
         self.project_selector.param.watch(self.update_subject_selector, 'value')
+        self.project_selector.param.watch(self.update_time_selector, 'value')
 
         self.main_col = pn.Column(
             self.project_selector,
             self.subject_selector,
+            self.time_selector,
             styles=OUTER_STYLE
         )
 
@@ -53,6 +64,15 @@ class Portal(PyComponent):
         else:
             self.subject_selector.options = []
             self.subject_selector.disabled = True
+
+    def update_time_selector(self, event=None):
+        """Update the time selector based on the selected subject"""
+        print("Updating time selector...")
+
+        if self.project_selector.value:
+            self.time_selector.disabled = False
+        else:
+            self.time_selector.disabled = True
 
     def __panel__(self):
         """Return the Panel representation of the Portal app"""

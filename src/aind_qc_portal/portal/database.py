@@ -21,6 +21,7 @@ FIELDS = [
 ]
 
 TTL_DAY = 24 * 60 * 60
+TTL_HOUR = 60 * 60
 
 
 class Database:
@@ -109,3 +110,20 @@ class Database:
         except Exception as e:
             print(f"Error fetching subject IDs: {e}")
             return []
+    
+    @pn.cache(ttl=TTL_HOUR)
+    def get_start_time(self, project_names: list[str]):
+        """Get the earliest start time for the given project names"""
+
+        try:
+            start_time = client.aggregate_docdb_records(
+                pipeline=[
+                    {"$match": {"data_description.project_name": {"$in": project_names}}},
+                    {"$group": {"_id": None, "acquisition.acquisition_start_time": {"$min": "$acquisition.acquisition_start_time"}}},
+                    {"$project": {"start_time": "$start_time", "_id": 0}}
+                ],
+            )
+            return start_time[0]["start_time"] if start_time else None
+        except Exception as e:
+            print(f"Error fetching start time: {e}")
+            return None
