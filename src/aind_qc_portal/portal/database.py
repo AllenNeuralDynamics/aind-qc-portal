@@ -112,18 +112,29 @@ class Database:
             return []
     
     @pn.cache(ttl=TTL_HOUR)
-    def get_start_time(self, project_names: list[str]):
+    def get_acquisition_time_range(self, project_names: list[str]):
         """Get the earliest start time for the given project names"""
 
         try:
-            start_time = client.aggregate_docdb_records(
+            time_range = client.aggregate_docdb_records(
                 pipeline=[
                     {"$match": {"data_description.project_name": {"$in": project_names}}},
-                    {"$group": {"_id": None, "acquisition.acquisition_start_time": {"$min": "$acquisition.acquisition_start_time"}}},
-                    {"$project": {"start_time": "$start_time", "_id": 0}}
+                    {"$group": {
+                        "_id": None, 
+                        "min_start_time": {"$min": "$acquisition.acquisition_start_time"},
+                        "max_start_time": {"$max": "$acquisition.acquisition_start_time"}
+                    }},
+                    {"$project": {
+                        "min_start_time": "$min_start_time",
+                        "max_start_time": "$max_start_time", 
+                        "_id": 0
+                    }}
                 ],
             )
-            return start_time[0]["start_time"] if start_time else None
+            return (
+                time_range[0]["min_start_time"] if time_range else None,
+                time_range[0]["max_start_time"] if time_range else None
+            )
         except Exception as e:
             print(f"Error fetching start time: {e}")
             return None

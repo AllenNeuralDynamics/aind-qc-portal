@@ -33,20 +33,28 @@ class Portal(PyComponent):
             options=[],
             disabled=True,
         )
-        self.time_selector = pn.widgets.DatetimeRangePicker(
-            name="acquisition.acquisition_start/end_time",
-            value=(AIND_LAUNCH_DATETIME, datetime.now(tz=tz.UTC)),
+        self.start_time_selector = pn.widgets.DatetimePicker(
+            name="Min: acquisition.acquisition_start_time",
+            value=AIND_LAUNCH_DATETIME,
+            military_time=False,
+            disabled=True,
+        )
+        self.end_time_selector = pn.widgets.DatetimePicker(
+            name="Max: acquisition.acquisition_start_time",
+            value=(datetime.now(tz=tz.UTC)),
+            military_time=False,
             disabled=True,
         )
 
         # Watch for changes in project_selector and trigger update
         self.project_selector.param.watch(self.update_subject_selector, 'value')
-        self.project_selector.param.watch(self.update_time_selector, 'value')
+        self.project_selector.param.watch(self.update_time_selectors, 'value')
 
         self.main_col = pn.Column(
             self.project_selector,
             self.subject_selector,
-            self.time_selector,
+            self.start_time_selector,
+            self.end_time_selector,
             styles=OUTER_STYLE
         )
 
@@ -65,14 +73,22 @@ class Portal(PyComponent):
             self.subject_selector.options = []
             self.subject_selector.disabled = True
 
-    def update_time_selector(self, event=None):
+    def update_time_selectors(self, event=None):
         """Update the time selector based on the selected subject"""
         print("Updating time selector...")
 
         if self.project_selector.value:
-            self.time_selector.disabled = False
+            # Get the min and max acquisition start times for the selected project
+            min_time, max_time = self.database.get_acquisition_time_range(
+                project_names=self.project_selector.value
+            )
+            print(("Min time:", min_time, "Max time:", max_time))
+
+            self.start_time_selector.disabled = False
+            self.end_time_selector.disabled = False
         else:
-            self.time_selector.disabled = True
+            self.start_time_selector.disabled = True
+            self.end_time_selector.disabled = True
 
     def __panel__(self):
         """Return the Panel representation of the Portal app"""

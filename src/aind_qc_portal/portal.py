@@ -9,4 +9,4 @@ format_css_background()
 database = Database()
 portal = Portal(database=database)
 
-portal.__panel__().servable(title=f"QC Portal")
+portal.__panel__().servable(title="QC Portal")
