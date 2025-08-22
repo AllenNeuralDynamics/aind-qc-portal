@@ -2,7 +2,7 @@
 
 The database pulls _id information and more complete record information from DocDB
 and uses to populate the view for the user. Aggressive caching is used to prevent
-updaetes to the database from causing excessive load on the DocDB server and to reduce
+updates to the database from causing excessive load on the DocDB server and to reduce
 page load times for users looking at large numbers of records.
 """
 
@@ -95,13 +95,16 @@ class Database:
             return []
 
     @pn.cache()
-    def get_subject_ids(self, project_names: list[str]):
+    def get_subject_ids(self, project_names: Optional[list[str]] = None):
         """Get unique subject IDs for the given project names"""
 
         try:
             subject_ids = client.aggregate_docdb_records(
                 pipeline=[
                     {"$match": {"data_description.project_name": {"$in": project_names}}},
+                    {"$group": {"_id": "$subject.subject_id"}},
+                    {"$project": {"subject_id": "$_id", "_id": 0}}
+                ] if project_names else [
                     {"$group": {"_id": "$subject.subject_id"}},
                     {"$project": {"subject_id": "$_id", "_id": 0}}
                 ],
@@ -126,7 +129,7 @@ class Database:
                     }},
                     {"$project": {
                         "min_start_time": "$min_start_time",
-                        "max_start_time": "$max_start_time", 
+                        "max_start_time": "$max_start_time",
                         "_id": 0
                     }}
                 ],

@@ -11,6 +11,44 @@ VIEW_PREFIX = "/qc_app?id="
 PROJECT_LINK_PREFIX = "/qc_project_app?project="
 
 
+def raw_name_from_derived(derived_name: str) -> str:
+    """Return the raw asset name from a derived asset name
+
+    Derived assets have a pattern like:
+
+    <subject_id>_<date>_<time>_<process>_<date>_<time>
+
+    Some older assets have a pattern like:
+
+    <platform>_<subject_id>_<date>_<time>_<process>_<date>_<time>
+
+    Parameters
+    ----------
+    derived_name : str
+        Name of a derived asset
+
+    Returns
+    -------
+    str
+        Name of the corresponding raw asset
+    """
+
+    if not derived_name:
+        raise ValueError("Derived name cannot be empty")
+
+    parts = derived_name.split("_")
+    if len(parts) == 6:
+        # Newer pattern without platform
+        raw_name = "_".join(parts[0:3])
+    elif len(parts) == 7:
+        # Older pattern with platform
+        raw_name = "_".join(parts[0:4])
+    else:
+        raise ValueError(f"Unexpected derived asset name format: {derived_name}")
+
+    return raw_name
+
+
 def get_user_name() -> str:
     """Return the user name from the current session"""
     if pn.state.user:
