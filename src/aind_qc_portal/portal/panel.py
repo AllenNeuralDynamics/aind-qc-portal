@@ -7,7 +7,7 @@ from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.portal.database import Database
 from aind_qc_portal.portal.assets.asset_group import AssetGroup
 
-
+RECORD_LIMIT = 500
 AIND_LAUNCH_DATETIME = datetime(2021, 11, 4).date()
 TOMORROW = datetime.today().date() + timedelta(days=1)
 
@@ -45,24 +45,42 @@ class Portal(PyComponent):
             enable_time=False,
             disabled=True,
         )
+        self.submit_button = pn.widgets.Button(
+            name="Submit",
+            button_type="primary",
+            on_click=self._update_asset_group_query,
+        )
+        self.query_size = pn.widgets.StaticText(
+            name="Query returns:",
+            value="0 assets",
+        )
 
         # Watch for changes in project_selector and trigger update
         self.project_selector.param.watch(self.update_subject_selector, "value")
         self.project_selector.param.watch(self.update_time_selectors, "value")
 
-        # Watch for changes in any selector and update the asset group query
-        self.project_selector.param.watch(self._update_asset_group_query, "value")
-        self.subject_selector.param.watch(self._update_asset_group_query, "value")
-        self.start_date_selector.param.watch(self._update_asset_group_query, "value")
-        self.end_date_selector.param.watch(self._update_asset_group_query, "value")
+        # Watch for changes in selectors and update query count
+        self.project_selector.param.watch(self.update_query_count, "value")
+        self.subject_selector.param.watch(self.update_query_count, "value")
+        self.start_date_selector.param.watch(self.update_query_count, "value")
+        self.end_date_selector.param.watch(self.update_query_count, "value")
+
+        self.selectors_col = pn.Column(
+            self.project_selector,
+            self.subject_selector,
+            self.start_date_selector,
+            self.end_date_selector,
+        )
+        self.submit_col = pn.Column(
+            self.submit_button,
+            self.query_size,
+        )
 
         self.filter_row = pn.Row(
             pn.HSpacer(),
-            pn.Column(
-                self.project_selector,
-                self.subject_selector,
-                self.start_date_selector,
-                self.end_date_selector,
+            pn.Row(
+                self.selectors_col,
+                self.submit_col,
                 styles=OUTER_STYLE,
             ),
             pn.HSpacer(),
@@ -85,8 +103,20 @@ class Portal(PyComponent):
             self.asset_col,
         )
 
-    def _update_asset_group_query(self, event=None):
-        """Update the asset group query based on the selected filters"""
+    def update_query_count(self, event=None):
+
+        self.query_size.loading = True
+        query = self._get_query()
+        ids = self.database.get_ids(query) if query else []
+
+        self.query_size.value = f"{len(ids)} assets"
+
+        if len(ids) > RECORD_LIMIT:
+            pn.state.notifications.error(f"Query returned {len(ids)} records. Loading this many assets will take up to a minute. Please refine your query.", duration=10000)
+        self.query_size.loading = False
+
+    def _get_query(self):
+        """Get the updatd query"""
 
         query = {}
         if self.project_selector.value:
@@ -101,6 +131,12 @@ class Portal(PyComponent):
                 time_query["$lte"] = self.end_date_selector.value.isoformat()
             query["acquisition.acquisition_start_time"] = time_query
 
+        return query
+
+    def _update_asset_group_query(self, event=None):
+        """Update the asset group query based on the selected filters"""
+
+        query = self._get_query()
         print("New query:", query)
         self.asset_group.update_query(query)
 
