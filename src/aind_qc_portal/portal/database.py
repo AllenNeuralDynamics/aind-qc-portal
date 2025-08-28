@@ -18,6 +18,12 @@ client = MetadataDbClient(
 
 FIELDS = [
     "name",
+    "data_description.data_level",
+    "data_description.source_data",
+    "acquisition.acquisition_start_time",
+    "subject.subject_id",
+    "data_description.project_name",
+    "quality_control.status",
 ]
 
 TTL_DAY = 24 * 60 * 60

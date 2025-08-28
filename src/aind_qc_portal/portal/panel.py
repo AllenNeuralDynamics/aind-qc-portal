@@ -88,7 +88,7 @@ class Portal(PyComponent):
     def _update_asset_group_query(self, event=None):
         """Update the asset group query based on the selected filters"""
 
-        query = {"data_description.data_level": "derived"}
+        query = {}
         if self.project_selector.value:
             query["data_description.project_name"] = {"$in": self.project_selector.value}
         if self.subject_selector.value:

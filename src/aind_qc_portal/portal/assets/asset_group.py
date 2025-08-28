@@ -2,7 +2,6 @@
 import param
 from aind_qc_portal.portal.database import Database
 from aind_qc_portal.portal.assets.asset import Asset
-from aind_qc_portal.utils import raw_name_from_derived
 from aind_qc_portal.layout import OUTER_STYLE
 from panel.custom import PyComponent
 import panel as pn
@@ -28,27 +27,22 @@ class AssetGroup(PyComponent):
         self.panel.loading = True
         self.query = query
 
-    def _format_query(self):
-        """Format the query for display"""
-        # Remove internal filters for display
-        query_copy = self.query.copy()
-        query_copy.pop("data_description.data_level", None)
-
-        if not self.query:
-            query_string = "*no query set*"
-        else:
-            query_string = "\n".join(f"- {k}: {v}" for k, v in query_copy.items())
-        return f"## Assets pulled from query:\n{query_string}"
-
     def _init_panel_components(self):
         """Initialize the components of the AssetGroupPanel"""
+        self.header_md = pn.pane.Markdown("## Asset Group\nQuery:", width=500)
 
-        self.header = pn.pane.Markdown(
-            self._format_query(),
-            styles=OUTER_STYLE,
+        self.query_panel = pn.widgets.JSONEditor(mode="text", width=500, menu=False)
+        self.query_panel.link(self, value="query", bidirectional=True)
+
+        self.header = pn.Column(
+            self.header_md,
+            self.query_panel,
         )
 
-        self.main_col = pn.Column(styles=OUTER_STYLE)
+        self.main_col = pn.Column(
+            styles=OUTER_STYLE,
+            width=1200,
+        )
         self.panel = pn.Row(
             pn.HSpacer(), self.main_col, pn.HSpacer()
         )
@@ -61,18 +55,25 @@ class AssetGroup(PyComponent):
         # Fetch records
         self.records = self.database.get_records(self.query) if self.query else []
 
-        # Go through all the records and pull out the raw asset names
-        # Then group records by asset name, and pass them to Asset objects
-        raw_to_derived = {}
-        for record in self.records:
-            raw_name = raw_name_from_derived(record["name"])
-            if raw_name not in raw_to_derived:
-                raw_to_derived[raw_name] = []
-            raw_to_derived[raw_name].append(record)
+        # Store the records as [raw, derived0, derived1, ...]
+        raw_to_records = {}
+        
+        # Split records into raw and derived
+        raw_records = [rec for rec in self.records if rec["data_description"]["data_level"] == "raw"]
+        derived_records = [rec for rec in self.records if rec["data_description"]["data_level"] != "raw"]
+        # Pre-sort records by acquisition.acquisition_start_time
+        raw_records.sort(key=lambda r: r.get("acquisition", {}).get("acquisition_start_time", ""), reverse=True)
+        derived_records.sort(key=lambda r: r.get("acquisition", {}).get("acquisition_start_time", ""), reverse=True)
 
-        self.header.object = self._format_query()
+        # Put the raw records first
+        for record in raw_records:
+            raw_to_records[record["name"]] = [record]
 
-        self.assets = [Asset(records, self.database) for _, records in raw_to_derived.items()]
+        for record in derived_records:
+            if "source_data" in record["data_description"] and record["data_description"]["source_data"]:
+                raw_to_records[record["data_description"]["source_data"][0]].append(record)
+
+        self.assets = [Asset(records, self.database) for _, records in raw_to_records.items()]
 
     @pn.depends("assets", watch=True)
     def _update_assets(self):
