@@ -1,4 +1,5 @@
 """Panel for a group of assets selected from a query"""
+
 import param
 from aind_qc_portal.portal.database import Database
 from aind_qc_portal.portal.assets.asset import Asset
@@ -43,9 +44,7 @@ class AssetGroup(PyComponent):
             styles=OUTER_STYLE,
             width=1200,
         )
-        self.panel = pn.Row(
-            pn.HSpacer(), self.main_col, pn.HSpacer()
-        )
+        self.panel = pn.Row(pn.HSpacer(), self.main_col, pn.HSpacer())
 
     @pn.depends("query", watch=True)
     def _get_records(self):
@@ -57,7 +56,7 @@ class AssetGroup(PyComponent):
 
         # Store the records as [raw, derived0, derived1, ...]
         raw_to_records = {}
-        
+
         # Split records into raw and derived
         raw_records = [rec for rec in self.records if rec["data_description"]["data_level"] == "raw"]
         derived_records = [rec for rec in self.records if rec["data_description"]["data_level"] != "raw"]
@@ -81,10 +80,7 @@ class AssetGroup(PyComponent):
         record_count = len(self.records) if self.records else 0
         print(f"Updating assets, {record_count} records found")
         # Hide loading spinner when records are updated
-        self.main_col.objects = [
-            self.header,
-            *self.assets
-        ]
+        self.main_col.objects = [self.header, *self.assets]
         self.panel.loading = False
 
     def __panel__(self):

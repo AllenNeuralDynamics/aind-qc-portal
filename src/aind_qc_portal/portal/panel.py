@@ -47,14 +47,14 @@ class Portal(PyComponent):
         )
 
         # Watch for changes in project_selector and trigger update
-        self.project_selector.param.watch(self.update_subject_selector, 'value')
-        self.project_selector.param.watch(self.update_time_selectors, 'value')
+        self.project_selector.param.watch(self.update_subject_selector, "value")
+        self.project_selector.param.watch(self.update_time_selectors, "value")
 
         # Watch for changes in any selector and update the asset group query
-        self.project_selector.param.watch(self._update_asset_group_query, 'value')
-        self.subject_selector.param.watch(self._update_asset_group_query, 'value')
-        self.start_date_selector.param.watch(self._update_asset_group_query, 'value')
-        self.end_date_selector.param.watch(self._update_asset_group_query, 'value')
+        self.project_selector.param.watch(self._update_asset_group_query, "value")
+        self.subject_selector.param.watch(self._update_asset_group_query, "value")
+        self.start_date_selector.param.watch(self._update_asset_group_query, "value")
+        self.end_date_selector.param.watch(self._update_asset_group_query, "value")
 
         self.filter_row = pn.Row(
             pn.HSpacer(),
@@ -110,9 +110,7 @@ class Portal(PyComponent):
 
         if self.project_selector.value:
             cur_value = self.subject_selector.value
-            self.subject_selector.options = self.database.get_subject_ids(
-                project_names=self.project_selector.value
-            )
+            self.subject_selector.options = self.database.get_subject_ids(project_names=self.project_selector.value)
             if cur_value in self.subject_selector.options:
                 self.subject_selector.value = cur_value
         else:
@@ -124,9 +122,7 @@ class Portal(PyComponent):
 
         if self.project_selector.value:
             # Get the min and max acquisition start times for the selected project
-            min_time, max_time = self.database.get_acquisition_time_range(
-                project_names=self.project_selector.value
-            )
+            min_time, max_time = self.database.get_acquisition_time_range(project_names=self.project_selector.value)
             print(("Min time:", min_time, "Max time:", max_time))
 
             self.start_date_selector.disabled = False
