@@ -26,6 +26,7 @@ FIELDS = [
     "quality_control.status",
     "processing.data_processes.start_date_time",
     "subject.subject_details.genotype",
+    "location",
 ]
 
 TTL_DAY = 24 * 60 * 60
