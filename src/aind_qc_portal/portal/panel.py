@@ -106,14 +106,21 @@ class Portal(PyComponent):
     def update_query_count(self, event=None):
 
         self.query_size.loading = True
+        self.submit_button.disabled = True
         query = self._get_query()
         ids = self.database.get_ids(query) if query else []
 
         self.query_size.value = f"{len(ids)} assets"
 
         if len(ids) > RECORD_LIMIT:
-            pn.state.notifications.error(f"Query returned {len(ids)} records. Loading this many assets will take up to a minute. Please refine your query.", duration=10000)
+            time_estimate = (len(ids) / 100) * 10
+            if time_estimate < 60:
+                time_estimate_str = "up to a minute"
+            else:
+                time_estimate_str = "several minutes"
+            pn.state.notifications.error(f"Query returned {len(ids)} records. Loading this many assets could take {time_estimate_str}. Please refine your query.", duration=10000)
         self.query_size.loading = False
+        self.submit_button.disabled = False
 
     def _get_query(self):
         """Get the updatd query"""

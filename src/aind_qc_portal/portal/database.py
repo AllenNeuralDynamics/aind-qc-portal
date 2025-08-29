@@ -87,7 +87,7 @@ class Database:
             print(f"Error fetching records: {e}")
             return []
 
-    @pn.cache()
+    @pn.cache(ttl=TTL_DAY)
     def get_unique_project_names(self):
         """Get unique project names from the database"""
 
@@ -103,7 +103,7 @@ class Database:
             print(f"Error fetching unique project names: {e}")
             return []
 
-    @pn.cache()
+    @pn.cache(ttl=TTL_DAY)
     def get_subject_ids(self, project_names: Optional[list[str]] = None):
         """Get unique subject IDs for the given project names"""
 

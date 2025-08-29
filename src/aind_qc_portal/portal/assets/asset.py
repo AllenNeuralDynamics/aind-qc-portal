@@ -46,7 +46,7 @@ class Asset(PyComponent):
             # processing.data_processes.start_date_time
             processes = record.get("processing", {}).get("data_processes", [])
             if processes:
-                process_datetime = processes[0].get("start_date_time", "")
+                process_datetime = processes[-1].get("start_date_time", "")
                 try:
                     process_datetime = datetime.fromisoformat(process_datetime).date()
                 except Exception:
@@ -63,6 +63,9 @@ class Asset(PyComponent):
                     "QC link": format_link(qc_link) if qc_link else "No QC",
                 }
             )
+        
+        # Sort by processed date, oldest first
+        data = sorted(data, key=lambda x: (x["Processed"] is None, x["Processed"]))
 
         return pd.DataFrame(data)
 
