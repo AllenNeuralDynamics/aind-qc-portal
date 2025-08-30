@@ -40,8 +40,8 @@ class Asset(PyComponent):
                 qc_link = None
 
             # Build S3 link
-            s3_link = record.get('location', '')
-            
+            s3_link = record.get("location", "")
+
             # Get the first processing timestamp
             # processing.data_processes.start_date_time
             processes = record.get("processing", {}).get("data_processes", [])
@@ -63,7 +63,7 @@ class Asset(PyComponent):
                     "QC link": format_link(qc_link) if qc_link else "No QC",
                 }
             )
-        
+
         # Sort by processed date, oldest first, but only for the derived assets
         if len(data) > 1:
             data = [data[0]] + sorted(data[1:], key=lambda x: (x["Processed"] is None, x["Processed"]))

@@ -26,7 +26,7 @@ class RawAssetSummary(PyComponent):
         self.acquisition_start_time = acquisition_start_time
         self.project_name = project_name
         self.genotype = genotype
-        
+
         settings.param.watch(self._update_table, ["show_full_metadata_path"])
 
         self._init_panel_components()
@@ -52,7 +52,7 @@ class RawAssetSummary(PyComponent):
 
     def _update_table(self, event=None):
         """Update the table based on current settings"""
-        
+
         if settings.show_full_metadata_path:
             acquisition_str = "Acquisition.acquisition_start_time"
             subject_str = "Subject.subject_id"
@@ -63,13 +63,15 @@ class RawAssetSummary(PyComponent):
             subject_str = "subject_id"
             project_str = "project_name"
             genotype_str = "genotype"
-        
-        self.table.object = pd.DataFrame({
-            acquisition_str: [self.acquisition_start_time],
-            subject_str: [self.subject_id],
-            project_str: [self.project_name],
-            genotype_str: [self.genotype],
-        })
+
+        self.table.object = pd.DataFrame(
+            {
+                acquisition_str: [self.acquisition_start_time],
+                subject_str: [self.subject_id],
+                project_str: [self.project_name],
+                genotype_str: [self.genotype],
+            }
+        )
 
     def __panel__(self):
         """Return the panel representation of the RawAsetCard"""

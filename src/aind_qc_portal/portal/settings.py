@@ -1,5 +1,3 @@
-
-
 import panel as pn
 from panel.custom import PyComponent
 import param
@@ -16,12 +14,12 @@ class Settings(PyComponent):
 
     def _init_panel_components(self):
         """Initialize the components of the Settings app"""
-        
+
         toggle = pn.widgets.Checkbox.from_param(
             self.param.show_full_metadata_path,
             name="Show Full Metadata Path",
         )
-        
+
         header = pn.pane.Markdown("### Settings")
 
         self.panel = pn.Modal(
