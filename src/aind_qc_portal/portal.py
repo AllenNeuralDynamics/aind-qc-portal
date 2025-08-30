@@ -5,7 +5,7 @@ from aind_qc_portal.portal.database import Database
 from aind_qc_portal.portal.panel import Portal
 from aind_qc_portal.utils import format_css_background
 
-pn.extension('jsoneditor', notifications=True)
+pn.extension('jsoneditor', 'modal', notifications=True)
 
 format_css_background()
 

@@ -3,9 +3,10 @@
 from datetime import datetime, timedelta
 import panel as pn
 from panel.custom import PyComponent
-from aind_qc_portal.layout import OUTER_STYLE
+from aind_qc_portal.layout import OUTER_STYLE, AIND_COLORS
 from aind_qc_portal.portal.database import Database
 from aind_qc_portal.portal.assets.asset_group import AssetGroup
+from aind_qc_portal.portal.settings import settings
 
 RECORD_LIMIT = 500
 AIND_LAUNCH_DATETIME = datetime(2021, 11, 4).date()
@@ -24,6 +25,26 @@ class Portal(PyComponent):
 
     def _init_panel_components(self, project_names: list):
         """Initialize the components of the Portal app"""
+        
+        self.settings = settings
+
+        # Import modal and create gear button
+        self.gear_button = self.settings.panel.create_button(
+            action="toggle",
+            icon="settings",
+            button_type="primary",
+            styles={
+                "position": "fixed",
+                "top": "5px",
+                "right": "5px",
+                "width": "30px",
+                "height": "30px",
+                "zIndex": "1000",
+                "background": "#fff",
+                "borderRadius": "50%",
+                "boxShadow": "0 2px 8px rgba(0,0,0,0.15)",
+            },
+        )
 
         self.project_selector = pn.widgets.MultiChoice(
             name="data_description.project_name",
@@ -84,6 +105,7 @@ class Portal(PyComponent):
                 styles=OUTER_STYLE,
             ),
             pn.HSpacer(),
+            self.settings,
         )
 
         # Build the asset group
@@ -98,7 +120,13 @@ class Portal(PyComponent):
             self.asset_col,
         )
 
+        # Overlay gear button in top right
         self.panel = pn.Column(
+            pn.Row(
+                pn.Spacer(),
+                self.gear_button,
+                styles={"height": "0px"},
+            ),
             self.filter_row,
             self.asset_col,
         )
