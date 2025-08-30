@@ -40,7 +40,7 @@ class Asset(PyComponent):
                 qc_link = None
 
             # Build S3 link
-            s3_link = {record.get('location', '')}
+            s3_link = record.get('location', '')
             
             # Get the first processing timestamp
             # processing.data_processes.start_date_time
