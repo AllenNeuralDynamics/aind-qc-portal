@@ -25,7 +25,7 @@ class Portal(PyComponent):
 
     def _init_panel_components(self, project_names: list):
         """Initialize the components of the Portal app"""
-        
+
         self.settings = settings
 
         # Import modal and create gear button
@@ -146,27 +146,21 @@ class Portal(PyComponent):
                 time_estimate_str = "up to a minute"
             else:
                 time_estimate_str = "several minutes"
-            pn.state.notifications.error(f"Query returned {len(ids)} records. Loading this many assets could take {time_estimate_str}. Please refine your query.", duration=10000)
+            pn.state.notifications.error(
+                f"Query returned {len(ids)} records. Loading this many assets could take {time_estimate_str}. Please refine your query.",
+                duration=10000,
+            )
         self.query_size.loading = False
         self.submit_button.disabled = False
 
     def _get_query(self):
         """Get the updatd query"""
-
-        query = {}
-        if self.project_selector.value:
-            query["data_description.project_name"] = {"$in": self.project_selector.value}
-        if self.subject_selector.value:
-            query["subject.subject_id"] = {"$in": self.subject_selector.value}
-        if query and (self.start_date_selector.value or self.end_date_selector.value):
-            time_query = {}
-            if self.start_date_selector.value:
-                time_query["$gte"] = self.start_date_selector.value.isoformat()
-            if self.end_date_selector.value:
-                time_query["$lte"] = self.end_date_selector.value.isoformat()
-            query["acquisition.acquisition_start_time"] = time_query
-
-        return query
+        self.database.build_query(
+            project_name=self.project_selector.value if self.project_selector.value else None,
+            subject_id=self.subject_selector.value if self.subject_selector.value else None,
+            start_date=self.start_date_selector.value if self.start_date_selector.value else None,
+            end_date=self.end_date_selector.value if self.end_date_selector.value else None,
+        )
 
     def _update_asset_group_query(self, event=None):
         """Update the asset group query based on the selected filters"""

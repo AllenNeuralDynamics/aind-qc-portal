@@ -38,7 +38,6 @@ class Database:
 
     def build_query(
         self,
-        name_string: Optional[str] = None,
         project_name: Optional[str] = None,
         subject_id: Optional[str] = None,
         start_date: Optional[datetime] = None,
@@ -47,17 +46,17 @@ class Database:
         """Construct a MongoDB query using the available parameters"""
 
         query = {}
-
-        if name_string:
-            query["name"] = {"$regex": name_string, "$options": "i"}
-
         if project_name:
-            query["data_description.project_name"] = project_name
-
+            query["data_description.project_name"] = {"$in": project_name}
         if subject_id:
-            query["subject.subject_id"] = subject_id
-
-        # [TODO] Add date filtering
+            query["subject.subject_id"] = {"$in": subject_id}
+        if query and (start_date or end_date):
+            time_query = {}
+            if start_date:
+                time_query["$gte"] = start_date.isoformat()
+            if end_date:
+                time_query["$lte"] = end_date.isoformat()
+            query["acquisition.acquisition_start_time"] = time_query
 
         return query
 
