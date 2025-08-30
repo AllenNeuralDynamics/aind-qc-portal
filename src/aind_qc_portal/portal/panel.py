@@ -130,6 +130,16 @@ class Portal(PyComponent):
             self.filter_row,
             self.asset_col,
         )
+    
+    def _get_query(self):
+        """Build the query from the current selector values"""
+        query = self.database.build_query(
+            project_name=self.project_selector.value if self.project_selector.value else None,
+            subject_id=self.subject_selector.value if self.subject_selector.value else None,
+            start_date=self.start_date_selector.value if self.start_date_selector.value else None,
+            end_date=self.end_date_selector.value if self.end_date_selector.value else None,
+        )
+        return query
 
     def update_query_count(self, event=None):
 
@@ -152,15 +162,6 @@ class Portal(PyComponent):
             )
         self.query_size.loading = False
         self.submit_button.disabled = False
-
-    def _get_query(self):
-        """Get the updatd query"""
-        self.database.build_query(
-            project_name=self.project_selector.value if self.project_selector.value else None,
-            subject_id=self.subject_selector.value if self.subject_selector.value else None,
-            start_date=self.start_date_selector.value if self.start_date_selector.value else None,
-            end_date=self.end_date_selector.value if self.end_date_selector.value else None,
-        )
 
     def _update_asset_group_query(self, event=None):
         """Update the asset group query based on the selected filters"""
