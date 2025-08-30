@@ -64,8 +64,9 @@ class Asset(PyComponent):
                 }
             )
         
-        # Sort by processed date, oldest first
-        data = sorted(data, key=lambda x: (x["Processed"] is None, x["Processed"]))
+        # Sort by processed date, oldest first, but only for the derived assets
+        if len(data) > 1:
+            data = [data[0]] + sorted(data[1:], key=lambda x: (x["Processed"] is None, x["Processed"]))
 
         return pd.DataFrame(data)
 
