@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 import panel as pn
 from panel.custom import PyComponent
-from aind_qc_portal.layout import OUTER_STYLE, AIND_COLORS
+from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.portal.database import Database
 from aind_qc_portal.portal.assets.asset_group import AssetGroup
 from aind_qc_portal.portal.settings import settings
@@ -190,6 +190,8 @@ class Portal(PyComponent):
             # Get the min and max acquisition start times for the selected project
             min_time, max_time = self.database.get_acquisition_time_range(project_names=self.project_selector.value)
             print(("Min time:", min_time, "Max time:", max_time))
+            self.start_date_selector.value = datetime.fromisoformat(min_time).date() if min_time else AIND_LAUNCH_DATETIME
+            self.end_date_selector.value = datetime.fromisoformat(max_time).date() + timedelta(days=1) if max_time else TOMORROW
 
             self.start_date_selector.disabled = False
             self.end_date_selector.disabled = False
