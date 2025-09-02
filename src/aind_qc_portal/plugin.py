@@ -2,6 +2,7 @@
 
 import json
 from tornado.web import RequestHandler, HTTPError
+from aind_qc_portal.view_contents.data import upload_temporary_metadata
 
 
 class UploadMetadataHandler(RequestHandler):
@@ -13,11 +14,11 @@ class UploadMetadataHandler(RequestHandler):
                 metadata = json.loads(self.request.body)
             else:
                 metadata = None
-                
+
             if not metadata:
                 raise HTTPError(400, 'No metadata provided.')
-            print("Received metadata:", metadata)  # Debugging line
-            # For now, return success status. Database integration can be added later
+
+            upload_temporary_metadata(metadata)
             status_code = 200  # Temporary success status
             self.set_header('Content-Type', 'application/json')
             self.write({'status': status_code})

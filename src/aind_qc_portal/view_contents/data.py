@@ -16,6 +16,13 @@ client = MetadataDbClient(
 )
 
 
+def upload_temporary_metadata(metadata: dict):
+    """Upload metadata to the database."""
+    if not hasattr(pn.state, "metadata"):
+        pn.state.metadata = {}
+    pn.state.metadata[metadata["name"]] = metadata
+
+
 class ViewData(param.Parameterized):
     """Database for the QC view application."""
 
@@ -203,23 +210,30 @@ class ViewData(param.Parameterized):
     # @pn.cache(max_items=1000, policy="LFU")
     def _load_record(self):
         """Get a QualityControl object from the database by its name."""
-        records = client.retrieve_docdb_records(
-            filter_query={
-                "name": self.name,
-            },
-            projection={
-                "_id": 1,
-                "quality_control": 1,
-                "name": 1,
-                "location": 1,
-                "data_description.project_name": 1,
-            },
-        )
+        
+        # Check if the record is in the temporary metadata
+        if hasattr(pn.state, "metadata") and self.name in pn.state.metadata:
+            self.record = pn.state.metadata[self.name]
+            print(f"Loaded record {self.name} from temporary metadata")
+        else:
+            records = client.retrieve_docdb_records(
+                filter_query={
+                    "name": self.name,
+                },
+                projection={
+                    "_id": 1,
+                    "quality_control": 1,
+                    "name": 1,
+                    "location": 1,
+                    "data_description.project_name": 1,
+                },
+            )
 
-        if not records:
-            return
+            if not records:
+                return
 
-        self.record = records[0]
+            self.record = records[0]
+
         quality_control = self.record.get("quality_control", {})
 
         self.dataframe = (
