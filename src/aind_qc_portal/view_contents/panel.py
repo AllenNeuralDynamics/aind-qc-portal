@@ -9,11 +9,11 @@ import param
 from panel.custom import PyComponent
 
 from aind_qc_portal.layout import OUTER_STYLE
-from aind_qc_portal.view.data import ViewData
-from aind_qc_portal.view.panels.header import Header
-from aind_qc_portal.view.panels.metrics import Metrics
-from aind_qc_portal.view.panels.settings import Settings
-from aind_qc_portal.view.panels.submit import SubmitPanel
+from aind_qc_portal.view_contents.data import ViewData
+from aind_qc_portal.view_contents.panels.header import Header
+from aind_qc_portal.view_contents.panels.metrics import Metrics
+from aind_qc_portal.view_contents.panels.settings import Settings
+from aind_qc_portal.view_contents.panels.submit import SubmitPanel
 
 
 class QCPanel(PyComponent):

@@ -7,7 +7,7 @@ import panel as pn
 import param
 from panel.custom import PyComponent
 
-from aind_qc_portal.view.panels.media.utils import (
+from aind_qc_portal.view_contents.panels.media.utils import (
     Fullscreen,
     _get_s3_file,
     _get_s3_url,

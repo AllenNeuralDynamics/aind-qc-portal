@@ -4,9 +4,9 @@ from datetime import datetime, timedelta
 import panel as pn
 from panel.custom import PyComponent
 from aind_qc_portal.layout import OUTER_STYLE
-from aind_qc_portal.portal.database import Database
-from aind_qc_portal.portal.assets.asset_group import AssetGroup
-from aind_qc_portal.portal.settings import settings
+from aind_qc_portal.portal_contents.database import Database
+from aind_qc_portal.portal_contents.assets.asset_group import AssetGroup
+from aind_qc_portal.portal_contents.settings import settings
 
 RECORD_LIMIT = 500
 AIND_LAUNCH_DATETIME = datetime(2021, 11, 4).date()

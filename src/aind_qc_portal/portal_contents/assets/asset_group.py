@@ -1,8 +1,8 @@
 """Panel for a group of assets selected from a query"""
 
 import param
-from aind_qc_portal.portal.database import Database
-from aind_qc_portal.portal.assets.asset import Asset
+from aind_qc_portal.portal_contents.database import Database
+from aind_qc_portal.portal_contents.assets.asset import Asset
 from aind_qc_portal.layout import OUTER_STYLE
 from panel.custom import PyComponent
 import panel as pn

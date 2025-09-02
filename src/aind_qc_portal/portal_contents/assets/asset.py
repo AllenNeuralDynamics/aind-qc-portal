@@ -6,8 +6,8 @@ import panel as pn
 from panel.custom import PyComponent
 import param
 
-from aind_qc_portal.portal.database import Database
-from aind_qc_portal.portal.assets.raw_asset_summary import RawAssetSummary
+from aind_qc_portal.portal_contents.database import Database
+from aind_qc_portal.portal_contents.assets.raw_asset_summary import RawAssetSummary
 from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.utils import format_link
 

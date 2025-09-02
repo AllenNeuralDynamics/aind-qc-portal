@@ -4,7 +4,7 @@ from typing import Optional
 import pandas as pd
 import panel as pn
 from panel.custom import PyComponent
-from aind_qc_portal.portal.settings import settings
+from aind_qc_portal.portal_contents.settings import settings
 
 
 class RawAssetSummary(PyComponent):
