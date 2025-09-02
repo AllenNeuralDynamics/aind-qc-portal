@@ -210,7 +210,7 @@ class ViewData(param.Parameterized):
     # @pn.cache(max_items=1000, policy="LFU")
     def _load_record(self):
         """Get a QualityControl object from the database by its name."""
-        
+
         # First try to pull record from DocDB
         records = client.retrieve_docdb_records(
             filter_query={
