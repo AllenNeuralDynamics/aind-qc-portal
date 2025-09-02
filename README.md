@@ -90,6 +90,21 @@ The portal supports a few special cases to allow a bit more flexibility or to co
 - If you put two reference strings separated by a semicolon `;` they will be displayed in a [Swipe](https://panel.holoviz.org/reference/layouts/Swipe.html) pane that lets you swipe back and forth between the two things. Mostly useful for overlay images.
 - If you re-use the same reference in multiple metrics, all of the metrics will be stacked in a single "Metric group".
 
+## Testing Metadata
+
+You can upload test metadata to the `/upload_metadata` endpoint and then view them at `/view?name=<metadata.name>`. Uploaded metadata should be a dictionary with the fields the fields `_id`, `name`, `location`, `data_description.project_name` and `quality_control`. This metadata JSON does need to be fully valid, but the `quality_control` object does need to be valid against the current release of [aind-data-schema](https://github.com/AllenNeuralDynamics/aind-data-schema).
+
+```{py}
+import json
+import requests
+
+with open('metadata.json', 'r') as f:
+    metadata = json.load(f)
+
+response = requests.post('https://qc.allenneuraldynamics.org/upload_metadata', json=metadata)
+print(f"Status: {response.status_code}")
+```
+
 ## How to upload data from CO Capsules
 
 ### Preferred workflow
