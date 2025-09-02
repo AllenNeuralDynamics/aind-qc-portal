@@ -211,27 +211,27 @@ class ViewData(param.Parameterized):
     def _load_record(self):
         """Get a QualityControl object from the database by its name."""
         
-        # Check if the record is in the temporary metadata
-        if hasattr(pn.state, "metadata") and self.name in pn.state.metadata:
-            self.record = pn.state.metadata[self.name]
-            print(f"Loaded record {self.name} from temporary metadata")
-        else:
-            records = client.retrieve_docdb_records(
-                filter_query={
-                    "name": self.name,
-                },
-                projection={
-                    "_id": 1,
-                    "quality_control": 1,
-                    "name": 1,
-                    "location": 1,
-                    "data_description.project_name": 1,
-                },
-            )
+        # First try to pull record from DocDB
+        records = client.retrieve_docdb_records(
+            filter_query={
+                "name": self.name,
+            },
+            projection={
+                "_id": 1,
+                "quality_control": 1,
+                "name": 1,
+                "location": 1,
+                "data_description.project_name": 1,
+            },
+        )
 
-            if not records:
+        if not records:
+            if hasattr(pn.state, "metadata") and self.name in pn.state.metadata:
+                self.record = pn.state.metadata[self.name]
+                print(f"Loaded record {self.name} from temporary metadata")
+            else:
                 return
-
+        else:
             self.record = records[0]
 
         quality_control = self.record.get("quality_control", {})
