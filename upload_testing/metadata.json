@@ -1,0 +1,2005 @@
+{
+  "_id": "c9888108-f413-41cc-9a1d-418937a04410",
+  "object_type": "Metadata",
+  "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/metadata.py",
+  "schema_version": "2.0.79",
+  "name": "multiplane-ophys_692478_2023-09-29_08-53-45_processed_2025-04-22_20-50-47",
+  "location": "s3://codeocean-s3datasetsbucket-1u41qdg42ur9/df429003-91a0-45d2-8457-66b156ad8bfa",
+  "other_identifiers": {},
+  "subject": {
+    "object_type": "Subject",
+    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/subject.py",
+    "schema_version": "2.0.13",
+    "subject_id": "692478",
+    "subject_details": {
+      "object_type": "Mouse subject",
+      "sex": "Male",
+      "date_of_birth": "2023-07-05",
+      "strain": {
+        "name": "C57BL/6J",
+        "species": "Mus musculus",
+        "registry": "Mouse Genome Informatics (MGI)",
+        "registry_identifier": "MGI:3028467"
+      },
+      "species": {
+        "name": "Mus musculus",
+        "common_name": "House mouse",
+        "registry": "National Center for Biotechnology Information (NCBI)",
+        "registry_identifier": "NCBI:txid10090"
+      },
+      "alleles": [],
+      "genotype": "Slc32a1-IRES-Cre/wt;Oi1(TIT2L-jGCaMP8s-WPRE-ICL-IRES-tTA2)/wt",
+      "breeding_info": {
+        "object_type": "Breeding info",
+        "breeding_group": "unknown",
+        "maternal_id": "unknown",
+        "maternal_genotype": "unknown",
+        "paternal_id": "unknown",
+        "paternal_genotype": "unknown"
+      },
+      "wellness_reports": [],
+      "housing": null,
+      "source": {
+        "name": "Allen Institute",
+        "abbreviation": "AI",
+        "registry": "Research Organization Registry (ROR)",
+        "registry_identifier": "03cpe7c52"
+      },
+      "restrictions": null,
+      "rrid": null
+    },
+    "notes": null
+  },
+  "data_description": {
+    "object_type": "Data description",
+    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/data_description.py",
+    "schema_version": "2.1.0",
+    "license": "CC-BY-4.0",
+    "subject_id": "692478",
+    "creation_time": "2025-04-22T20:50:47.399657Z",
+    "tags": null,
+    "name": "multiplane-ophys_692478_2023-09-29_08-53-45_processed_2025-04-22_20-50-47",
+    "institution": {
+      "name": "Allen Institute for Neural Dynamics",
+      "abbreviation": "AIND",
+      "registry": "Research Organization Registry (ROR)",
+      "registry_identifier": "04szwah67"
+    },
+    "funding_source": [
+      {
+        "object_type": "Funding",
+        "funder": {
+          "name": "Allen Institute",
+          "abbreviation": "AI",
+          "registry": "Research Organization Registry (ROR)",
+          "registry_identifier": "03cpe7c52"
+        },
+        "grant_number": null,
+        "fundee": [
+          {
+            "object_type": "Person",
+            "name": "unknown",
+            "registry": "Open Researcher and Contributor ID (ORCID)",
+            "registry_identifier": null
+          }
+        ]
+      }
+    ],
+    "data_level": "derived",
+    "group": null,
+    "investigators": [
+      {
+        "object_type": "Person",
+        "name": "Marina Garrett",
+        "registry": "Open Researcher and Contributor ID (ORCID)",
+        "registry_identifier": null
+      },
+      {
+        "object_type": "Person",
+        "name": "Peter Groblewski",
+        "registry": "Open Researcher and Contributor ID (ORCID)",
+        "registry_identifier": null
+      }
+    ],
+    "project_name": "Learning mFISH-V1omFISH",
+    "restrictions": null,
+    "modalities": [
+      {
+        "name": "Planar optical physiology",
+        "abbreviation": "pophys"
+      },
+      {
+        "name": "Behavior videos",
+        "abbreviation": "behavior-videos"
+      }
+    ],
+    "source_data": [
+      "multiplane-ophys_692478_2023-09-29_08-53-45"
+    ],
+    "data_summary": "LearningmFISHDevelopment"
+  },
+  "procedures": {
+    "object_type": "Procedures",
+    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/procedures.py",
+    "schema_version": "2.0.33",
+    "subject_id": "692478",
+    "subject_procedures": [
+      {
+        "object_type": "Surgery",
+        "protocol_id": null,
+        "start_date": "2023-10-27",
+        "experimenters": [
+          "30086"
+        ],
+        "ethics_review_id": "2103",
+        "animal_weight_prior": null,
+        "animal_weight_post": null,
+        "weight_unit": "gram",
+        "anaesthesia": null,
+        "workstation_id": null,
+        "coordinate_system": null,
+        "measured_coordinates": null,
+        "procedures": [
+          {
+            "object_type": "Perfusion",
+            "protocol_id": "dx.doi.org/10.17504/protocols.io.8epv51bejl1b/v6",
+            "output_specimen_ids": [
+              "692478"
+            ]
+          }
+        ],
+        "notes": null
+      },
+      {
+        "object_type": "Surgery",
+        "protocol_id": "dx.doi.org/10.17504/protocols.io.kqdg392o7g25/v2",
+        "start_date": "2023-08-23",
+        "experimenters": [
+          "NSB"
+        ],
+        "ethics_review_id": "2103",
+        "animal_weight_prior": 20.6,
+        "animal_weight_post": 23.2,
+        "weight_unit": "gram",
+        "anaesthesia": {
+          "object_type": "Anaesthetic",
+          "anaesthetic_type": "isoflurane",
+          "duration": 150,
+          "duration_unit": "minute",
+          "level": 1.5
+        },
+        "workstation_id": "SWS 3",
+        "coordinate_system": null,
+        "measured_coordinates": null,
+        "procedures": [
+          {
+            "object_type": "Craniotomy",
+            "protocol_id": null,
+            "craniotomy_type": "Circle",
+            "coordinate_system_name": "BREGMA_ARID",
+            "position": [
+              "Origin"
+            ],
+            "size": 5,
+            "size_unit": "millimeter",
+            "protective_material": null,
+            "implant_part_number": "5mm stacked coverslip",
+            "dura_removed": null
+          },
+          {
+            "object_type": "Headframe",
+            "protocol_id": null,
+            "headframe_type": "Visual Ctx",
+            "headframe_part_number": "0160-100-10",
+            "headframe_material": null,
+            "well_part_number": "0160-200-20",
+            "well_type": "Mesoscope"
+          }
+        ],
+        "notes": null
+      }
+    ],
+    "specimen_procedures": [],
+    "coordinate_system": {
+      "object_type": "Coordinate system",
+      "name": "BREGMA_ARID",
+      "origin": "Bregma",
+      "axes": [
+        {
+          "object_type": "Axis",
+          "name": "AP",
+          "direction": "Posterior_to_anterior"
+        },
+        {
+          "object_type": "Axis",
+          "name": "ML",
+          "direction": "Left_to_right"
+        },
+        {
+          "object_type": "Axis",
+          "name": "SI",
+          "direction": "Superior_to_inferior"
+        },
+        {
+          "object_type": "Axis",
+          "name": "Depth",
+          "direction": "Up_to_down"
+        }
+      ],
+      "axis_unit": "millimeter"
+    },
+    "notes": null
+  },
+  "instrument": {
+    "object_type": "Instrument",
+    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/instrument.py",
+    "schema_version": "2.0.39",
+    "location": null,
+    "instrument_id": "429-mesoscope-20220321",
+    "modification_date": "2024-04-02",
+    "modalities": [],
+    "calibrations": [],
+    "coordinate_system": {
+      "object_type": "Coordinate system",
+      "name": "BREGMA_ALS",
+      "origin": "Bregma",
+      "axes": [
+        {
+          "object_type": "Axis",
+          "name": "X",
+          "direction": "Posterior_to_anterior"
+        },
+        {
+          "object_type": "Axis",
+          "name": "Y",
+          "direction": "Right_to_left"
+        },
+        {
+          "object_type": "Axis",
+          "name": "Z",
+          "direction": "Down_to_up"
+        }
+      ],
+      "axis_unit": "micrometer"
+    },
+    "temperature_control": null,
+    "notes": null,
+    "connections": [
+      {
+        "object_type": "Connection",
+        "source_device": "Behavior Camera",
+        "source_port": null,
+        "target_device": "Video Monitor",
+        "target_port": null,
+        "send_and_receive": false
+      },
+      {
+        "object_type": "Connection",
+        "source_device": "Eye Camera",
+        "source_port": null,
+        "target_device": "Video Monitor",
+        "target_port": null,
+        "send_and_receive": false
+      },
+      {
+        "object_type": "Connection",
+        "source_device": "Face Camera",
+        "source_port": null,
+        "target_device": "Video Monitor",
+        "target_port": null,
+        "send_and_receive": false
+      },
+      {
+        "object_type": "Connection",
+        "source_device": "VBEB DAQ",
+        "source_port": null,
+        "target_device": "STIM",
+        "target_port": null,
+        "send_and_receive": false
+      },
+      {
+        "object_type": "Connection",
+        "source_device": "SYNC DAQ",
+        "source_port": null,
+        "target_device": "SYNC",
+        "target_port": null,
+        "send_and_receive": false
+      },
+      {
+        "object_type": "Connection",
+        "source_device": "STIM DAQ",
+        "source_port": null,
+        "target_device": "STIM",
+        "target_port": null,
+        "send_and_receive": false
+      }
+    ],
+    "components": [
+      {
+        "object_type": "Disc",
+        "name": "MindScope Running Disk",
+        "serial_number": null,
+        "manufacturer": {
+          "name": "Allen Institute",
+          "abbreviation": "AI",
+          "registry": "Research Organization Registry (ROR)",
+          "registry_identifier": "03cpe7c52"
+        },
+        "model": null,
+        "additional_settings": null,
+        "notes": null,
+        "radius": "8.255",
+        "radius_unit": "centimeter",
+        "output": "Digital Output",
+        "encoder": "CUI Devices AMT102-V 0000 Dip Switch 2048 ppr",
+        "decoder": "LS7366R",
+        "encoder_firmware": {
+          "object_type": "Software",
+          "name": "ls7366r_quadrature_counter",
+          "version": "0.1.6"
+        },
+        "surface_material": "Kittrich Magic Cover Solid Grip Liner"
+      },
+      {
+        "object_type": "Monitor",
+        "relative_position": [],
+        "coordinate_system": {
+          "object_type": "Coordinate system",
+          "name": "SIPE_MONITOR_RTF",
+          "origin": "Front_center",
+          "axes": [
+            {
+              "object_type": "Axis",
+              "name": "X",
+              "direction": "Left_to_right"
+            },
+            {
+              "object_type": "Axis",
+              "name": "Y",
+              "direction": "Down_to_up"
+            },
+            {
+              "object_type": "Axis",
+              "name": "Z",
+              "direction": "Back_to_front"
+            }
+          ],
+          "axis_unit": "millimeter"
+        },
+        "transform": [],
+        "name": "Stimulus Screen",
+        "serial_number": null,
+        "manufacturer": {
+          "name": "ASUS",
+          "abbreviation": null,
+          "registry": "Research Organization Registry (ROR)",
+          "registry_identifier": "00bxkz165"
+        },
+        "model": "PA248Q",
+        "additional_settings": {},
+        "notes": "viewing distance is from screen normal to bregma",
+        "refresh_rate": 60,
+        "width": 1920,
+        "height": 1200,
+        "size_unit": "pixel",
+        "viewing_distance": "15.5",
+        "viewing_distance_unit": "centimeter",
+        "contrast": null,
+        "brightness": null
+      },
+      {
+        "object_type": "Camera assembly",
+        "relative_position": [],
+        "coordinate_system": {
+          "object_type": "Coordinate system",
+          "name": "SIPE_CAMERA_RBF",
+          "origin": "Front_center",
+          "axes": [
+            {
+              "object_type": "Axis",
+              "name": "X",
+              "direction": "Left_to_right"
+            },
+            {
+              "object_type": "Axis",
+              "name": "Y",
+              "direction": "Up_to_down"
+            },
+            {
+              "object_type": "Axis",
+              "name": "Z",
+              "direction": "Back_to_front"
+            }
+          ],
+          "axis_unit": "millimeter"
+        },
+        "transform": [],
+        "name": "Behavior Camera",
+        "target": "Body",
+        "camera": {
+          "object_type": "Camera",
+          "name": "Behavior Camera",
+          "serial_number": null,
+          "manufacturer": {
+            "name": "Allied",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "Mako G-32B",
+          "additional_settings": {},
+          "notes": null,
+          "detector_type": "Camera",
+          "data_interface": "Ethernet",
+          "cooling": "No cooling",
+          "frame_rate": null,
+          "frame_rate_unit": "hertz",
+          "immersion": null,
+          "chroma": "Monochrome",
+          "sensor_width": 658,
+          "sensor_height": 492,
+          "size_unit": "inch",
+          "sensor_format": "1/3",
+          "sensor_format_unit": "inch",
+          "bit_depth": 8,
+          "bin_mode": "No binning",
+          "bin_width": null,
+          "bin_height": null,
+          "bin_unit": "pixel",
+          "gain": "4",
+          "crop_offset_x": null,
+          "crop_offset_y": null,
+          "crop_width": null,
+          "crop_height": null,
+          "crop_unit": "pixel",
+          "recording_software": {
+            "object_type": "Software",
+            "name": "MultiVideoRecorder",
+            "version": "1.1.7"
+          },
+          "driver": "Vimba",
+          "driver_version": "Vimba GigE Transport Layer 1.6.0"
+        },
+        "lens": {
+          "object_type": "Lens",
+          "name": "Behavior Camera Lens",
+          "serial_number": null,
+          "manufacturer": {
+            "name": "Thorlabs",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "04gsnvb07"
+          },
+          "model": "MVL6WA",
+          "additional_settings": null,
+          "notes": null
+        },
+        "filter": {
+          "object_type": "Filter",
+          "name": "Behavior Camera Filter",
+          "serial_number": null,
+          "manufacturer": {
+            "name": "Semrock",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "FF01-747/33-25",
+          "additional_settings": {},
+          "notes": null,
+          "filter_type": "Band pass",
+          "cut_off_wavelength": 780,
+          "cut_on_wavelength": 714,
+          "center_wavelength": 747,
+          "wavelength_unit": "nanometer"
+        }
+      },
+      {
+        "object_type": "Camera assembly",
+        "relative_position": [],
+        "coordinate_system": {
+          "object_type": "Coordinate system",
+          "name": "SIPE_CAMERA_RBF",
+          "origin": "Front_center",
+          "axes": [
+            {
+              "object_type": "Axis",
+              "name": "X",
+              "direction": "Left_to_right"
+            },
+            {
+              "object_type": "Axis",
+              "name": "Y",
+              "direction": "Up_to_down"
+            },
+            {
+              "object_type": "Axis",
+              "name": "Z",
+              "direction": "Back_to_front"
+            }
+          ],
+          "axis_unit": "millimeter"
+        },
+        "transform": [],
+        "name": "Eye Camera",
+        "target": "Eye",
+        "camera": {
+          "object_type": "Camera",
+          "name": "Eye Camera",
+          "serial_number": null,
+          "manufacturer": {
+            "name": "Allied",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "Mako G-32B",
+          "additional_settings": {},
+          "notes": null,
+          "detector_type": "Camera",
+          "data_interface": "Ethernet",
+          "cooling": "No cooling",
+          "frame_rate": null,
+          "frame_rate_unit": "hertz",
+          "immersion": null,
+          "chroma": "Monochrome",
+          "sensor_width": 658,
+          "sensor_height": 492,
+          "size_unit": "inch",
+          "sensor_format": "1/3",
+          "sensor_format_unit": "inch",
+          "bit_depth": 8,
+          "bin_mode": "No binning",
+          "bin_width": null,
+          "bin_height": null,
+          "bin_unit": "pixel",
+          "gain": "4",
+          "crop_offset_x": null,
+          "crop_offset_y": null,
+          "crop_width": null,
+          "crop_height": null,
+          "crop_unit": "pixel",
+          "recording_software": {
+            "object_type": "Software",
+            "name": "MultiVideoRecorder",
+            "version": "1.1.7"
+          },
+          "driver": "Vimba",
+          "driver_version": "Vimba GigE Transport Layer 1.6.0"
+        },
+        "lens": {
+          "object_type": "Lens",
+          "name": "Eye Camera Lens",
+          "serial_number": null,
+          "manufacturer": {
+            "name": "Infinity Photo-Optical",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "213073",
+          "additional_settings": null,
+          "notes": null
+        },
+        "filter": {
+          "object_type": "Filter",
+          "name": "Eye Camera Filter",
+          "serial_number": null,
+          "manufacturer": {
+            "name": "Semrock",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "FF01-850/10-25",
+          "additional_settings": {},
+          "notes": null,
+          "filter_type": "Band pass",
+          "cut_off_wavelength": 860,
+          "cut_on_wavelength": 840,
+          "center_wavelength": 850,
+          "wavelength_unit": "nanometer"
+        }
+      },
+      {
+        "object_type": "Camera assembly",
+        "relative_position": [],
+        "coordinate_system": {
+          "object_type": "Coordinate system",
+          "name": "SIPE_CAMERA_RBF",
+          "origin": "Front_center",
+          "axes": [
+            {
+              "object_type": "Axis",
+              "name": "X",
+              "direction": "Left_to_right"
+            },
+            {
+              "object_type": "Axis",
+              "name": "Y",
+              "direction": "Up_to_down"
+            },
+            {
+              "object_type": "Axis",
+              "name": "Z",
+              "direction": "Back_to_front"
+            }
+          ],
+          "axis_unit": "millimeter"
+        },
+        "transform": [],
+        "name": "Face Camera",
+        "target": "Face",
+        "camera": {
+          "object_type": "Camera",
+          "name": "Face Camera",
+          "serial_number": null,
+          "manufacturer": {
+            "name": "Allied",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "Mako G-32B",
+          "additional_settings": {},
+          "notes": null,
+          "detector_type": "Camera",
+          "data_interface": "Ethernet",
+          "cooling": "No cooling",
+          "frame_rate": null,
+          "frame_rate_unit": "hertz",
+          "immersion": null,
+          "chroma": "Monochrome",
+          "sensor_width": 658,
+          "sensor_height": 492,
+          "size_unit": "inch",
+          "sensor_format": "1/3",
+          "sensor_format_unit": "inch",
+          "bit_depth": 8,
+          "bin_mode": "No binning",
+          "bin_width": null,
+          "bin_height": null,
+          "bin_unit": "pixel",
+          "gain": "4",
+          "crop_offset_x": null,
+          "crop_offset_y": null,
+          "crop_width": null,
+          "crop_height": null,
+          "crop_unit": "pixel",
+          "recording_software": {
+            "object_type": "Software",
+            "name": "MultiVideoRecorder",
+            "version": "1.1.7"
+          },
+          "driver": "Vimba",
+          "driver_version": "Vimba GigE Transport Layer 1.6.0"
+        },
+        "lens": {
+          "object_type": "Lens",
+          "name": "Face Camera Lens",
+          "serial_number": null,
+          "manufacturer": {
+            "name": "Edmund Optics",
+            "abbreviation": null,
+            "registry": "Research Organization Registry (ROR)",
+            "registry_identifier": "01j1gwp17"
+          },
+          "model": "86-604",
+          "additional_settings": null,
+          "notes": null
+        },
+        "filter": {
+          "object_type": "Filter",
+          "name": "Face Camera Filter",
+          "serial_number": null,
+          "manufacturer": {
+            "name": "Semrock",
+            "abbreviation": null,
+            "registry": null,
+            "registry_identifier": null
+          },
+          "model": "FF01-715/LP-25",
+          "additional_settings": {},
+          "notes": null,
+          "filter_type": "Long pass",
+          "cut_off_wavelength": null,
+          "cut_on_wavelength": 715,
+          "center_wavelength": null,
+          "wavelength_unit": "nanometer"
+        }
+      },
+      {
+        "object_type": "DAQ device",
+        "name": "VBEB DAQ",
+        "serial_number": null,
+        "manufacturer": {
+          "name": "National Instruments",
+          "abbreviation": null,
+          "registry": "Research Organization Registry (ROR)",
+          "registry_identifier": "026exqw73"
+        },
+        "model": "USB-6001",
+        "additional_settings": {},
+        "notes": null,
+        "data_interface": "USB",
+        "channels": [],
+        "firmware_version": null,
+        "hardware_version": null
+      },
+      {
+        "object_type": "DAQ device",
+        "name": "SYNC DAQ",
+        "serial_number": null,
+        "manufacturer": {
+          "name": "National Instruments",
+          "abbreviation": null,
+          "registry": "Research Organization Registry (ROR)",
+          "registry_identifier": "026exqw73"
+        },
+        "model": "PCIe-6612",
+        "additional_settings": {},
+        "notes": null,
+        "data_interface": "PCIe",
+        "channels": [],
+        "firmware_version": null,
+        "hardware_version": null
+      },
+      {
+        "object_type": "DAQ device",
+        "name": "STIM DAQ",
+        "serial_number": null,
+        "manufacturer": {
+          "name": "National Instruments",
+          "abbreviation": null,
+          "registry": "Research Organization Registry (ROR)",
+          "registry_identifier": "026exqw73"
+        },
+        "model": "PCIe-6321",
+        "additional_settings": {},
+        "notes": null,
+        "data_interface": "PCIe",
+        "channels": [],
+        "firmware_version": null,
+        "hardware_version": null
+      },
+      {
+        "object_type": "Device",
+        "name": "Video Monitor",
+        "serial_number": null,
+        "manufacturer": null,
+        "model": null,
+        "additional_settings": null,
+        "notes": "(v1v2 upgrade rig) This device was not found in the components list, but is referenced in connections."
+      },
+      {
+        "object_type": "Device",
+        "name": "SYNC",
+        "serial_number": null,
+        "manufacturer": null,
+        "model": null,
+        "additional_settings": null,
+        "notes": "(v1v2 upgrade rig) This device was not found in the components list, but is referenced in connections."
+      },
+      {
+        "object_type": "Device",
+        "name": "STIM",
+        "serial_number": null,
+        "manufacturer": null,
+        "model": null,
+        "additional_settings": null,
+        "notes": "(v1v2 upgrade rig) This device was not found in the components list, but is referenced in connections."
+      },
+      {
+        "object_type": "Device",
+        "name": "Laser",
+        "serial_number": null,
+        "manufacturer": null,
+        "model": null,
+        "additional_settings": null,
+        "notes": "(v1v2 upgrade metadata) This device was not found in the components list, but is referenced in Acquisition.active_devices."
+      },
+      {
+        "object_type": "Device",
+        "name": "Face",
+        "serial_number": null,
+        "manufacturer": null,
+        "model": null,
+        "additional_settings": null,
+        "notes": "(v1v2 upgrade metadata) This device was not found in the components list, but is referenced in Acquisition.active_devices."
+      },
+      {
+        "object_type": "Device",
+        "name": "Eye",
+        "serial_number": null,
+        "manufacturer": null,
+        "model": null,
+        "additional_settings": null,
+        "notes": "(v1v2 upgrade metadata) This device was not found in the components list, but is referenced in Acquisition.active_devices."
+      },
+      {
+        "object_type": "Device",
+        "name": "Behavior",
+        "serial_number": null,
+        "manufacturer": null,
+        "model": null,
+        "additional_settings": null,
+        "notes": "(v1v2 upgrade metadata) This device was not found in the components list, but is referenced in Acquisition.active_devices."
+      },
+      {
+        "object_type": "Device",
+        "name": "Imaging System",
+        "serial_number": null,
+        "manufacturer": null,
+        "model": null,
+        "additional_settings": null,
+        "notes": "(v1v2 upgrade metadata) This device was not found in the components list, but is referenced in Acquisition.active_devices."
+      },
+      {
+        "object_type": "Device",
+        "name": "Mesoscope",
+        "serial_number": null,
+        "manufacturer": null,
+        "model": null,
+        "additional_settings": null,
+        "notes": "(v1v2 upgrade metadata) This device was not found in the components list, but is referenced in Acquisition.active_devices."
+      }
+    ]
+  },
+  "processing": {
+    "object_type": "Processing",
+    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/processing.py",
+    "schema_version": "2.1.0",
+    "data_processes": [
+      {
+        "object_type": "Data process",
+        "process_type": "Video motion correction",
+        "name": "Video motion correction_2",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "https://github.com/AllenNeuralDynamics/aind-ophys-motion-correction/tree/main/code",
+          "name": "Video motion correction",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "input": "../data",
+            "output_dir": "/results/",
+            "debug": false,
+            "tmp_dir": "/scratch",
+            "data_type": "h5",
+            "force_refImg": true,
+            "outlier_detrend_window": 3,
+            "outlier_maxregshift": 0.05,
+            "clip_negative": false,
+            "max_reference_iterations": 8,
+            "auto_remove_empty_frames": true,
+            "trim_frames_start": 0,
+            "trim_frames_end": 0,
+            "do_optimize_motion_params": false,
+            "use_ave_image_as_reference": false,
+            "movie_frame_rate_hz": 37.93,
+            "motion_corrected_output": "/results/VISp_0/motion_correction/VISp_0_registered.h5",
+            "motion_diagnostics_output": "/results/VISp_0/motion_correction/VISp_0_motion_transform.csv",
+            "max_projection_output": "/results/VISp_0/motion_correction/VISp_0_maximum_projection.png",
+            "avg_projection_output": "/results/VISp_0/motion_correction/VISp_0_average_projection.png",
+            "registration_summary_output": "/results/VISp_0/motion_correction/VISp_0_registration_summary.png",
+            "motion_correction_preview_output": "/results/VISp_0/motion_correction/VISp_0_motion_preview.webm",
+            "output_json": "/results/VISp_0/motion_correction/VISp_0_motion_correction_output.json",
+            "movie_lower_quantile": 0.1,
+            "movie_upper_quantile": 0.999,
+            "preview_frame_bin_seconds": 2,
+            "preview_playback_factor": 10,
+            "n_batches": 20,
+            "smooth_sigma_min": 0.65,
+            "smooth_sigma_max": 2.15,
+            "smooth_sigma_steps": 4,
+            "smooth_sigma_time_min": 0,
+            "smooth_sigma_time_max": 6,
+            "smooth_sigma_time_steps": 7,
+            "suite2p_args": {
+              "suite2p_version": "0.14.4",
+              "look_one_level_down": false,
+              "fast_disk": [],
+              "delete_bin": false,
+              "mesoscan": false,
+              "bruker": false,
+              "bruker_bidirectional": false,
+              "h5py": "../data/VISp_0/VISp_0.h5",
+              "h5py_key": "data",
+              "nwb_file": "",
+              "nwb_driver": "",
+              "nwb_series": "",
+              "save_path0": "/scratch/tmpueuamfyu",
+              "save_folder": [],
+              "subfolders": [],
+              "move_bin": false,
+              "nplanes": 1,
+              "nchannels": 1,
+              "functional_chan": 1,
+              "tau": 1,
+              "fs": 10,
+              "force_sktiff": false,
+              "frames_include": -1,
+              "multiplane_parallel": false,
+              "ignore_flyback": [],
+              "preclassify": 0,
+              "save_mat": false,
+              "save_NWB": false,
+              "combined": true,
+              "aspect": 1,
+              "do_bidiphase": false,
+              "bidiphase": 0,
+              "bidi_corrected": false,
+              "do_registration": 1,
+              "two_step_registration": false,
+              "keep_movie_raw": false,
+              "nimg_init": 500,
+              "batch_size": 500,
+              "maxregshift": 0.2,
+              "align_by_chan": 1,
+              "reg_tif": false,
+              "reg_tif_chan2": false,
+              "subpixel": 10,
+              "smooth_sigma_time": 0,
+              "smooth_sigma": 1.15,
+              "th_badframes": 1,
+              "norm_frames": true,
+              "force_refImg": true,
+              "pad_fft": false,
+              "nonrigid": true,
+              "block_size": [
+                128,
+                128
+              ],
+              "snr_thresh": 1.2,
+              "maxregshiftNR": 5,
+              "1Preg": false,
+              "spatial_hp_reg": 42,
+              "pre_smooth": 0,
+              "spatial_taper": 40,
+              "roidetect": false,
+              "spikedetect": true,
+              "sparse_mode": true,
+              "spatial_scale": 0,
+              "connected": true,
+              "nbinned": 5000,
+              "max_iterations": 20,
+              "threshold_scaling": 1,
+              "max_overlap": 0.75,
+              "high_pass": 100,
+              "spatial_hp_detect": 25,
+              "denoise": false,
+              "anatomical_only": 0,
+              "diameter": 0,
+              "cellprob_threshold": 0,
+              "flow_threshold": 1.5,
+              "spatial_hp_cp": 0,
+              "pretrained_model": "cyto",
+              "soma_crop": true,
+              "neuropil_extract": true,
+              "inner_neuropil_radius": 2,
+              "min_neuropil_pixels": 350,
+              "lam_percentile": 50,
+              "allow_overlap": false,
+              "use_builtin_classifier": false,
+              "classifier_path": "",
+              "chan2_thres": 0.65,
+              "baseline": "maximin",
+              "win_baseline": 60,
+              "sig_baseline": 10,
+              "prctile_baseline": 8,
+              "neucoeff": 0.7
+            }
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-22T20:50:47.388776Z",
+        "end_date_time": "2025-04-22T23:43:09.151372Z",
+        "output_path": "/results/VISp_0/motion_correction/VISp_0_registered.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      },
+      {
+        "object_type": "Data process",
+        "process_type": "Video motion correction",
+        "name": "Video motion correction_1",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "https://github.com/AllenNeuralDynamics/aind-ophys-motion-correction/tree/main/code",
+          "name": "Video motion correction",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "input": "../data",
+            "output_dir": "/results/",
+            "debug": false,
+            "tmp_dir": "/scratch",
+            "data_type": "h5",
+            "force_refImg": true,
+            "outlier_detrend_window": 3,
+            "outlier_maxregshift": 0.05,
+            "clip_negative": false,
+            "max_reference_iterations": 8,
+            "auto_remove_empty_frames": true,
+            "trim_frames_start": 0,
+            "trim_frames_end": 0,
+            "do_optimize_motion_params": false,
+            "use_ave_image_as_reference": false,
+            "movie_frame_rate_hz": 37.93,
+            "motion_corrected_output": "/results/VISp_1/motion_correction/VISp_1_registered.h5",
+            "motion_diagnostics_output": "/results/VISp_1/motion_correction/VISp_1_motion_transform.csv",
+            "max_projection_output": "/results/VISp_1/motion_correction/VISp_1_maximum_projection.png",
+            "avg_projection_output": "/results/VISp_1/motion_correction/VISp_1_average_projection.png",
+            "registration_summary_output": "/results/VISp_1/motion_correction/VISp_1_registration_summary.png",
+            "motion_correction_preview_output": "/results/VISp_1/motion_correction/VISp_1_motion_preview.webm",
+            "output_json": "/results/VISp_1/motion_correction/VISp_1_motion_correction_output.json",
+            "movie_lower_quantile": 0.1,
+            "movie_upper_quantile": 0.999,
+            "preview_frame_bin_seconds": 2,
+            "preview_playback_factor": 10,
+            "n_batches": 20,
+            "smooth_sigma_min": 0.65,
+            "smooth_sigma_max": 2.15,
+            "smooth_sigma_steps": 4,
+            "smooth_sigma_time_min": 0,
+            "smooth_sigma_time_max": 6,
+            "smooth_sigma_time_steps": 7,
+            "suite2p_args": {
+              "suite2p_version": "0.14.4",
+              "look_one_level_down": false,
+              "fast_disk": [],
+              "delete_bin": false,
+              "mesoscan": false,
+              "bruker": false,
+              "bruker_bidirectional": false,
+              "h5py": "../data/VISp_1/VISp_1.h5",
+              "h5py_key": "data",
+              "nwb_file": "",
+              "nwb_driver": "",
+              "nwb_series": "",
+              "save_path0": "/scratch/tmpw25m4uag",
+              "save_folder": [],
+              "subfolders": [],
+              "move_bin": false,
+              "nplanes": 1,
+              "nchannels": 1,
+              "functional_chan": 1,
+              "tau": 1,
+              "fs": 10,
+              "force_sktiff": false,
+              "frames_include": -1,
+              "multiplane_parallel": false,
+              "ignore_flyback": [],
+              "preclassify": 0,
+              "save_mat": false,
+              "save_NWB": false,
+              "combined": true,
+              "aspect": 1,
+              "do_bidiphase": false,
+              "bidiphase": 0,
+              "bidi_corrected": false,
+              "do_registration": 1,
+              "two_step_registration": false,
+              "keep_movie_raw": false,
+              "nimg_init": 500,
+              "batch_size": 500,
+              "maxregshift": 0.2,
+              "align_by_chan": 1,
+              "reg_tif": false,
+              "reg_tif_chan2": false,
+              "subpixel": 10,
+              "smooth_sigma_time": 0,
+              "smooth_sigma": 1.15,
+              "th_badframes": 1,
+              "norm_frames": true,
+              "force_refImg": true,
+              "pad_fft": false,
+              "nonrigid": true,
+              "block_size": [
+                128,
+                128
+              ],
+              "snr_thresh": 1.2,
+              "maxregshiftNR": 5,
+              "1Preg": false,
+              "spatial_hp_reg": 42,
+              "pre_smooth": 0,
+              "spatial_taper": 40,
+              "roidetect": false,
+              "spikedetect": true,
+              "sparse_mode": true,
+              "spatial_scale": 0,
+              "connected": true,
+              "nbinned": 5000,
+              "max_iterations": 20,
+              "threshold_scaling": 1,
+              "max_overlap": 0.75,
+              "high_pass": 100,
+              "spatial_hp_detect": 25,
+              "denoise": false,
+              "anatomical_only": 0,
+              "diameter": 0,
+              "cellprob_threshold": 0,
+              "flow_threshold": 1.5,
+              "spatial_hp_cp": 0,
+              "pretrained_model": "cyto",
+              "soma_crop": true,
+              "neuropil_extract": true,
+              "inner_neuropil_radius": 2,
+              "min_neuropil_pixels": 350,
+              "lam_percentile": 50,
+              "allow_overlap": false,
+              "use_builtin_classifier": false,
+              "classifier_path": "",
+              "chan2_thres": 0.65,
+              "baseline": "maximin",
+              "win_baseline": 60,
+              "sig_baseline": 10,
+              "prctile_baseline": 8,
+              "neucoeff": 0.7
+            }
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-22T20:55:08.158914Z",
+        "end_date_time": "2025-04-23T00:23:34.105410Z",
+        "output_path": "/results/VISp_1/motion_correction/VISp_1_registered.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      },
+      {
+        "object_type": "Data process",
+        "process_type": "Video plane decrosstalk",
+        "name": "Video plane decrosstalk_1",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "",
+          "name": "Video plane decrosstalk",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "alpha_mean": 0.05,
+            "beta_mean": 0.05,
+            "paired_emf": "/tmp/nxf.JcmacDUIyK/capsule/results/VISp_1/decrosstalk/VISp_1_registered_to_pair_episodic_mean_fov.h5"
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-23T02:40:45.655076Z",
+        "end_date_time": "2025-04-23T03:44:48.374673Z",
+        "output_path": "/tmp/nxf.JcmacDUIyK/capsule/results/VISp_0/decrosstalk/VISp_0_decrosstalk.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      },
+      {
+        "object_type": "Data process",
+        "process_type": "Video plane decrosstalk",
+        "name": "Video plane decrosstalk_2",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "",
+          "name": "Video plane decrosstalk",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "alpha_mean": 0.05,
+            "beta_mean": 0.05,
+            "paired_emf": "/tmp/nxf.JcmacDUIyK/capsule/results/VISp_0/decrosstalk/VISp_0_registered_to_pair_episodic_mean_fov.h5"
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-23T03:45:51.371878Z",
+        "end_date_time": "2025-04-23T05:02:02.717532Z",
+        "output_path": "/tmp/nxf.JcmacDUIyK/capsule/results/VISp_1/decrosstalk/VISp_1_decrosstalk.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      },
+      {
+        "object_type": "Data process",
+        "process_type": "Video ROI timeseries extraction",
+        "name": "Video ROI timeseries extraction_1",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "",
+          "name": "Video ROI timeseries extraction",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "input_dir": "../data/",
+            "output_dir": "../results/",
+            "tmp_dir": "/scratch",
+            "diameter": 0,
+            "anatomical_only": 2,
+            "denoise": false,
+            "cellprob_threshold": 0,
+            "flow_threshold": 1.5,
+            "spatial_hp_cp": 0,
+            "pretrained_model": "cyto",
+            "use_suite2p_neuropil": false,
+            "contour_video": false
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-23T05:14:26.871280Z",
+        "end_date_time": "2025-04-23T05:32:05.164221Z",
+        "output_path": "/tmp/nxf.Lh6wIajN9T/capsule/results/VISp_0/extraction/VISp_0_extraction.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      },
+      {
+        "object_type": "Data process",
+        "process_type": "Video ROI timeseries extraction",
+        "name": "Video ROI timeseries extraction_2",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "",
+          "name": "Video ROI timeseries extraction",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "input_dir": "../data/",
+            "output_dir": "../results/",
+            "tmp_dir": "/scratch",
+            "diameter": 0,
+            "anatomical_only": 2,
+            "denoise": false,
+            "cellprob_threshold": 0,
+            "flow_threshold": 1.5,
+            "spatial_hp_cp": 0,
+            "pretrained_model": "cyto",
+            "use_suite2p_neuropil": false,
+            "contour_video": false
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-23T05:21:13.699279Z",
+        "end_date_time": "2025-04-23T05:48:46.151715Z",
+        "output_path": "/tmp/nxf.zstg0NAJnO/capsule/results/VISp_1/extraction/VISp_1_extraction.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      },
+      {
+        "object_type": "Data process",
+        "process_type": "dF/F estimation",
+        "name": "dF/F estimation_2",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "",
+          "name": "dF/F estimation",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "input_dir": "/data/",
+            "output_dir": "/results/"
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-23T05:36:24.332719Z",
+        "end_date_time": "2025-04-23T05:36:36.885628Z",
+        "output_path": "/tmp/nxf.ExVzNFLWBP/capsule/results/VISp_0/dff/dff.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      },
+      {
+        "object_type": "Data process",
+        "process_type": "Fluorescence event detection",
+        "name": "Fluorescence event detection_2",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection",
+          "name": "Fluorescence event detection",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "input_dir": "../data/",
+            "output_dir": "../results/",
+            "estimate_parameters": true,
+            "tau": null,
+            "tau_rise": 0,
+            "optimize_tau": 0,
+            "b": null,
+            "b_nonneg": true,
+            "sn": null,
+            "penalty": 1,
+            "lam": null,
+            "s_min": 0,
+            "no_qc": false,
+            "g": [
+              null
+            ]
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-23T05:37:27.511389Z",
+        "end_date_time": "2025-04-23T05:38:41.265022Z",
+        "output_path": "/tmp/nxf.xPEIfwB8Lz/capsule/results/VISp_0/events/VISp_0_events_oasis.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      },
+      {
+        "object_type": "Data process",
+        "process_type": "dF/F estimation",
+        "name": "dF/F estimation_1",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "",
+          "name": "dF/F estimation",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "input_dir": "/data/",
+            "output_dir": "/results/"
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-23T05:54:49.642506Z",
+        "end_date_time": "2025-04-23T05:54:53.402889Z",
+        "output_path": "/tmp/nxf.GKNDKqkVY5/capsule/results/VISp_1/dff/dff.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      },
+      {
+        "object_type": "Data process",
+        "process_type": "Fluorescence event detection",
+        "name": "Fluorescence event detection_1",
+        "stage": "Processing",
+        "code": {
+          "object_type": "Code",
+          "url": "https://github.com/AllenNeuralDynamics/aind-ophys-oasis-event-detection",
+          "name": "Fluorescence event detection",
+          "version": null,
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "input_dir": "../data/",
+            "output_dir": "../results/",
+            "estimate_parameters": true,
+            "tau": null,
+            "tau_rise": 0,
+            "optimize_tau": 0,
+            "b": null,
+            "b_nonneg": true,
+            "sn": null,
+            "penalty": 1,
+            "lam": null,
+            "s_min": 0,
+            "no_qc": false,
+            "g": [
+              null
+            ]
+          },
+          "core_dependency": null
+        },
+        "experimenters": [
+          "Arielle Leon"
+        ],
+        "pipeline_name": null,
+        "start_date_time": "2025-04-23T05:55:31.249617Z",
+        "end_date_time": "2025-04-23T05:56:12.888663Z",
+        "output_path": "/tmp/nxf.LnbtEmHrey/capsule/results/VISp_1/events/VISp_1_events_oasis.h5",
+        "output_parameters": {},
+        "notes": null,
+        "resources": null
+      }
+    ],
+    "pipelines": null,
+    "notes": "Processes were reordered by start_date_time",
+    "dependency_graph": {
+      "Fluorescence event detection_1": [],
+      "dF/F estimation_1": [
+        "Fluorescence event detection_1"
+      ],
+      "dF/F estimation_2": [
+        "dF/F estimation_1"
+      ],
+      "Fluorescence event detection_2": [
+        "dF/F estimation_2"
+      ],
+      "Video ROI timeseries extraction_1": [
+        "Fluorescence event detection_2"
+      ],
+      "Video plane decrosstalk_1": [
+        "Video ROI timeseries extraction_1"
+      ],
+      "Video plane decrosstalk_2": [
+        "Video plane decrosstalk_1"
+      ],
+      "Video ROI timeseries extraction_2": [
+        "Video plane decrosstalk_2"
+      ],
+      "Video motion correction_1": [
+        "Video ROI timeseries extraction_2"
+      ],
+      "Video motion correction_2": [
+        "Video motion correction_1"
+      ]
+    }
+  },
+  "acquisition": {
+    "object_type": "Acquisition",
+    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/acquisition.py",
+    "schema_version": "2.0.35",
+    "subject_id": "692478",
+    "specimen_id": null,
+    "acquisition_start_time": "2023-09-29T08:53:23.654198-07:00",
+    "acquisition_end_time": "2023-09-29T10:08:49.330438-07:00",
+    "experimenters": [
+      "unknown user"
+    ],
+    "protocol_id": null,
+    "ethics_review_id": null,
+    "instrument_id": "429-mesoscope-20220321",
+    "acquisition_type": "OPHYS_2_images_A_passive",
+    "notes": " (v1v2 upgrade) Session start time was adjusted from 2023-09-29 08:53:45.839198-07:00 to 2023-09-29 08:53:23.654198-07:00 (v1v2 upgrade) Session end time was adjusted from 2023-09-29 10:08:49.330438-07:00 to 2023-09-29 10:08:49.330438-07:00",
+    "coordinate_system": null,
+    "calibrations": [],
+    "maintenance": [],
+    "data_streams": [
+      {
+        "object_type": "Data stream",
+        "stream_start_time": "2023-09-29T08:53:45.839198-07:00",
+        "stream_end_time": "2023-09-29T10:08:49.330438-07:00",
+        "modalities": [
+          {
+            "name": "Planar optical physiology",
+            "abbreviation": "pophys"
+          }
+        ],
+        "code": null,
+        "notes": null,
+        "active_devices": [
+          "Laser",
+          "Face",
+          "Eye",
+          "Behavior",
+          "Imaging System",
+          "Mesoscope"
+        ],
+        "configurations": [
+          {
+            "object_type": "Laser config",
+            "device_name": "Laser",
+            "wavelength": 920,
+            "wavelength_unit": "nanometer",
+            "power": null,
+            "power_unit": "milliwatt"
+          },
+          {
+            "object_type": "Imaging config",
+            "device_name": "Imaging System",
+            "channels": [
+              {
+                "object_type": "Channel",
+                "channel_name": "Ophys Channel",
+                "intended_measurement": null,
+                "detector": {
+                  "object_type": "Detector config",
+                  "device_name": "Unknown Detector",
+                  "exposure_time": 1,
+                  "exposure_time_unit": "millisecond",
+                  "trigger_type": "Internal",
+                  "compression": null
+                },
+                "additional_device_names": null,
+                "light_sources": [
+                  {
+                    "object_type": "Laser config",
+                    "device_name": "Laser",
+                    "wavelength": 920,
+                    "wavelength_unit": "nanometer",
+                    "power": null,
+                    "power_unit": "milliwatt"
+                  }
+                ],
+                "variable_power": false,
+                "excitation_filters": null,
+                "emission_filters": null,
+                "emission_wavelength": null,
+                "emission_wavelength_unit": null
+              }
+            ],
+            "coordinate_system": null,
+            "images": [
+              {
+                "object_type": "Planar image",
+                "channel_name": "Ophys Channel",
+                "dimensions_unit": "pixel",
+                "image_to_acquisition_transform": [],
+                "dimensions": null,
+                "planes": [
+                  {
+                    "object_type": "Coupled plane",
+                    "depth": 175,
+                    "depth_unit": "micrometer",
+                    "power": 25,
+                    "power_unit": "percent",
+                    "targeted_structure": {
+                      "atlas": "CCFv3",
+                      "name": "Primary visual area",
+                      "acronym": "VISp",
+                      "id": "385"
+                    },
+                    "plane_index": 0,
+                    "coupled_plane_index": 0,
+                    "power_ratio": 1
+                  }
+                ]
+              },
+              {
+                "object_type": "Planar image",
+                "channel_name": "Ophys Channel",
+                "dimensions_unit": "pixel",
+                "image_to_acquisition_transform": [],
+                "dimensions": null,
+                "planes": [
+                  {
+                    "object_type": "Coupled plane",
+                    "depth": 275,
+                    "depth_unit": "micrometer",
+                    "power": 25,
+                    "power_unit": "percent",
+                    "targeted_structure": {
+                      "atlas": "CCFv3",
+                      "name": "Primary visual area",
+                      "acronym": "VISp",
+                      "id": "385"
+                    },
+                    "plane_index": 1,
+                    "coupled_plane_index": 0,
+                    "power_ratio": 1
+                  }
+                ]
+              }
+            ],
+            "sampling_strategy": {
+              "object_type": "Sampling strategy",
+              "frame_rate": 37.93,
+              "frame_rate_unit": "hertz"
+            }
+          }
+        ],
+        "connections": []
+      }
+    ],
+    "stimulus_epochs": [
+      {
+        "object_type": "Stimulus epoch",
+        "stimulus_start_time": "2023-09-29T08:53:23.654198-07:00",
+        "stimulus_end_time": "2023-09-29T08:58:45.859278-07:00",
+        "stimulus_name": "spontaneous",
+        "code": {
+          "object_type": "Code",
+          "url": "http://stash.corp.alleninstitute.org/projects/VB/repos/visual_behavior_scripts/raw/change_detection_with_fingerprint.py?at=021ec55fbbdbb05aad1681c016e83066fe5aa1dd",
+          "name": "VisualBehavior_Task1A_v1.1.1",
+          "version": "1.0",
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "notes": null,
+            "stimulus_name": "spontaneous",
+            "stimulus_parameters": {
+              "duration": [
+                322.20508
+              ],
+              "end_frame": [
+                17985
+              ],
+              "flashes_since_change": [],
+              "image_index": [],
+              "image_name": [],
+              "image_set": [],
+              "is_change": [],
+              "movie_frame_index": [],
+              "movie_repeat": [],
+              "omitted": [],
+              "start_frame": [
+                0
+              ],
+              "stim_block": [
+                0
+              ]
+            },
+            "stimulus_template_name": [],
+            "stimulus_type": "Visual Stimulation"
+          },
+          "core_dependency": {
+            "object_type": "Software",
+            "name": "camstim",
+            "version": "1.0"
+          }
+        },
+        "stimulus_modalities": [
+          "Visual"
+        ],
+        "performance_metrics": null,
+        "notes": null,
+        "active_devices": [],
+        "configurations": [],
+        "training_protocol_name": null,
+        "curriculum_status": null
+      },
+      {
+        "object_type": "Stimulus epoch",
+        "stimulus_start_time": "2023-09-29T08:58:45.859278-07:00",
+        "stimulus_end_time": "2023-09-29T09:58:48.571528-07:00",
+        "stimulus_name": "behavior",
+        "code": {
+          "object_type": "Code",
+          "url": "http://stash.corp.alleninstitute.org/projects/VB/repos/visual_behavior_scripts/raw/change_detection_with_fingerprint.py?at=021ec55fbbdbb05aad1681c016e83066fe5aa1dd",
+          "name": "VisualBehavior_Task1A_v1.1.1",
+          "version": "1.0",
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {},
+          "core_dependency": {
+            "object_type": "Software",
+            "name": "camstim",
+            "version": "1.0"
+          }
+        },
+        "stimulus_modalities": [
+          "Visual"
+        ],
+        "performance_metrics": null,
+        "notes": null,
+        "active_devices": [],
+        "configurations": [],
+        "training_protocol_name": null,
+        "curriculum_status": null
+      },
+      {
+        "object_type": "Stimulus epoch",
+        "stimulus_start_time": "2023-09-29T09:58:48.571528-07:00",
+        "stimulus_end_time": "2023-09-29T10:03:49.092238-07:00",
+        "stimulus_name": "spontaneous",
+        "code": {
+          "object_type": "Code",
+          "url": "http://stash.corp.alleninstitute.org/projects/VB/repos/visual_behavior_scripts/raw/change_detection_with_fingerprint.py?at=021ec55fbbdbb05aad1681c016e83066fe5aa1dd",
+          "name": "VisualBehavior_Task1A_v1.1.1",
+          "version": "1.0",
+          "container": null,
+          "run_script": null,
+          "language": null,
+          "language_version": null,
+          "input_data": null,
+          "parameters": {
+            "notes": null,
+            "stimulus_name": "spontaneous",
+            "stimulus_parameters": {
+              "duration": [
+                300.5207099999998
+              ],
+              "end_frame": [
+                251978
+              ],
+              "flashes_since_change": [],
+              "image_index": [],
+              "image_name": [],
+              "image_set": [],
+              "is_change": [],
+              "movie_frame_index": [],
+              "movie_repeat": [],
+              "omitted": [],
+              "start_frame": [
+                233962
+              ],
+              "stim_block": [
+                2
+              ]
+            },
+            "stimulus_template_name": [],
+            "stimulus_type": "Visual Stimulation"
+          },
+          "core_dependency": {
+            "object_type": "Software",
+            "name": "camstim",
+            "version": "1.0"
+          }
+        },
+        "stimulus_modalities": [
+          "Visual"
+        ],
+        "performance_metrics": null,
+        "notes": null,
+        "active_devices": [],
+        "configurations": [],
+        "training_protocol_name": null,
+        "curriculum_status": null
+      }
+    ],
+    "subject_details": {
+      "object_type": "Acquisition subject details",
+      "animal_weight_prior": null,
+      "animal_weight_post": null,
+      "weight_unit": "gram",
+      "anaesthesia": null,
+      "mouse_platform_name": "disc",
+      "reward_consumed_total": null,
+      "reward_consumed_unit": "milliliter"
+    }
+  },
+  "quality_control": {
+    "object_type": "Quality control",
+    "describedBy": "https://raw.githubusercontent.com/AllenNeuralDynamics/aind-data-schema/main/src/aind_data_schema/core/quality_control.py",
+    "schema_version": "2.0.7",
+    "metrics": [
+      {
+        "object_type": "QC metric",
+        "name": "VISp_0 Registration Summary",
+        "modality": {
+          "name": "Planar optical physiology",
+          "abbreviation": "pophys"
+        },
+        "stage": "Processing",
+        "value": {
+          "value": "",
+          "options": [
+            "Motion correction successful",
+            "No motion correction applied",
+            "Motion correction failed",
+            "Motion correction partially successful"
+          ],
+          "status": [
+            "Pass",
+            "Fail",
+            "Fail",
+            "Fail"
+          ],
+          "type": "dropdown"
+        },
+        "status_history": [
+          {
+            "object_type": "QC status",
+            "evaluator": "Pending review",
+            "status": "Pending",
+            "timestamp": "2025-04-23T00:38:48.368044Z"
+          }
+        ],
+        "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
+        "reference": "VISp_0/motion_correction/VISp_0_registration_summary.png",
+        "tags": [
+          "Motion Correction Registration Summary VISp_0"
+        ],
+        "evaluated_assets": null
+      },
+      {
+        "object_type": "QC metric",
+        "name": "VISp_1 Registration Summary",
+        "modality": {
+          "name": "Planar optical physiology",
+          "abbreviation": "pophys"
+        },
+        "stage": "Processing",
+        "value": {
+          "value": "",
+          "options": [
+            "Motion correction successful",
+            "No motion correction applied",
+            "Motion correction failed",
+            "Motion correction partially successful"
+          ],
+          "status": [
+            "Pass",
+            "Fail",
+            "Fail",
+            "Fail"
+          ],
+          "type": "dropdown"
+        },
+        "status_history": [
+          {
+            "object_type": "QC status",
+            "evaluator": "Pending review",
+            "status": "Pending",
+            "timestamp": "2025-04-23T01:22:01.198466Z"
+          }
+        ],
+        "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
+        "reference": "VISp_1/motion_correction/VISp_1_registration_summary.png",
+        "tags": [
+          "Motion Correction Registration Summary VISp_1"
+        ],
+        "evaluated_assets": null
+      },
+      {
+        "object_type": "QC metric",
+        "name": "VISp_0 FOV Quality",
+        "modality": {
+          "name": "Planar optical physiology",
+          "abbreviation": "pophys"
+        },
+        "stage": "Processing",
+        "value": {
+          "value": "Quality is sufficient",
+          "options": [
+            "Quality is sufficient",
+            "Timeseries shuffled between planes",
+            "Field of view associated with incorrect area and/or depth",
+            "Paired plane cross talk: Extreme",
+            "Paired plane cross-talk: Moderate"
+          ],
+          "status": [
+            "Pass",
+            "Fail",
+            "Fail",
+            "Fail",
+            "Fail"
+          ],
+          "type": "dropdown"
+        },
+        "status_history": [
+          {
+            "object_type": "QC status",
+            "evaluator": "Pending review",
+            "status": "Pending",
+            "timestamp": "2025-04-23T00:38:48.522900Z"
+          }
+        ],
+        "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
+        "reference": "VISp_0/motion_correction/VISp_0_combined_projection.png",
+        "tags": [
+          "Motion Correction FOV Quality VISp_0"
+        ],
+        "evaluated_assets": null
+      },
+      {
+        "object_type": "QC metric",
+        "name": "VISp_1 FOV Quality",
+        "modality": {
+          "name": "Planar optical physiology",
+          "abbreviation": "pophys"
+        },
+        "stage": "Processing",
+        "value": {
+          "value": "Quality is sufficient",
+          "options": [
+            "Quality is sufficient",
+            "Timeseries shuffled between planes",
+            "Field of view associated with incorrect area and/or depth",
+            "Paired plane cross talk: Extreme",
+            "Paired plane cross-talk: Moderate"
+          ],
+          "status": [
+            "Pass",
+            "Fail",
+            "Fail",
+            "Fail",
+            "Fail"
+          ],
+          "type": "dropdown"
+        },
+        "status_history": [
+          {
+            "object_type": "QC status",
+            "evaluator": "Pending review",
+            "status": "Pending",
+            "timestamp": "2025-04-23T01:22:01.407293Z"
+          }
+        ],
+        "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
+        "reference": "VISp_1/motion_correction/VISp_1_combined_projection.png",
+        "tags": [
+          "Motion Correction FOV Quality VISp_1"
+        ],
+        "evaluated_assets": null
+      }
+    ],
+    "key_experimenters": null,
+    "notes": null,
+    "default_grouping": [
+      "Motion Correction Registration Summary VISp_0",
+      "Motion Correction Registration Summary VISp_1",
+      "Motion Correction FOV Quality VISp_0",
+      "Motion Correction FOV Quality VISp_1"
+    ],
+    "allow_tag_failures": [],
+    "status": {
+      "Motion Correction Registration Summary VISp_1": "Pending",
+      "Motion Correction FOV Quality VISp_0": "Pending",
+      "Motion Correction FOV Quality VISp_1": "Pending",
+      "Motion Correction Registration Summary VISp_0": "Pending",
+      "pophys": "Pending",
+      "Processing": "Pending"
+    }
+  },
+  "model": null,
+  "_created": "2025-08-25T18:18:08.775Z",
+  "_last_modified": "2025-08-27T18:25:55.506Z"
+}
