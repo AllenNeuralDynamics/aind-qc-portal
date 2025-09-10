@@ -22,6 +22,9 @@ def upload_temporary_metadata(metadata: dict):
         pn.state.metadata = {}
     pn.state.metadata[metadata["name"]] = metadata
 
+    print(f"Uploaded temporary metadata for {metadata['name']}")
+    print(f"Full data: {metadata}")
+
 
 class ViewData(param.Parameterized):
     """Database for the QC view application."""
@@ -236,6 +239,33 @@ class ViewData(param.Parameterized):
 
         quality_control = self.record.get("quality_control", {})
 
-        self.dataframe = (
-            pd.DataFrame(quality_control["metrics"]) if quality_control and "metrics" in quality_control else None
-        )
+        metrics_copy = []
+        for metric in quality_control["metrics"]:
+            metric_copy = metric.copy()
+            
+            # Fix the bug: normalize DropdownMetric values that got converted to lists
+            if (isinstance(metric_copy.get("value"), dict) and 
+                metric_copy["value"].get("type") == "dropdown" and
+                isinstance(metric_copy["value"].get("value"), list)):
+                
+                # Convert list back to proper format
+                value_list = metric_copy["value"]["value"]
+                if len(value_list) == 0:
+                    # Empty list should be None or empty string for dropdown
+                    metric_copy["value"]["value"] = None
+                elif len(value_list) == 1:
+                    # Single item list should be the string value
+                    metric_copy["value"]["value"] = value_list[0]
+                else:
+                    # Multiple items - this shouldn't happen for dropdown, but log it
+                    print(f"WARNING: DropdownMetric has multiple values: {value_list}")
+                    metric_copy["value"]["value"] = value_list[0]  # Take the first one
+            
+            metrics_copy.append(metric_copy)
+        
+        # Use json_normalize with max_level=0 to prevent flattening of nested objects
+        self.dataframe = pd.json_normalize(metrics_copy, max_level=0)
+
+        # self.dataframe = (
+        #     pd.DataFrame.from_records(quality_control["metrics"]) if quality_control and "metrics" in quality_control else None
+        # )
