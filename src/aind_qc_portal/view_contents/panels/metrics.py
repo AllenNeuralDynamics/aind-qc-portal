@@ -79,6 +79,8 @@ class MetricValue(PyComponent):
             self.value_widget = pn.widgets.Checkbox(name=self.metric_name, width=widget_width)
         elif not self.value or isinstance(self.value, str):
             self.value_widget = pn.widgets.TextInput(name=self.metric_name, width=widget_width)
+            if not isinstance(self.value, str):
+                self.value = str(self.value)
         elif isinstance(self.value, float):
             self.value_widget = pn.widgets.FloatInput(name=self.metric_name, width=widget_width)
         elif isinstance(self.value, int):
