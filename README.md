@@ -258,14 +258,19 @@ If you get errors, contact Dan for help debugging.
 
 ## Development
 
+Panel launches two apps `view` and `portal`. The entrypoints for each app `view.py` and `portal.py` are minimal startup files, the actual contents of each app are stored in the *_contents folders. Each app follows the same organization for content files:
+
+`panel.py` - the actual QCPanel and Portal classes that aggregate all the different Panels into a user interface
+`data/database.py` - a class to handle interacting with DocDB 
+`settings.py` - a global Settings class that can be imported into other files to keep track of settings within each app.
+
+All classes used in the UI inherit from `panel.custom.PyComponent` which makes them `Parameterized`, i.e. they can define parameter variables and these can be watched using `object.param.watch(callback, [<param_name>])`. This is what makes the user interface update when data changes in the background.
+
 ### Launch
 
 ```sh
-panel serve src/aind_qc_portal/qc_portal_app.py src/aind_qc_portal/qc_asset_app.py src/aind_qc_portal/qc_app.py --static-dirs images=src/aind_qc_portal/images --autoreload --show --port 5007 --allow-websocket-origin=10.128.141.92:5007 --keep-alive 10000
+anel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py --dev --show --port 5007 --plugins aind_qc_portal.plugin --static-dirs images=./src/aind_qc_portal/images --oauth-redirect-uri=\"http://localhost:5007/qc_app\" --oauth-optional --index portal.py --num-threads 0
 ```
-
-(port is set to differentiate from aind-metadata-viz app)
-
 
 ### CI/CD
 There is a `Dockerfile` which includes the entrypoint to launch the app.
