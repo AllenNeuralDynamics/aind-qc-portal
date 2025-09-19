@@ -159,7 +159,7 @@ class MetricTab(PyComponent):
         self.metric_name = name
         self.metric_media = metric_media
         self.metric_values = metric_values
-
+        
     def __panel__(self):
         """Create and return the MetricTab panel"""
 
@@ -267,7 +267,7 @@ class Metrics(PyComponent):
                 value_panels = reference_to_value[reference]
                 tab = MetricTab(name=tag, metric_media=media_panel, metric_values=value_panels)
 
-                tag_accordion.append(tab)
+                tag_accordion.append((tab.metric_name, tab))
 
             self.tabs.append(tag_accordion)
 
