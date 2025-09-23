@@ -4,7 +4,7 @@ import pandas as pd
 import panel as pn
 import param
 from aind_data_access_api.document_db import MetadataDbClient
-from aind_data_schema.core.quality_control import QualityControl
+from aind_data_schema.core.quality_control import QualityControl, QCMetric, CurationMetric
 
 TIMEOUT_1M = 60
 TIMEOUT_1H = 60 * 60
@@ -135,7 +135,20 @@ class ViewData(param.Parameterized):
 
         metrics = []
         for _, row in self.dataframe.iterrows():
-            metrics.append(row.to_dict())
+            metric_dict = row.to_dict()
+            if "object_type" in metric_dict:
+                if metric_dict["object_type"] == "QC metric":
+                    # Remove dataframe columns that are not part of the QCMetric model
+                    metric_dict.pop("evaluated_assets")
+                    metric_dict.pop("curation_history")
+                    metric_dict.pop("type")
+                    metrics.append(QCMetric(**metric_dict))
+                elif metric_dict["object_type"] == "Curation metric":
+                    metrics.append(CurationMetric(**metric_dict))
+                else:
+                    raise ValueError(f"Unknown metric object_type: {metric_dict['object_type']}")
+            else:
+                raise ValueError("Metric dictionary missing 'object_type' field")
 
         quality_control["metrics"] = metrics
 
