@@ -139,9 +139,12 @@ class ViewData(param.Parameterized):
             if "object_type" in metric_dict:
                 if metric_dict["object_type"] == "QC metric":
                     # Remove dataframe columns that are not part of the QCMetric model
-                    metric_dict.pop("evaluated_assets")
-                    metric_dict.pop("curation_history")
-                    metric_dict.pop("type")
+                    if "evaluated_assets" in metric_dict:
+                        metric_dict.pop("evaluated_assets")
+                    if "curation_history" in metric_dict:
+                        metric_dict.pop("curation_history")
+                    if "type" in metric_dict:
+                        metric_dict.pop("type")
                     metrics.append(QCMetric(**metric_dict))
                 elif metric_dict["object_type"] == "Curation metric":
                     metrics.append(CurationMetric(**metric_dict))
