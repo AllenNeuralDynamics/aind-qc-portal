@@ -270,7 +270,8 @@ class Metrics(PyComponent):
             for reference in reference_to_value.keys():
                 media_panel = self.reference_to_media[reference]
                 value_panels = reference_to_value[reference]
-                tab = MetricTab(name=tag, metric_media=media_panel, metric_values=value_panels)
+                accordion_name = f"{tag}: {reference}" if reference else f"{tag}"
+                tab = MetricTab(name=accordion_name, metric_media=media_panel, metric_values=value_panels)
 
                 tag_accordion.append((tab.metric_name, tab))
 
