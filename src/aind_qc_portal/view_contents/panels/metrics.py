@@ -179,7 +179,7 @@ class MetricTab(PyComponent):
 class Metrics(PyComponent):
     """Panel for displaying the metrics"""
 
-    active_tab = param.Integer(default=0)
+    active_tab = param.Integer(default=None, allow_None=True)
 
     def __init__(self, data: ViewData, settings: Settings, callback: Callable):
         super().__init__()
@@ -205,6 +205,10 @@ class Metrics(PyComponent):
             styles=OUTER_STYLE,
             tabs_location="left",
         )
+
+        def on_tab_change(event):
+            self.active_tab = event.new
+        self.tabs.param.watch(on_tab_change, "active")
 
     def _construct_metrics(self, data: ViewData):
         """Build all MetricValue/MetricMedia panels"""
@@ -243,7 +247,8 @@ class Metrics(PyComponent):
         Use the group_by tags to pull together which references will be shown
         Then group all the value panels by their media reference
         """
-        active_list = self.tabs.active
+        active_tab = self.tabs.active if self.tabs.active > 0 else self.active_tab
+            
         self.tabs.clear()
 
         print(f"Populating metrics with group_by: {self.settings.group_by}")
@@ -271,10 +276,16 @@ class Metrics(PyComponent):
 
             self.tabs.append(tag_accordion)
 
+        print(active_tab)
+
         if len(self.tabs.objects) == 0:
             self.tabs.active = -1
-        else:
-            self.tabs.active = active_list is not None and active_list < len(self.tabs) and active_list or 0
+        elif active_tab and active_tab < len(self.tabs):
+            self.tabs.active = active_tab or 0
+
+        print(self.tabs.active)
+
+        self.active_tab = self.tabs.active
 
     def __panel__(self):
         """Create and return the metrics panel"""
