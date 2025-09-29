@@ -98,6 +98,7 @@ class Portal(PyComponent):
         )
 
         self.filter_row = pn.Row(
+            self.settings,
             pn.HSpacer(),
             pn.Row(
                 self.selectors_col,
@@ -105,7 +106,6 @@ class Portal(PyComponent):
                 styles=OUTER_STYLE,
             ),
             pn.HSpacer(),
-            self.settings,
         )
 
         # Build the asset group
