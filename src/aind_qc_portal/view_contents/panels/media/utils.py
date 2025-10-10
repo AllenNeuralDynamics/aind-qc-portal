@@ -192,12 +192,14 @@ def _get_s3_url(bucket, key):
         S3 key name
     """
     if "codeocean" in bucket:
+        print(f"[INFO] Generating CodeOcean S3 URL for s3://{bucket}/{key}")
         return codeocean_s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket, "Key": key},
             ExpiresIn=MEDIA_TTL,
         )
     else:
+        print(f"[INFO] Generating Regular S3 URL for s3://{bucket}/{key}")
         return s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket, "Key": key},
