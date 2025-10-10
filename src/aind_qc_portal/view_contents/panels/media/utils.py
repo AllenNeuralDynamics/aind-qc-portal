@@ -14,6 +14,43 @@ s3_client = boto3.client(
     config=boto3.session.Config(signature_version="s3v4"),
 )
 
+
+### TEMP CODE TO HANDLE AUTH ISSUES
+if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
+    codeocean_s3_client = s3_client
+else:
+    def get_role_session(role_arn, session_name="assumed-session"):
+        """
+        Assume a role and return a boto3 Session for it.
+        """
+        # Use your default credentials (from ~/.aws/credentials or env vars)
+        sts_client = boto3.client("sts")
+
+        # Assume the role
+        response = sts_client.assume_role(
+            RoleArn=role_arn,
+            RoleSessionName=session_name
+        )
+
+        creds = response["Credentials"]
+
+        # Create a new session with the assumed role credentials
+        return boto3.Session(
+            aws_access_key_id=creds["AccessKeyId"],
+            aws_secret_access_key=creds["SecretAccessKey"],
+            aws_session_token=creds["SessionToken"]
+        )
+
+
+    role_session = get_role_session("arn:aws:iam::467914378000:role/AindCodeOceanBucketCrossAccountAccess")
+    codeocean_s3_client = role_session.client(
+        "s3",
+        region_name="us-west-2",
+        config=boto3.session.Config(signature_version="s3v4"),
+    )
+### END TEMP CODE TO HANDLE AUTH ISSUES
+
+
 MEDIA_TTL = 3600  # 1 hour
 KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 FULLSCREEN_CSS = """
@@ -154,11 +191,18 @@ def _get_s3_url(bucket, key):
     key : str
         S3 key name
     """
-    return s3_client.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": bucket, "Key": key},
-        ExpiresIn=MEDIA_TTL,
-    )
+    if "codeocean" in bucket:
+        return codeocean_s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=MEDIA_TTL,
+        )
+    else:
+        return s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket, "Key": key},
+            ExpiresIn=MEDIA_TTL,
+        )
 
 
 def _get_s3_file(url, ext):
