@@ -20,6 +20,8 @@ class Portal(PyComponent):
         super().__init__()
         self.database = database
 
+        self.previous_query = None
+
         project_names = database.get_unique_project_names()
         self._init_panel_components(project_names)
 
@@ -142,10 +144,16 @@ class Portal(PyComponent):
         return query
 
     def update_query_count(self, event=None):
+        """Update the number of records that will be returned for a query"""
+        query = self._get_query()
+
+        # Don't update query count for the same query twice
+        if query == self.previous_query:
+            return
+        self.previous_query = query
 
         self.query_size.loading = True
         self.submit_button.disabled = True
-        query = self._get_query()
         ids = self.database.get_ids(query) if query else []
 
         self.query_size.value = f"{len(ids)} assets"
