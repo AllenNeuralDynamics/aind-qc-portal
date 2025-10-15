@@ -11,7 +11,7 @@ from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.metric.metric import CustomMetricValue
 from aind_qc_portal.view_contents.panels.settings import Settings
-
+from aind_qc_portal.view_contents.panels.media.curation import GenericCuration
 
 class MetricMedia(PyComponent):
 
@@ -210,36 +210,48 @@ class Metrics(PyComponent):
             self.active_tab = event.new
         self.tabs.param.watch(on_tab_change, "active")
 
+    def _construct_qc_metric(self, row: pd.Series, s3_bucket, s3_prefix):
+        # Handle the metric value
+        value_panel = MetricValue(
+            name=row["name"],
+            description=row["description"],
+            value=row["value"],
+            status=row["status_history"][-1]["status"],
+            callback=self.callback,
+        )
+
+        # Populate the tag -> value dictionary
+        for tag in row["tags"] + [row["modality"]["abbreviation"]]:
+            if tag not in self.tag_to_value:
+                self.tag_to_value[tag] = [value_panel]
+            else:
+                self.tag_to_value[tag].append(value_panel)
+
+        reference = row["reference"]
+        # Populate the value -> reference dictionary
+        self.value_to_reference[value_panel] = reference
+
+        # Only re-construct the MediaPanel if it doesn't already exist
+        if reference not in self.reference_to_media:
+            media_panel = MetricMedia(reference, s3_bucket=s3_bucket, s3_prefix=s3_prefix)
+            self.reference_to_media[reference] = media_panel
+
+    def _construct_curation_metric(self, row: pd.Series, s3_bucket, s3_prefix):
+        # Curation metrics are not yet implemented
+        pass
+
     def _construct_metrics(self, data: ViewData):
         """Build all MetricValue/MetricMedia panels"""
+        location = data.record["location"].replace("s3://", "")
+        s3_bucket, s3_prefix = location.split("/", 1)
 
         for _, row in data.dataframe.iterrows():
-            # Handle the metric value
-            value_panel = MetricValue(
-                name=row["name"],
-                description=row["description"],
-                value=row["value"],
-                status=row["status_history"][-1]["status"],
-                callback=self.callback,
-            )
-
-            # Populate the tag -> value dictionary
-            for tag in row["tags"] + [row["modality"]["abbreviation"]]:
-                if tag not in self.tag_to_value:
-                    self.tag_to_value[tag] = [value_panel]
-                else:
-                    self.tag_to_value[tag].append(value_panel)
-
-            reference = row["reference"]
-            # Populate the value -> reference dictionary
-            self.value_to_reference[value_panel] = reference
-
-            # Only re-construct the MediaPanel if it doesn't already exist
-            if reference not in self.reference_to_media:
-                location = data.record["location"].replace("s3://", "")
-                s3_bucket, s3_prefix = location.split("/", 1)
-                media_panel = MetricMedia(reference, s3_bucket=s3_bucket, s3_prefix=s3_prefix)
-                self.reference_to_media[reference] = media_panel
+            if row["type"] == "QC metric":
+                self._construct_qc_metric(row, s3_bucket, s3_prefix)
+            elif row["type"] == "Curation metric":
+                self._construct_curation_metric(row, s3_bucket, s3_prefix)
+            else:
+                print(f"Unknown metric type: {row['type']}")
 
     def _populate_metrics(self, event=None):
         """Populate the metrics tabs with data
