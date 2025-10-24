@@ -301,6 +301,7 @@ def get_project_data(project_name: str):
             "session.experimenter_full_name": 1,
             "quality_control": 1,
             "processing.processing_pipeline": 1,
+            "session.stimulus_epochs.output_parameters.task_parameters.stage_in_use": 1,
         },
         limit=limit,
         paginate_batch_size=paginate_batch_size,

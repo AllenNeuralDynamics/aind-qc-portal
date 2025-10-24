@@ -1,6 +1,5 @@
 """Dataset class for a project"""
 
-from datetime import datetime
 import pandas as pd
 import panel as pn
 import param
@@ -95,21 +94,26 @@ class ProjectDataset(param.Parameterized):
             if record.get("processing", {}):
                 data_processes = record.get("processing", {}).get("processing_pipeline", {}).get("data_processes", [])
                 if len(data_processes) > 0:
-                    # convert to datetime from 2025-02-08T00:06:31.973872Z
                     end_date_time_str = data_processes[-1].get("end_date_time")
                     try:
-                        processing_time = datetime.strptime(
-                            end_date_time_str,
-                            "%Y-%m-%dT%H:%M:%S.%fZ",
-                        )
-                    except ValueError:
-                        processing_time = datetime.strptime(
-                            end_date_time_str,
-                            "%Y-%m-%dT%H:%M:%S.%f",
-                        )
+                        from dateutil import parser
+                        processing_time = parser.parse(end_date_time_str)
+                    except Exception as e:
+                        processing_time = None
+                        id = record.get("_id")
+                        print(f"Error in {id} parsing processing time: {e}")
         except Exception as e:
             id = record.get("_id")
             print(f"Error in {id} parsing processing time: {e}")
+
+        # Pull custom field from session.stimulus_epochs.output_parameters.task_parameters.stage_in_use
+        stimulus_epochs = record.get("session", {}).get("stimulus_epochs", [])
+        if stimulus_epochs:
+            stage_in_use = stimulus_epochs[0].get("output_parameters", {}).get("task_parameters", {}).get(
+                "stage_in_use"
+            )
+        else:
+            stage_in_use = None
 
         record_data = {
             "_id": record.get("_id"),
@@ -123,6 +127,7 @@ class ProjectDataset(param.Parameterized):
             "operator": operator_list,
             "QC Status": qc.status().value if qc else "No QC",
             "Processing Time": processing_time,
+            "Stage In Use": stage_in_use,
         }
         return record_data
 
