@@ -210,6 +210,13 @@ class Metrics(PyComponent):
             self.active_tab = event.new
         self.tabs.param.watch(on_tab_change, "active")
 
+    def _add_tag_options(self, tag: str, panel: Any):
+        """Add a tag to the settings group_by options if it doesn't already exist"""
+        if tag not in self.tag_to_value:
+            self.tag_to_value[tag] = [panel]
+        else:
+            self.tag_to_value[tag].append(panel)
+
     def _construct_qc_metric(self, row: pd.Series, s3_bucket, s3_prefix):
         # Handle the metric value
         value_panel = MetricValue(
@@ -222,10 +229,7 @@ class Metrics(PyComponent):
 
         # Populate the tag -> value dictionary
         for tag in row["tags"] + [row["modality"]["abbreviation"]]:
-            if tag not in self.tag_to_value:
-                self.tag_to_value[tag] = [value_panel]
-            else:
-                self.tag_to_value[tag].append(value_panel)
+            self._add_tag_options(tag, value_panel)
 
         reference = row["reference"]
         # Populate the value -> reference dictionary
@@ -238,7 +242,21 @@ class Metrics(PyComponent):
 
     def _construct_curation_metric(self, row: pd.Series, s3_bucket, s3_prefix):
         # Curation metrics are not yet implemented
-        pass
+        curation_reference = f"curation_{row['name']}"
+        
+        data = row["value"].to_dict()
+
+        curation_panel = GenericCuration(
+            data=data,
+            bucket=s3_bucket,
+            prefix=s3_prefix,
+        )
+        
+        for tag in row["tags"] + [row["modality"]["abbreviation"]]:
+            self._add_tag_options(tag, curation_panel)
+        
+        self.value_to_reference[curation_panel] = curation_reference
+        self.reference_to_media[curation_reference] = curation_panel
 
     def _construct_metrics(self, data: ViewData):
         """Build all MetricValue/MetricMedia panels"""
@@ -282,10 +300,14 @@ class Metrics(PyComponent):
             for reference in reference_to_value.keys():
                 media_panel = self.reference_to_media[reference]
                 value_panels = reference_to_value[reference]
-                accordion_name = f"{tag}: {reference}" if reference else f"{tag}"
-                tab = MetricTab(name=accordion_name, metric_media=media_panel, metric_values=value_panels)
 
-                tag_accordion.append((tab.metric_name, tab))
+                if reference and reference.startswith("curation_"):
+                    accordion_name = f"{tag}: {reference.replace('curation_', '')}"
+                    tag_accordion.append((accordion_name, media_panel))
+                else:
+                    accordion_name = f"{tag}: {reference}" if reference else f"{tag}"
+                    tab = MetricTab(name=accordion_name, metric_media=media_panel, metric_values=value_panels)
+                    tag_accordion.append((tab.metric_name, tab))
 
             self.tabs.append(tag_accordion)
 
