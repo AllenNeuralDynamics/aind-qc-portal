@@ -196,6 +196,7 @@ class Portal(PyComponent):
             start_date=self.start_date_selector.value if self.start_date_selector.value else None,
             end_date=self.end_date_selector.value if self.end_date_selector.value else None,
         )
+        self.query_size.value = f"{N} assets"
 
         if N > RECORD_LIMIT:
             time_estimate = (N / 1000) * 1
