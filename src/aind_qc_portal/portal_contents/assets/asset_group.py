@@ -26,7 +26,7 @@ class AssetGroup(PyComponent):
         self.database = database
 
         self._init_panel_components()
-        
+
         # Watch for changes in settings
         settings.param.watch(self._update_header_visibility, "show_query_editor")
 
@@ -67,7 +67,7 @@ class AssetGroup(PyComponent):
             width=1200,
         )
         self.panel = pn.Row(pn.HSpacer(), self.main_col, pn.HSpacer())
-        
+
         # Set initial header visibility
         self._update_header_visibility()
 
@@ -88,7 +88,7 @@ class AssetGroup(PyComponent):
         subject_id = record.get("subject", {}).get("subject_id", "")
         project_name = record.get("data_description", {}).get("project_name", "")
         genotype = record.get("subject", {}).get("subject_details", {}).get("genotype", "")
-        
+
         # Format acquisition time for display
         try:
             acquisition_display = datetime.fromisoformat(acquisition_time).strftime("%Y-%m-%d %H:%M")
@@ -102,7 +102,7 @@ class AssetGroup(PyComponent):
             "Project": project_name,
             "Genotype": genotype,
         }
-    
+
     def _format_derived_record_row(self, record: dict) -> dict:
         """Format a record into a row dict for the nested table (works for both raw and derived)"""
         # Get processed date
@@ -123,7 +123,7 @@ class AssetGroup(PyComponent):
                     processed_display = acquisition_time if acquisition_time else ""
             else:
                 processed_display = ""
-        
+
         modalities = record.get("data_description", {}).get("modalities", [])
         if modalities:
             processed_modalities = ", ".join([mod["abbreviation"] for mod in modalities])
@@ -151,7 +151,7 @@ class AssetGroup(PyComponent):
 
     def _records_to_dataframe(self, records: list[dict]) -> tuple[pd.DataFrame, dict]:
         """Convert records to a DataFrame with raw assets and a dict mapping indices to derived data"""
-        
+
         if not records:
             return pd.DataFrame(), {}
 
@@ -161,7 +161,7 @@ class AssetGroup(PyComponent):
         # Split records into raw and derived
         raw_records = [rec for rec in records if rec["data_description"]["data_level"] == "raw"]
         derived_records = [rec for rec in records if rec["data_description"]["data_level"] != "raw"]
-        
+
         # Pre-sort records by acquisition.acquisition_start_time
         raw_records.sort(key=lambda r: r.get("acquisition", {}).get("acquisition_start_time", ""), reverse=True)
         derived_records.sort(key=lambda r: r.get("acquisition", {}).get("acquisition_start_time", ""), reverse=True)
@@ -182,30 +182,30 @@ class AssetGroup(PyComponent):
         # Create rows for raw assets only, store all assets (raw + derived) in derived_data_map
         rows = []
         derived_data_map = {}
-        
+
         for idx, (raw_name, asset_records) in enumerate(raw_to_records.items()):
             raw_record = asset_records[0]
-            
+
             # Create the main row for the raw asset
             row = self._format_raw_record_row(raw_record)
             rows.append(row)
-            
+
             # Sort assets: raw first, then derived by processing date (earliest first)
             def get_sort_key(rec):
                 if rec["data_description"]["data_level"] == "raw":
                     return (0, "")  # Raw records come first
-                
+
                 # For derived records, get the processing date
                 processes = rec.get("processing", {}).get("data_processes", [])
                 if processes:
                     process_datetime = processes[-1].get("start_date_time", "")
                 else:
                     process_datetime = ""
-                
+
                 return (1, process_datetime)  # Derived records sorted by date
-            
+
             sorted_assets = sorted(asset_records, key=get_sort_key)
-            
+
             # Store all assets (raw + derived) in the dropdown table
             all_rows = [self._format_derived_record_row(rec) for rec in sorted_assets]
             derived_data_map[idx] = pd.DataFrame(all_rows)
@@ -225,15 +225,15 @@ class AssetGroup(PyComponent):
 
     def _create_derived_table(self, row):
         """Create a tabulator for all assets (raw + derived)"""
-        
+
         # Get the row index from the dataframe
-        row_idx = row.name if hasattr(row, 'name') else None
-        
+        row_idx = row.name if hasattr(row, "name") else None
+
         if row_idx is None or row_idx not in self.derived_data_map:
             return pn.pane.Markdown("*No assets found*")
-        
+
         derived_data = self.derived_data_map[row_idx]
-        
+
         # Create a mini tabulator for all assets (raw + derived)
         derived_table = pn.widgets.Tabulator(
             derived_data,
@@ -261,22 +261,22 @@ class AssetGroup(PyComponent):
         """Update the tabulator when dataframe changes"""
         record_count = len(self.records) if self.records else 0
         print(f"Updating table, {record_count} records found")
-        
+
         # Update the tabulator value
         self.tabulator.value = self.df
-        
+
         # Set up row_content to show derived assets if there are any
         if self.derived_data_map:
             self.tabulator.row_content = self._create_derived_table
         else:
             self.tabulator.row_content = None
-        
+
         # Update main column objects based on header visibility
         if settings.show_query_editor:
             self.main_col.objects = [self.header, self.tabulator]
         else:
             self.main_col.objects = [self.tabulator]
-        
+
         # Hide loading spinner when table is updated
         self.panel.loading = False
 

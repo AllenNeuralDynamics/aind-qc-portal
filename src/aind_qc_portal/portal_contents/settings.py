@@ -20,7 +20,7 @@ class Settings(PyComponent):
             self.param.show_full_metadata_path,
             name="Show Full Metadata Path",
         )
-        
+
         query_toggle = pn.widgets.Checkbox.from_param(
             self.param.show_query_editor,
             name="Show Query Editor",

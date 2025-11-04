@@ -258,12 +258,14 @@ class ViewData(param.Parameterized):
         metrics_copy = []
         for metric in quality_control["metrics"]:
             metric_copy = metric.copy()
-            
+
             # Fix the bug: normalize DropdownMetric values that got converted to lists
-            if (isinstance(metric_copy.get("value"), dict) and 
-                metric_copy["value"].get("type") == "dropdown" and
-                isinstance(metric_copy["value"].get("value"), list)):
-                
+            if (
+                isinstance(metric_copy.get("value"), dict)
+                and metric_copy["value"].get("type") == "dropdown"
+                and isinstance(metric_copy["value"].get("value"), list)
+            ):
+
                 # Convert list back to proper format
                 value_list = metric_copy["value"]["value"]
                 if len(value_list) == 0:
@@ -276,9 +278,9 @@ class ViewData(param.Parameterized):
                     # Multiple items - this shouldn't happen for dropdown, but log it
                     print(f"WARNING: DropdownMetric has multiple values: {value_list}")
                     metric_copy["value"]["value"] = value_list[0]  # Take the first one
-            
+
             metrics_copy.append(metric_copy)
-        
+
         # Use json_normalize with max_level=0 to prevent flattening of nested objects
         self.dataframe = pd.json_normalize(metrics_copy, max_level=0)
 

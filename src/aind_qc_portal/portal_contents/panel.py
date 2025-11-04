@@ -140,34 +140,30 @@ class Portal(PyComponent):
         self.subject_selector.param.watch(self.update_query_count, "value")
         self.start_date_selector.param.watch(self.update_query_count, "value")
         self.end_date_selector.param.watch(self.update_query_count, "value")
-        
+
         # Initialize from URL parameters if present, handling dependencies
         # This needs to happen after watchers are attached so they don't fire during setup
         self._initialize_from_url()
-    
+
     def _initialize_from_url(self):
         """Initialize selectors from URL parameters, handling dependencies"""
         # If projects are specified in URL, update subject options and time ranges
         if self.project_selector.value:
             # Update subject options based on selected projects
-            self.subject_selector.options = self.database.get_subject_ids(
-                project_names=self.project_selector.value
-            )
-            
+            self.subject_selector.options = self.database.get_subject_ids(project_names=self.project_selector.value)
+
             # Update time ranges and enable date selectors if not already set from URL
             # Only update if the date selectors still have default values
             if self.start_date_selector.value == AIND_LAUNCH_DATETIME or self.end_date_selector.value == TOMORROW:
-                min_time, max_time = self.database.get_acquisition_time_range(
-                    project_names=self.project_selector.value
-                )
+                min_time, max_time = self.database.get_acquisition_time_range(project_names=self.project_selector.value)
                 if min_time and self.start_date_selector.value == AIND_LAUNCH_DATETIME:
                     self.start_date_selector.value = datetime.fromisoformat(min_time).date()
                 if max_time and self.end_date_selector.value == TOMORROW:
                     self.end_date_selector.value = datetime.fromisoformat(max_time).date() + timedelta(days=1)
-            
+
             self.start_date_selector.disabled = False
             self.end_date_selector.disabled = False
-            
+
             # Update query count and execute query if parameters are present
             self.update_query_count()
             self._update_asset_group_query()
@@ -193,7 +189,7 @@ class Portal(PyComponent):
 
         self.query_size.loading = True
         self.submit_button.disabled = True
-        
+
         N = self.database.get_query_count(
             project_name=self.project_selector.value if self.project_selector.value else None,
             subject_id=self.subject_selector.value if self.subject_selector.value else None,
@@ -241,8 +237,12 @@ class Portal(PyComponent):
             # Get the min and max acquisition start times for the selected project
             min_time, max_time = self.database.get_acquisition_time_range(project_names=self.project_selector.value)
             print(("Min time:", min_time, "Max time:", max_time))
-            self.start_date_selector.value = datetime.fromisoformat(min_time).date() if min_time else AIND_LAUNCH_DATETIME
-            self.end_date_selector.value = datetime.fromisoformat(max_time).date() + timedelta(days=1) if max_time else TOMORROW
+            self.start_date_selector.value = (
+                datetime.fromisoformat(min_time).date() if min_time else AIND_LAUNCH_DATETIME
+            )
+            self.end_date_selector.value = (
+                datetime.fromisoformat(max_time).date() + timedelta(days=1) if max_time else TOMORROW
+            )
 
             self.start_date_selector.disabled = False
             self.end_date_selector.disabled = False
