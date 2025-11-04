@@ -8,7 +8,7 @@ from aind_qc_portal.portal_contents.database import Database
 from aind_qc_portal.portal_contents.assets.asset_group import AssetGroup
 from aind_qc_portal.portal_contents.settings import settings
 
-RECORD_LIMIT = 500
+RECORD_LIMIT = 20000
 AIND_LAUNCH_DATETIME = datetime(2021, 11, 4).date()
 TOMORROW = datetime.today().date() + timedelta(days=1)
 
@@ -198,7 +198,7 @@ class Portal(PyComponent):
         )
 
         if N > RECORD_LIMIT:
-            time_estimate = (N / 100) * 10
+            time_estimate = (N / 1000) * 1
             if time_estimate < 60:
                 time_estimate_str = "up to a minute"
             else:
