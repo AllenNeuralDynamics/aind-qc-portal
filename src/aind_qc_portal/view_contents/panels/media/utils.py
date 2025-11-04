@@ -19,6 +19,7 @@ s3_client = boto3.client(
 if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
     codeocean_s3_client = s3_client
 else:
+
     def get_role_session(role_arn, session_name="assumed-session"):
         """
         Assume a role and return a boto3 Session for it.
@@ -27,10 +28,7 @@ else:
         sts_client = boto3.client("sts")
 
         # Assume the role
-        response = sts_client.assume_role(
-            RoleArn=role_arn,
-            RoleSessionName=session_name
-        )
+        response = sts_client.assume_role(RoleArn=role_arn, RoleSessionName=session_name)
 
         creds = response["Credentials"]
 
@@ -38,9 +36,8 @@ else:
         return boto3.Session(
             aws_access_key_id=creds["AccessKeyId"],
             aws_secret_access_key=creds["SecretAccessKey"],
-            aws_session_token=creds["SessionToken"]
+            aws_session_token=creds["SessionToken"],
         )
-
 
     role_session = get_role_session("arn:aws:iam::467914378000:role/AindCodeOceanBucketCrossAccountAccess")
     codeocean_s3_client = role_session.client(
