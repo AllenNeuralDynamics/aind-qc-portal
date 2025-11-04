@@ -55,10 +55,10 @@ class AssetGroup(PyComponent):
             layout="fit_data_table",
             sizing_mode="stretch_width",
             show_index=False,
+            header_filters=True,
             configuration={
                 "rowHeight": 35,
                 "headerSort": True,
-                "headerFilter": True,
             },
         )
 
@@ -190,8 +190,24 @@ class AssetGroup(PyComponent):
             row = self._format_raw_record_row(raw_record)
             rows.append(row)
             
+            # Sort assets: raw first, then derived by processing date (earliest first)
+            def get_sort_key(rec):
+                if rec["data_description"]["data_level"] == "raw":
+                    return (0, "")  # Raw records come first
+                
+                # For derived records, get the processing date
+                processes = rec.get("processing", {}).get("data_processes", [])
+                if processes:
+                    process_datetime = processes[-1].get("start_date_time", "")
+                else:
+                    process_datetime = ""
+                
+                return (1, process_datetime)  # Derived records sorted by date
+            
+            sorted_assets = sorted(asset_records, key=get_sort_key)
+            
             # Store all assets (raw + derived) in the dropdown table
-            all_rows = [self._format_derived_record_row(rec) for rec in asset_records]
+            all_rows = [self._format_derived_record_row(rec) for rec in sorted_assets]
             derived_data_map[idx] = pd.DataFrame(all_rows)
 
         return pd.DataFrame(rows), derived_data_map
