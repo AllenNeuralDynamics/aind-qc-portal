@@ -7,6 +7,7 @@ ADD pyproject.toml .
 ADD setup.py .
 
 RUN apt-get update
+RUN apt install -y libpq-dev gcc
 RUN pip install --upgrade pip
 RUN pip install . --no-cache-dir
 
