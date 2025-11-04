@@ -159,7 +159,7 @@ class MetricTab(PyComponent):
         self.metric_name = name
         self.metric_media = metric_media
         self.metric_values = metric_values
-        
+
     def __panel__(self):
         """Create and return the MetricTab panel"""
 
@@ -208,6 +208,7 @@ class Metrics(PyComponent):
 
         def on_tab_change(event):
             self.active_tab = event.new
+
         self.tabs.param.watch(on_tab_change, "active")
 
     def _construct_metrics(self, data: ViewData):
@@ -248,7 +249,7 @@ class Metrics(PyComponent):
         Then group all the value panels by their media reference
         """
         active_tab = self.tabs.active if self.tabs.active > 0 else self.active_tab
-            
+
         self.tabs.clear()
 
         print(f"Populating metrics with group_by: {self.settings.group_by}")

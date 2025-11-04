@@ -48,6 +48,7 @@ class Portal(PyComponent):
             },
         )
 
+        # Create selectors without watchers initially
         self.project_selector = pn.widgets.MultiChoice(
             name="data_description.project_name",
             options=project_names,
@@ -78,15 +79,14 @@ class Portal(PyComponent):
             value="0 assets",
         )
 
-        # Watch for changes in project_selector and trigger update
-        self.project_selector.param.watch(self.update_subject_selector, "value")
-        self.project_selector.param.watch(self.update_time_selectors, "value")
+        # Sync selectors to URL parameters
+        pn.state.location.sync(self.project_selector, {"value": "projects"})
+        pn.state.location.sync(self.subject_selector, {"value": "subjects"})
+        pn.state.location.sync(self.start_date_selector, {"value": "start_date"})
+        pn.state.location.sync(self.end_date_selector, {"value": "end_date"})
 
-        # Watch for changes in selectors and update query count
-        self.project_selector.param.watch(self.update_query_count, "value")
-        self.subject_selector.param.watch(self.update_query_count, "value")
-        self.start_date_selector.param.watch(self.update_query_count, "value")
-        self.end_date_selector.param.watch(self.update_query_count, "value")
+        # Build the asset group
+        self.asset_group = AssetGroup(query={}, database=self.database)
 
         self.selectors_col = pn.Column(
             self.project_selector,
@@ -110,9 +110,6 @@ class Portal(PyComponent):
             pn.HSpacer(),
         )
 
-        # Build the asset group
-        self.asset_group = AssetGroup(query={}, database=self.database)
-
         self.asset_col = pn.Column(
             self.asset_group,
         )
@@ -132,7 +129,45 @@ class Portal(PyComponent):
             self.filter_row,
             self.asset_col,
         )
-    
+
+        # Attach watchers first
+        # Watch for changes in project_selector and trigger update
+        self.project_selector.param.watch(self.update_subject_selector, "value")
+        self.project_selector.param.watch(self.update_time_selectors, "value")
+
+        # Watch for changes in selectors and update query count
+        self.project_selector.param.watch(self.update_query_count, "value")
+        self.subject_selector.param.watch(self.update_query_count, "value")
+        self.start_date_selector.param.watch(self.update_query_count, "value")
+        self.end_date_selector.param.watch(self.update_query_count, "value")
+
+        # Initialize from URL parameters if present, handling dependencies
+        # This needs to happen after watchers are attached so they don't fire during setup
+        self._initialize_from_url()
+
+    def _initialize_from_url(self):
+        """Initialize selectors from URL parameters, handling dependencies"""
+        # If projects are specified in URL, update subject options and time ranges
+        if self.project_selector.value:
+            # Update subject options based on selected projects
+            self.subject_selector.options = self.database.get_subject_ids(project_names=self.project_selector.value)
+
+            # Update time ranges and enable date selectors if not already set from URL
+            # Only update if the date selectors still have default values
+            if self.start_date_selector.value == AIND_LAUNCH_DATETIME or self.end_date_selector.value == TOMORROW:
+                min_time, max_time = self.database.get_acquisition_time_range(project_names=self.project_selector.value)
+                if min_time and self.start_date_selector.value == AIND_LAUNCH_DATETIME:
+                    self.start_date_selector.value = datetime.fromisoformat(min_time).date()
+                if max_time and self.end_date_selector.value == TOMORROW:
+                    self.end_date_selector.value = datetime.fromisoformat(max_time).date() + timedelta(days=1)
+
+            self.start_date_selector.disabled = False
+            self.end_date_selector.disabled = False
+
+            # Update query count and execute query if parameters are present
+            self.update_query_count()
+            self._update_asset_group_query()
+
     def _get_query(self):
         """Build the query from the current selector values"""
         query = self.database.build_query(
@@ -154,18 +189,22 @@ class Portal(PyComponent):
 
         self.query_size.loading = True
         self.submit_button.disabled = True
-        ids = self.database.get_ids(query) if query else []
 
-        self.query_size.value = f"{len(ids)} assets"
+        N = self.database.get_query_count(
+            project_name=self.project_selector.value if self.project_selector.value else None,
+            subject_id=self.subject_selector.value if self.subject_selector.value else None,
+            start_date=self.start_date_selector.value if self.start_date_selector.value else None,
+            end_date=self.end_date_selector.value if self.end_date_selector.value else None,
+        )
 
-        if len(ids) > RECORD_LIMIT:
-            time_estimate = (len(ids) / 100) * 10
+        if N > RECORD_LIMIT:
+            time_estimate = (N / 100) * 10
             if time_estimate < 60:
                 time_estimate_str = "up to a minute"
             else:
                 time_estimate_str = "several minutes"
             pn.state.notifications.error(
-                f"Query returned {len(ids)} records. Loading this many assets could take {time_estimate_str}. Please refine your query.",
+                f"Query returned {N} records. Loading this many assets could take {time_estimate_str}. Please refine your query.",
                 duration=10000,
             )
         self.query_size.loading = False
@@ -198,8 +237,12 @@ class Portal(PyComponent):
             # Get the min and max acquisition start times for the selected project
             min_time, max_time = self.database.get_acquisition_time_range(project_names=self.project_selector.value)
             print(("Min time:", min_time, "Max time:", max_time))
-            self.start_date_selector.value = datetime.fromisoformat(min_time).date() if min_time else AIND_LAUNCH_DATETIME
-            self.end_date_selector.value = datetime.fromisoformat(max_time).date() + timedelta(days=1) if max_time else TOMORROW
+            self.start_date_selector.value = (
+                datetime.fromisoformat(min_time).date() if min_time else AIND_LAUNCH_DATETIME
+            )
+            self.end_date_selector.value = (
+                datetime.fromisoformat(max_time).date() + timedelta(days=1) if max_time else TOMORROW
+            )
 
             self.start_date_selector.disabled = False
             self.end_date_selector.disabled = False
