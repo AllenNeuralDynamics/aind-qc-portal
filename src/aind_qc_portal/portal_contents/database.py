@@ -21,6 +21,7 @@ FIELDS = [
     "name",
     "data_description.data_level",
     "data_description.source_data",
+    "data_description.modalities",
     "acquisition.acquisition_start_time",
     "subject.subject_id",
     "data_description.project_name",
@@ -39,8 +40,8 @@ class Database:
 
     def build_query(
         self,
-        project_name: Optional[str] = None,
-        subject_id: Optional[str] = None,
+        project_name: Optional[list[str]] = None,
+        subject_id: Optional[list[str]] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
     ):
@@ -60,6 +61,28 @@ class Database:
             query["acquisition.acquisition_start_time"] = time_query
 
         return query
+
+    def get_query_count(self,
+        project_name: Optional[list[str]] = None,
+        subject_id: Optional[list[str]] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> int:
+        """Get the count of records matching the query using the zombie-squirrel asset basics df"""
+
+        df = asset_basics()
+
+        # Apply filters
+        if project_name:
+            df = df[df['project_name'].isin(project_name)]
+        if subject_id:
+            df = df[df['subject_id'].isin(subject_id)]
+        if start_date:
+            df = df[df['acquisition_start_time'] >= start_date.isoformat()]
+        if end_date:
+            df = df[df['acquisition_start_time'] <= end_date.isoformat()]
+        
+        return len(df)
 
     def get_ids(self, query: dict):
         """Get a list of record IDs matching the query"""
@@ -113,8 +136,6 @@ class Database:
         # Filter by project_names if provided
         if project_names:
             df = df[df['project_name'].isin(project_names)]
-        
-        print(df.head())
 
         # Get all acquisition_start_time and end_time values, compute min start and max end
         if df.empty:

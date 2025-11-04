@@ -6,6 +6,7 @@ import param
 class Settings(PyComponent):
 
     show_full_metadata_path = param.Boolean(default=True)
+    show_query_editor = param.Boolean(default=False)
 
     def __init__(self):
         """Initialize the Settings app"""
@@ -15,16 +16,22 @@ class Settings(PyComponent):
     def _init_panel_components(self):
         """Initialize the components of the Settings app"""
 
-        toggle = pn.widgets.Checkbox.from_param(
+        metadata_toggle = pn.widgets.Checkbox.from_param(
             self.param.show_full_metadata_path,
             name="Show Full Metadata Path",
+        )
+        
+        query_toggle = pn.widgets.Checkbox.from_param(
+            self.param.show_query_editor,
+            name="Show Query Editor",
         )
 
         header = pn.pane.Markdown("### Settings")
 
         self.panel = pn.Modal(
             header,
-            toggle,
+            metadata_toggle,
+            query_toggle,
         )
 
     def __panel__(self):

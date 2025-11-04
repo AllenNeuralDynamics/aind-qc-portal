@@ -7,7 +7,8 @@ from aind_qc_portal.portal_contents.panel import Portal
 from aind_qc_portal.utils import format_css_background
 
 pn.extension(
-    "jsoneditor", "modal", disconnect_notification="Connection lost, please reload the page!", notifications=True
+    "jsoneditor", "modal", "tabulator",
+    disconnect_notification="Connection lost, please reload the page!", notifications=True
 )
 
 format_css_background()
