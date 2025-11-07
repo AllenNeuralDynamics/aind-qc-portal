@@ -79,6 +79,9 @@ class ZSliceH5Viewer(PyComponent):
 
     def _build_max_projection_window_controls(self) -> pn.Row:
         """ Create slider to select max projection half-window size. Links to the class's 'window' param.
+        
+        Returns:
+            pn.Row: Panel row containing the max projection window controls. Links to the class's 'window' param.
         """
 
         # Create slider linked to window param
@@ -90,7 +93,14 @@ class ZSliceH5Viewer(PyComponent):
 
     def _load_slice_max(self, z: int, w: int) -> Image.Image:
         """
-        Load max projection over z-w:z+w and return as PIL Image.
+        Load max projection over z-w:z+w and return as a normalized PIL Image.
+
+        Args:
+            z (int): Center z-slice index for the max projection.
+            w (int): Half-window size; number of slices to include on each side of z.
+
+        Returns:
+            PIL.Image.Image: Image containing the normalized max projection over the specified z window.
         """
         z_start = max(0, z - w)
         z_end = min(self.shape[0], z + w + 1)
