@@ -28,6 +28,7 @@ dependencies = [
     'httpx',
     'altair',
     'zombie-squirrel',
+    'h5py',
 ]
 
 [project.optional-dependencies]

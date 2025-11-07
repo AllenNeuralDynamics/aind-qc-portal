@@ -14,7 +14,9 @@ class ZSliceH5Viewer(PyComponent):
     """ Panel component to visualize z-slices of 3d data stored in an H5 file with max projection.
 
     Args:
-        file_path (str): Path to the H5 file containing the 3D volume data.
+        file_path_or_object: Either a string path to the H5 file or a file-like object (e.g., from fsspec).
+        filename (str, optional): Display name for the file. If not provided, will try to extract from
+            file_path_or_object.
 
     Attributes:
         z (int): Current z slice index (center of max projection).
@@ -25,10 +27,19 @@ class ZSliceH5Viewer(PyComponent):
     z = param.Integer(default=0, bounds=(0, 0))        # bounds fixed in __init__
     window = param.Integer(default=0, bounds=(0, 0))   # bounds fixed in __init__
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path_or_object, filename=None):
         super().__init__()
-        self.file_path = file_path
+
+        self.file_obj = file_path_or_object
         self.dataset = 'data'  # location within the H5 file
+
+        # Determine filename for display
+        if filename:
+            self.filename = filename
+        elif isinstance(file_path_or_object, str):
+            self.filename = Path(file_path_or_object).name
+        else:
+            self.filename = "H5 Data"
 
         self.shape = self._get_volume_shape()  # (z, y, x)
 
@@ -36,9 +47,15 @@ class ZSliceH5Viewer(PyComponent):
         self.param.window.bounds = (0, self.shape[0] // 2)
         self.z = 0
         self.window = 0
+        
+        self.image = pn.pane.Image(sizing_mode="stretch_both")
 
         self.z_controls = self._build_z_slider_controls()
         self.window_controls = self._build_max_projection_window_controls()
+        
+        self.param.watch(self.image_view, 'z')
+        self.param.watch(self.image_view, 'window')
+        self.image_view()
 
     def _get_volume_shape(self):
         """
@@ -47,7 +64,7 @@ class ZSliceH5Viewer(PyComponent):
             tuple: Shape of the volume as (z, y, x).
 
         """
-        with h5py.File(self.file_path, "r") as f:
+        with h5py.File(self.file_obj, "r") as f:
             data = f[self.dataset]
             return data.shape  # (z, y, x)
 
@@ -105,7 +122,7 @@ class ZSliceH5Viewer(PyComponent):
         z_start = max(0, z - w)
         z_end = min(self.shape[0], z + w + 1)
 
-        with h5py.File(self.file_path, "r") as f:
+        with h5py.File(self.file_obj, "r") as f:
             dset = f[self.dataset]
             # shape: (z_window, y, x)
             vol = dset[z_start:z_end]
@@ -121,21 +138,19 @@ class ZSliceH5Viewer(PyComponent):
 
         return Image.fromarray(arr)
 
-    @pn.depends("z", "window")
-    def image_view(self):
+    def image_view(self, event=None):
         """ Render the current max-projected image as a Panel Image pane.
         """
+        self.image.loading = True
         img = self._load_slice_max(self.z, self.window)
-        return pn.pane.Image(
-            img,
-            sizing_mode="stretch_both",
-        )
+        self.image.loading = False
+        self.image.object = img
 
     def __panel__(self):
 
         filename_text_wiget = pn.widgets.StaticText(
             name='File Name',
-            value=Path(self.file_path).name,
+            value=self.filename,
             align='center'
         )
 
@@ -144,5 +159,6 @@ class ZSliceH5Viewer(PyComponent):
             filename_text_wiget,
             self.z_controls,
             self.window_controls,
-            self.image_view,
+            self.image,
+            min_height=600,
         )

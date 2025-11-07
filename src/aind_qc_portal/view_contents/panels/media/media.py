@@ -17,6 +17,7 @@ from aind_qc_portal.view_contents.panels.media.utils import (
     reference_is_pdf,
     reference_is_video,
 )
+from aind_qc_portal.view_contents.panels.media.z_slice_h5_viewer import ZSliceH5Viewer
 
 
 class Media(PyComponent):
@@ -81,6 +82,11 @@ class Media(PyComponent):
             self.reference_data = _get_s3_url(bucket, key)
         elif "sha" in reference:
             self.reference_data = _get_kachery_cloud_url(reference)
+        elif reference.endswith(".h5") or reference.endswith(".hdf5"):
+            # Handle H5 files - we'll construct the S3 path and open with fsspec later
+            if "results/" in reference:
+                reference = reference.split("results/")[1]
+            self.reference_data = f"s3://{self.s3_bucket}/{str(Path(self.s3_prefix) / reference)}"
         else:
             # assume local data asset_get_s3_asset
 
@@ -115,6 +121,16 @@ class Media(PyComponent):
                 sizing_mode="scale_width",
                 max_width=1200,
             )
+        elif reference.endswith(".h5") or reference.endswith(".hdf5"):
+            # For H5 files, open with fsspec and create a ZSliceH5Viewer
+            import fsspec
+            print(f"Opening H5 file from S3: {self.reference_data}")
+
+            fs = fsspec.filesystem("s3", anon=False)
+            file_obj = fs.open(self.reference_data, "rb")
+            # Extract filename from S3 path for display
+            filename = self.reference_data.split("/")[-1]
+            obj = ZSliceH5Viewer(file_obj, filename=filename)
         elif "rrd" in reference:
             # files should be in the format name_vX.Y.Z.rrd
             obj = _parse_rrd(reference, self.reference_data)
