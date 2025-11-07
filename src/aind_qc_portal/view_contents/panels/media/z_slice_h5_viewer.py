@@ -1,13 +1,14 @@
 
 
-from panel.custom import PyComponent
+from pathlib import Path
 
 import h5py
+import numpy as np
 import panel as pn
 import param
-import numpy as np
+from panel.custom import PyComponent
 from PIL import Image
-from pathlib import Path
+
 
 class ZSliceH5Viewer(PyComponent):
     """ Panel component to visualize z-slices of 3d data stored in an H5 file with max projection.
@@ -23,13 +24,13 @@ class ZSliceH5Viewer(PyComponent):
     # Param state
     z = param.Integer(default=0, bounds=(0, 0))        # bounds fixed in __init__
     window = param.Integer(default=0, bounds=(0, 0))   # bounds fixed in __init__
- 
+
     def __init__(self, file_path: str):
         super().__init__()
         self.file_path = file_path
-        self.dataset = 'data' # location within the H5 file
+        self.dataset = 'data'  # location within the H5 file
 
-        self.shape = self._get_volume_shape() # (z, y, x)
+        self.shape = self._get_volume_shape()  # (z, y, x)
 
         self.param.z.bounds = (0, self.shape[0] - 1)
         self.param.window.bounds = (0, self.shape[0] // 2)
@@ -39,18 +40,17 @@ class ZSliceH5Viewer(PyComponent):
         self.z_controls = self._build_z_slider_controls()
         self.window_controls = self._build_max_projection_window_controls()
 
-
     def _get_volume_shape(self):
         """
         Get the shape of the 3D volume stored in the H5 file.
         Returns:
             tuple: Shape of the volume as (z, y, x).
-        
+
         """
         with h5py.File(self.file_path, "r") as f:
             data = f[self.dataset]
             return data.shape  # (z, y, x)
-        
+
     def _build_z_slider_controls(self) -> pn.Row:
         """ Create slider and buttons to select z slice.
         Returns:
@@ -76,7 +76,7 @@ class ZSliceH5Viewer(PyComponent):
 
         z_controls = pn.Row(btn_minus, self.z_slider, btn_plus, align="center")
         return z_controls
-    
+
     def _build_max_projection_window_controls(self) -> pn.Row:
         """ Create slider to select max projection half-window size. Links to the class's 'window' param.
         """
@@ -87,7 +87,6 @@ class ZSliceH5Viewer(PyComponent):
 
         window_controls = pn.Row(self.window_slider, align="center")
         return window_controls
-    
 
     def _load_slice_max(self, z: int, w: int) -> Image.Image:
         """
@@ -111,7 +110,7 @@ class ZSliceH5Viewer(PyComponent):
         arr = (arr * 255).astype(np.uint8)
 
         return Image.fromarray(arr)
-    
+
     @pn.depends("z", "window")
     def image_view(self):
         """ Render the current max-projected image as a Panel Image pane.
@@ -125,7 +124,7 @@ class ZSliceH5Viewer(PyComponent):
     def __panel__(self):
 
         filename_text_wiget = pn.widgets.StaticText(
-            name='File Name', 
+            name='File Name',
             value=Path(self.file_path).name,
             align='center'
         )
