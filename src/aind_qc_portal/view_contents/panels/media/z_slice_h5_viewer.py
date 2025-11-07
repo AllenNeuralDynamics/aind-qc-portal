@@ -79,7 +79,7 @@ class ZSliceH5Viewer(PyComponent):
 
     def _build_max_projection_window_controls(self) -> pn.Row:
         """ Create slider to select max projection half-window size. Links to the class's 'window' param.
-        
+
         Returns:
             pn.Row: Panel row containing the max projection window controls. Links to the class's 'window' param.
         """
