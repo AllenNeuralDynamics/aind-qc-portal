@@ -7,8 +7,9 @@ import panel as pn
 import param
 import numpy as np
 from PIL import Image
+from pathlib import Path
 
-class H5Component(PyComponent):
+class ZSliceH5Viewer(PyComponent):
     """ Panel component to visualize z-slices of 3d data stored in an H5 file with max projection.
 
     Args:
@@ -28,7 +29,7 @@ class H5Component(PyComponent):
         self.file_path = file_path
         self.dataset = 'data' # location within the H5 file
 
-        self.shape = self.get_volume_shape() # (z, y, x)
+        self.shape = self._get_volume_shape() # (z, y, x)
 
         self.param.z.bounds = (0, self.shape[0] - 1)
         self.param.window.bounds = (0, self.shape[0] // 2)
@@ -56,14 +57,10 @@ class H5Component(PyComponent):
             pn.Row: Panel row containing the z slice controls. Links to the class's 'z' param.
         """
 
-        # Create slider
-        self.z_slider = pn.widgets.IntSlider(
-            name="Z slice (center)",
-            start=self.param.z.bounds[0],
-            end=self.param.z.bounds[1],
-            value=self.z,
-            width=300,
-        )
+        # Create slider linked to z param
+        self.z_slider = pn.widgets.IntSlider.from_param(
+            self.param.z, width=300, name='Z Slice')
+
         # Create increment buttons
         btn_minus = pn.widgets.Button(name="-", width=40)
         btn_plus = pn.widgets.Button(name="+", width=40)
@@ -77,10 +74,6 @@ class H5Component(PyComponent):
         btn_minus.on_click(dec_z)
         btn_plus.on_click(inc_z)
 
-        # Link slider <-> param
-        self.z_slider.link(self, value="z")
-        self.param.watch(lambda e: setattr(self.z_slider, "value", e.new), "z")
-
         z_controls = pn.Row(btn_minus, self.z_slider, btn_plus, align="center")
         return z_controls
     
@@ -88,19 +81,9 @@ class H5Component(PyComponent):
         """ Create slider to select max projection half-window size. Links to the class's 'window' param.
         """
 
-        # Create slider
-        self.window_slider = pn.widgets.IntSlider(
-            name="Max projection half-window (±z)",
-            start=self.param.window.bounds[0],
-            end=self.param.window.bounds[1],
-            step=1,
-            value=self.window,
-            width=300,
-        )
-
-        # Link slider <-> param
-        self.window_slider.link(self, value="window")
-        self.param.watch(lambda e: setattr(self.window_slider, "value", e.new), "window")
+        # Create slider linked to window param
+        self.window_slider = pn.widgets.IntSlider.from_param(
+            self.param.window, width=300, name="Max projection half-window (z±window)")
 
         window_controls = pn.Row(self.window_slider, align="center")
         return window_controls
@@ -137,12 +120,19 @@ class H5Component(PyComponent):
         return pn.pane.Image(
             img,
             sizing_mode="stretch_both",
-            height=512,
         )
 
     def __panel__(self):
+
+        filename_text_wiget = pn.widgets.StaticText(
+            name='File Name', 
+            value=Path(self.file_path).name,
+            align='center'
+        )
+
         # image_view is reactive due to @pn.depends on image_view
         return pn.Column(
+            filename_text_wiget,
             self.z_controls,
             self.window_controls,
             self.image_view,
