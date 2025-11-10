@@ -1,5 +1,3 @@
-
-
 from pathlib import Path
 
 import h5py
@@ -11,7 +9,7 @@ from PIL import Image
 
 
 class ZSliceH5Viewer(PyComponent):
-    """ Panel component to visualize z-slices of 3d data stored in an H5 file with max projection.
+    """Panel component to visualize z-slices of 3d data stored in an H5 file with max projection.
 
     Args:
         file_path_or_object: Either a string path to the H5 file or a file-like object (e.g., from fsspec).
@@ -24,14 +22,15 @@ class ZSliceH5Viewer(PyComponent):
     """
 
     # Param state
-    z = param.Integer(default=0, bounds=(0, 0))        # bounds fixed in __init__
-    window = param.Integer(default=0, bounds=(0, 0))   # bounds fixed in __init__
+    z = param.Integer(default=0, bounds=(0, 0))  # bounds fixed in __init__
+    window = param.Integer(default=0, bounds=(0, 0))  # bounds fixed in __init__
+    contrast = param.Range(default=(0, 99), bounds=(0, 100), step=1)
 
     def __init__(self, file_path_or_object, filename=None):
         super().__init__()
 
         self.file_obj = file_path_or_object
-        self.dataset = 'data'  # location within the H5 file
+        self.dataset = "data"  # location within the H5 file
 
         # Determine filename for display
         if filename:
@@ -47,14 +46,16 @@ class ZSliceH5Viewer(PyComponent):
         self.param.window.bounds = (0, self.shape[0] // 2)
         self.z = 0
         self.window = 0
-        
+
         self.image = pn.pane.Image(sizing_mode="stretch_both")
 
         self.z_controls = self._build_z_slider_controls()
         self.window_controls = self._build_max_projection_window_controls()
-        
-        self.param.watch(self.image_view, 'z')
-        self.param.watch(self.image_view, 'window')
+        self.contrast_controls = self._build_contrast_controls()
+
+        self.param.watch(self.image_view, "z")
+        self.param.watch(self.image_view, "window")
+        self.param.watch(self.image_view, "contrast")
         self.image_view()
 
     def _get_volume_shape(self):
@@ -69,14 +70,13 @@ class ZSliceH5Viewer(PyComponent):
             return data.shape  # (z, y, x)
 
     def _build_z_slider_controls(self) -> pn.Row:
-        """ Create slider and buttons to select z slice.
+        """Create slider and buttons to select z slice.
         Returns:
             pn.Row: Panel row containing the z slice controls. Links to the class's 'z' param.
         """
 
         # Create slider linked to z param
-        self.z_slider = pn.widgets.IntSlider.from_param(
-            self.param.z, width=300, name='Z Slice')
+        self.z_slider = pn.widgets.IntSlider.from_param(self.param.z, width=300, name="Z Slice")
 
         # Create increment buttons
         btn_minus = pn.widgets.Button(name="-", width=40)
@@ -95,7 +95,7 @@ class ZSliceH5Viewer(PyComponent):
         return z_controls
 
     def _build_max_projection_window_controls(self) -> pn.Row:
-        """ Create slider to select max projection half-window size. Links to the class's 'window' param.
+        """Create slider to select max projection half-window size. Links to the class's 'window' param.
 
         Returns:
             pn.Row: Panel row containing the max projection window controls. Links to the class's 'window' param.
@@ -103,10 +103,23 @@ class ZSliceH5Viewer(PyComponent):
 
         # Create slider linked to window param
         self.window_slider = pn.widgets.IntSlider.from_param(
-            self.param.window, width=300, name="Max projection half-window (z±window)")
+            self.param.window, width=300, name="Max projection half-window (z±window)"
+        )
 
         window_controls = pn.Row(self.window_slider, align="center")
         return window_controls
+
+    def _build_contrast_controls(self) -> pn.Row:
+        """Create slider for contrast percentile (0-100).
+        Returns:
+            pn.Row: Panel row containing upper percentile for contrast normalization
+        """
+        self.contrast_slider = pn.widgets.RangeSlider.from_param(
+            self.param.contrast,
+            width=300,
+            name="Percentile contrast",
+        )
+        return pn.Row(self.contrast_slider, align="center")
 
     def _load_slice_max(self, z: int, w: int) -> Image.Image:
         """
@@ -131,16 +144,33 @@ class ZSliceH5Viewer(PyComponent):
 
         # Normalize to 0–255 uint8
         arr = arr.astype(np.float32)
-        arr = arr - arr.min()
-        if arr.max() > 0:
-            arr = arr / arr.max()
+
+        low_p, high_p = self.contrast  # in [0, 100]
+
+        if low_p <= 0 and high_p >= 100:
+            # Full dynamic range
+            low_val, high_val = arr.min(), arr.max()
+        elif low_p <= 0:
+            low_val = arr.min()
+            high_val = np.percentile(arr, high_p)
+        elif high_p >= 100:
+            low_val = np.percentile(arr, low_p)
+            high_val = arr.max()
+        else:
+            # Both are percentiles
+            low_val, high_val = np.percentile(arr, [low_p, high_p])
+
+        if high_val <= low_val:
+            high_val = low_val + 1e-6
+
+        arr = np.clip(arr, low_val, high_val)
+        arr = (arr - low_val) / (high_val - low_val)
         arr = (arr * 255).astype(np.uint8)
 
         return Image.fromarray(arr)
 
     def image_view(self, event=None):
-        """ Render the current max-projected image as a Panel Image pane.
-        """
+        """Render the current max-projected image as a Panel Image pane."""
         self.image.loading = True
         img = self._load_slice_max(self.z, self.window)
         self.image.loading = False
@@ -148,17 +178,14 @@ class ZSliceH5Viewer(PyComponent):
 
     def __panel__(self):
 
-        filename_text_wiget = pn.widgets.StaticText(
-            name='File Name',
-            value=self.filename,
-            align='center'
-        )
+        filename_text_wiget = pn.widgets.StaticText(name="File Name", value=self.filename, align="center")
 
         # image_view is reactive due to @pn.depends on image_view
         return pn.Column(
             filename_text_wiget,
             self.z_controls,
             self.window_controls,
+            self.contrast_controls,
             self.image,
             min_height=600,
         )
