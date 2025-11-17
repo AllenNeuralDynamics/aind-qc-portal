@@ -15,7 +15,7 @@ threads = threading.enumerate()
 print("Active threads:", len(threads))
 
 alt.data_transformers.disable_max_rows()
-pn.extension("vega", "ace", "jsoneditor")
+pn.extension("vega", "ace", "jsoneditor", "mathjax")
 
 format_css_background()
 
