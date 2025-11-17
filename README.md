@@ -69,9 +69,9 @@ You have a few options for where to store files. In general we *prefer* that you
 
 Neuroglancer, Figurl, and SortingView links should point to the exact URL that opens the view you want.
 
-**Q: Can I put links into the `description` field to other resources?**
+**Q: How does the `description` field get parsed?**
 
-The description field gets parsed as markdown, use the format `[text](url)`.
+The description field gets parsed as markdown. For links use the format `[text](url)`. For mathematical typesetting use [mathjax](https://docs.mathjax.org/en/latest/) styling.
 
 **Q: I saw fancy things like dropdowns in the QC Portal, how do I do that?**
 
