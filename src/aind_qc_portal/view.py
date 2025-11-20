@@ -27,7 +27,7 @@ class Settings(param.Parameterized):
 settings = Settings()
 pn.state.location.sync(settings, {"name": "name"})
 
-data = ViewData(name=settings.name)
+data = ViewData(asset_name=settings.name)
 
 qc_panel = QCPanel(record_name=settings.name, data=data)
 

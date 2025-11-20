@@ -29,7 +29,7 @@ def upload_temporary_metadata(metadata: dict):
 class ViewData(param.Parameterized):
     """Database for the QC view application."""
 
-    name = param.String(default="")
+    asset_name = param.String(default="")
     record = param.Dict(default=None, allow_None=True)
     dataframe = param.DataFrame(default=pd.DataFrame())
     status = param.DataFrame(default=None, allow_None=True)
@@ -39,10 +39,10 @@ class ViewData(param.Parameterized):
     )
     dirty = param.Integer(default=0, doc="Number of unsaved changes")
 
-    def __init__(self, name: str, client: MetadataDbClient = client):
+    def __init__(self, asset_name: str, client: MetadataDbClient = client):
         super().__init__()
         self._client = client
-        self.name = name
+        self.asset_name = asset_name
 
         self._load_record()
 
@@ -233,7 +233,7 @@ class ViewData(param.Parameterized):
         # First try to pull record from DocDB
         records = client.retrieve_docdb_records(
             filter_query={
-                "name": self.name,
+                "name": self.asset_name,
             },
             projection={
                 "_id": 1,
@@ -245,9 +245,9 @@ class ViewData(param.Parameterized):
         )
 
         if not records:
-            if hasattr(pn.state, "metadata") and self.name in pn.state.metadata:
-                self.record = pn.state.metadata[self.name]
-                print(f"Loaded record {self.name} from temporary metadata")
+            if hasattr(pn.state, "metadata") and self.asset_name in pn.state.metadata:
+                self.record = pn.state.metadata[self.asset_name]
+                print(f"Loaded record {self.asset_name} from temporary metadata")
             else:
                 return
         else:
