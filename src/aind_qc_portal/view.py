@@ -19,16 +19,16 @@ format_css_background()
 class Settings(param.Parameterized):
     """Top-level settings for QC app"""
 
-    name = param.String(
+    asset_name = param.String(
         default="unknown"
     )  # for testing: SmartSPIM_753888_2025-05-23_20-10-58_stitched_2025-05-25_00-43-44
 
 
 settings = Settings()
-pn.state.location.sync(settings, {"name": "name"})
+pn.state.location.sync(settings, {"asset_name": "name"})
 
-data = ViewData(asset_name=settings.name)
+data = ViewData(asset_name=settings.asset_name)
 
-qc_panel = QCPanel(record_name=settings.name, data=data)
+qc_panel = QCPanel(record_name=settings.asset_name, data=data)
 
-qc_panel.__panel__().servable(title=f"QC View: {settings.name}")
+qc_panel.__panel__().servable(title=f"QC View: {settings.asset_name}")

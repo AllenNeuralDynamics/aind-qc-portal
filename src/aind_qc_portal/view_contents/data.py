@@ -249,6 +249,7 @@ class ViewData(param.Parameterized):
                 self.record = pn.state.metadata[self.asset_name]
                 print(f"Loaded record {self.asset_name} from temporary metadata")
             else:
+                print(f"Failed to load {self.asset_name} from local or DocDB")
                 return
         else:
             self.record = records[0]
