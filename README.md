@@ -266,6 +266,29 @@ Panel launches two apps `view` and `portal`. The entrypoints for each app `view.
 
 All classes used in the UI inherit from `panel.custom.PyComponent` which makes them `Parameterized`, i.e. they can define parameter variables and these can be watched using `object.param.watch(callback, [<param_name>])`. This is what makes the user interface update when data changes in the background.
 
+### ENV variables
+
+The QC portal requires an AWS profile to give you access to the media files in aind-open-data and the private codeocean buckets. AIND dev credentials will not work on the development branch for testing assets that have media in private buckets.
+
+Currently on the dev branch you also need to set the following to bypass the extra AUTH role we use on AWS to handle cross-account access.
+
+```bash
+export BYPASS_CODEOCEAN_S3=1
+```
+
+To test the OAUTH features you need to set these keys. Leave them unset to run the app in "guest" mode.
+
+```bash
+export PANEL_OAUTH_PROVIDER="azure" 
+export PANEL_OAUTH_KEY=""
+export PANEL_OAUTH_SECRET=""
+typeset -A PANEL_OAUTH_EXTRA_PARAMS
+PANEL_OAUTH_EXTRA_PARAMS[tenant_id]=""
+export PANEL_OAUTH_EXTRA_PARAMS
+export PANEL_COOKIE_SECRET=""
+export PANEL_OAUTH_ENCRYPTION="="
+```
+
 ### Launch
 
 ```bash
