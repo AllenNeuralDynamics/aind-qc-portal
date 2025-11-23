@@ -268,20 +268,14 @@ All classes used in the UI inherit from `panel.custom.PyComponent` which makes t
 
 ### Launch
 
-```sh
-anel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py --dev --show --port 5007 --plugins aind_qc_portal.plugin --static-dirs images=./src/aind_qc_portal/images --oauth-redirect-uri=\"http://localhost:5007/qc_app\" --oauth-optional --index portal.py --num-threads 0
+```bash
+uv venv --python 3.12
+uv sync
 ```
 
-### CI/CD
-There is a `Dockerfile` which includes the entrypoint to launch the app.
-
-#### Local dev
-1. Build the Docker image locally and run a Docker container:
-```sh
-docker build -t aind-qc-portal .
-docker run -e ALLOW_WEBSOCKET_ORIGIN=localhost:8000 -p 8000:8000 aind-qc-portal
+```bash
+panel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py --dev --show --port 5007 --plugins aind_qc_portal.plugin --static-dirs images=./src/aind_qc_portal/images --oauth-redirect-uri=\"http://localhost:5007/qc_app\" --oauth-optional --index=portal --num-threads 0
 ```
-2. Navigate to 'localhost:8000` to view the app.
 
 #### AWS
 1. On pushes to the `dev` or `main` branch, a GitHub Action will run to publish a Docker image to `ghcr.io/allenneuraldynamics/aind-qc-portal:dev` or `ghcr.io/allenneuraldynamics/aind-qc-portal:latest`.
