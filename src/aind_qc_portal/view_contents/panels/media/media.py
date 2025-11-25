@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Any, Optional
 
 import panel as pn
 import param
@@ -11,21 +12,23 @@ from aind_qc_portal.view_contents.panels.media.utils import (
     Fullscreen,
     _get_s3_file,
     _get_s3_url,
+    _parse_ephys_gui_app,
     _parse_rrd,
     _parse_sortingview,
     reference_is_image,
     reference_is_pdf,
     reference_is_video,
+    clean_reference_prefix,
+    clean_reference_url,
 )
 
 
 class Media(PyComponent):
     """A Media object that can display images, videos, and other media types."""
+    
+    media_type = param.String(default="", doc="Type of object being displayed")
 
-    reference = param.String(default="")
-    reference_data = param.String(default=None, allow_None=True)
-
-    def __init__(self, reference: str, s3_bucket: str, s3_prefix: str):
+    def __init__(self, reference: str, s3_bucket: str, s3_prefix: str, raw_s3_loc: str):
         """Build a media object
 
         Parameters
@@ -37,7 +40,7 @@ class Media(PyComponent):
 
         self.s3_bucket = s3_bucket
         self.s3_prefix = s3_prefix
-        self.reference = reference
+        self.raw_s3_loc = raw_s3_loc
 
         self._init_panel_objects()
         self.parse_reference(reference)
@@ -46,89 +49,115 @@ class Media(PyComponent):
         """Initialize empty panel objects"""
         self.content = pn.Column()
 
-    def parse_reference(self, reference=None):
+    def _get_media_data(self, reference: str):
+        """Parse a reference string and convert to a data object"""
+        if "http" in reference:
+            # Any HTTP URL
+            reference_data = clean_reference_url(reference)
+        elif "s3" in reference:
+            # S3 asset that is *not* in our bucket/key
+            bucket = reference.split("/")[2]
+            key = "/".join(reference.split("/")[3:])
+            reference_data = _get_s3_url(bucket, key)
+        else:
+            # S3 asset in our bucket/key
+            reference = clean_reference_prefix(reference)
+            reference_data = _get_s3_url(
+                self.s3_bucket,
+                str(Path(self.s3_prefix) / reference),
+            )
+
+        return reference_data
+
+    def _get_media_object(self, reference: str, reference_data: Any):
         """Parse the reference string and return the appropriate media object
 
         Parameters
         ----------
         reference : str
+        reference_data: Any
         """
-        if not reference:
-            reference = self.reference
-        print(f"Parsing reference: {self.reference}")
 
-        # Deal with swipe panels first
-        if ";" in reference:
-            self.set_media_object(
-                pn.layout.Swipe(
-                    self.parse_reference(reference.split(";")[0]),
-                    self.parse_reference(reference.split(";")[1]),
-                )
-            )
-            return
+        if reference_data and "https://s3" in reference_data:
+            reference_data = _get_s3_file(reference_data, os.path.splitext(reference)[1])
 
-        reference = reference.lstrip('/')
-
-        # Step 1: get the data
-        # possible sources are: http, s3, local data asset, figurl
-        if "http" in reference:
-            self.reference_data = reference
-        elif "s3" in reference:
-            bucket = reference.split("/")[2]
-            key = "/".join(reference.split("/")[3:])
-            self.reference_data = _get_s3_url(bucket, key)
-        elif "sha" in reference:
-            self.reference_data = _get_kachery_cloud_url(reference)
-        else:
-            # assume local data asset_get_s3_asset
-
-            # if a user appends extra things up to results/, strip that
-            if "results/" in reference:
-                reference = reference.split("results/")[1]
-            self.reference_data = _get_s3_url(
-                self.s3_bucket,
-                str(Path(self.s3_prefix) / reference),
-            )
-
-        if not self.reference_data:
-            self.set_media_object(pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger"))
-            return
-
-        # print(f"Parsing type: {reference} with data: {data}")
-
-        if self.reference_data and "https://s3" in self.reference_data:
-            self.reference_data = _get_s3_file(self.reference_data, os.path.splitext(reference)[1])
-
-            if not self.reference_data:
+            if not reference_data:
                 obj = pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
         if reference_is_image(reference):
-            obj = pn.pane.Image(self.reference_data, sizing_mode="scale_width", max_width=1200)
+            self.media_type = "Image"
+            obj = pn.pane.Image(reference_data, sizing_mode="scale_width", max_width=1200)
         elif reference_is_pdf(reference):
-            obj = pn.pane.PDF(self.reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
+            self.media_type = "PDF"
+            obj = pn.pane.PDF(reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
         elif reference_is_video(reference):
+            self.media_type = "Video"
             # Return the Video pane using the temporary file
             obj = pn.pane.Video(
-                self.reference_data,
+                reference_data,
                 sizing_mode="scale_width",
                 max_width=1200,
             )
         elif "rrd" in reference:
             # files should be in the format name_vX.Y.Z.rrd
-            obj = _parse_rrd(reference, self.reference_data)
+            self.media_type = "Rerun"
+            obj = _parse_rrd(reference, reference_data)
         elif "sortingview" in reference:
-            obj = _parse_sortingview(reference, self.reference_data, self)
+            self.media_type = "Sortingview"
+            obj = _parse_sortingview(reference, reference_data, self)
         elif "neuroglancer" in reference:
+            self.media_type = "Neuroglancer"
             iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
             obj = pn.pane.HTML(
                 iframe_html,
                 sizing_mode="stretch_width",
                 height=1000,
             )
+        elif "ephys.allenneuraldynamics.org" in reference:
+            self.media_type = "Ephys GUI"
+            # Pull the derived asset location in S3
+            derived_asset_location = f"{self.s3_bucket}/{self.s3_prefix}"
+            raw_asset_location = self.raw_s3_loc
+            obj = _parse_ephys_gui_app(reference_data, raw_asset_location, derived_asset_location)
         elif "http" in reference:
+            self.media_type = "Link"
             obj = pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
         else:
-            obj = pn.widgets.StaticText(value=self.reference_data)
+            self.media_type = "Text"
+            obj = pn.widgets.StaticText(value=reference_data)
+
+        return obj
+
+    def parse_reference(self, reference: Optional[str] = None):
+        """Parse the reference string and build the media object
+
+        Parameters
+        ----------
+        data : str
+        """
+        if not reference:
+            return
+
+        print(f"Parsing reference: {reference}")
+
+        if ";" in reference:
+            # Deal with swipe panels, split the reference and build two media objects
+            reference_left = reference.split(";")[0]
+            reference_right = reference.split(";")[1]
+            obj = pn.layout.Swipe(
+                self._get_media_object(reference_left, self._get_media_data(reference_left)),
+                self._get_media_object(reference_right, self._get_media_data(reference_right)),
+            )
+        else:
+            # Single-media references
+            reference = reference.lstrip('/')
+
+            reference_data = self._get_media_data(reference)
+            if not reference_data:
+                self.content.append(pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger"))
+                return
+
+            obj = self._get_media_object(reference, reference_data)
 
         self.content.append(obj)
 
