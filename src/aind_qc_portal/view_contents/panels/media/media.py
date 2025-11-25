@@ -67,9 +67,7 @@ class Media(PyComponent):
             )
             return
 
-        # Strip slashes at the start of the reference
-        if reference.startswith("/"):
-            reference = reference[1:]
+        reference = reference.lstrip('/')
 
         # Step 1: get the data
         # possible sources are: http, s3, local data asset, figurl
