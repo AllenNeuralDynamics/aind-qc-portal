@@ -1,5 +1,6 @@
 import os
 import tempfile
+from urllib.parse import unquote
 
 import boto3
 import httpx
@@ -187,7 +188,7 @@ def clean_reference_prefix(reference: str):
 def clean_reference_url(reference: str):
     """Make sure a URL isn't encoded"""
     if "http" in reference:
-        reference = reference.replace("%2F", "/").replace("%3A", ":").replace("%3F", "?").replace("%26", "&").replace("%7B", "{").replace("%7D", "}")
+        reference = unquote(reference)
     return reference
 
 
@@ -279,11 +280,11 @@ def _parse_sortingview(reference, data, media_obj):
     )
 
 
-def _parse_ephys_gui_app(reference, raw_asset_s3, derived_asset_s3):
+def _parse_ephys_gui_app(reference, data, raw_asset_s3, derived_asset_s3):
     """Parse a sortingview URL and return the appropriate object"""
-    reference.replace("{derived_asset_location}", derived_asset_s3)
-    reference.replace("{raw_asset_location}", raw_asset_s3)
-    iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
+    data = data.replace("{derived_asset_location}", f"s3://{derived_asset_s3}")
+    data = data.replace("{raw_asset_location}", f"s3://{raw_asset_s3}")
+    iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
     return pn.Column(
         pn.pane.HTML(
             iframe_html,

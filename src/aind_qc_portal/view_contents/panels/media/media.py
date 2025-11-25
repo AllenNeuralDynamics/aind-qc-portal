@@ -115,10 +115,7 @@ class Media(PyComponent):
             )
         elif "ephys.allenneuraldynamics.org" in reference:
             self.media_type = "Ephys GUI"
-            # Pull the derived asset location in S3
-            derived_asset_location = f"{self.s3_bucket}/{self.s3_prefix}"
-            raw_asset_location = self.raw_s3_loc
-            obj = _parse_ephys_gui_app(reference_data, raw_asset_location, derived_asset_location)
+            obj = _parse_ephys_gui_app(reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}")
         elif "http" in reference:
             self.media_type = "Link"
             obj = pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
