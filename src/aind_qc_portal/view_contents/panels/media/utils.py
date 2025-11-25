@@ -177,6 +177,20 @@ def reference_is_pdf(reference):
     return reference.endswith(".pdf")
 
 
+def clean_reference_prefix(reference: str):
+    if "results/" in reference:
+        reference = reference.split("results/")[1]
+
+    return reference
+
+
+def clean_reference_url(reference: str):
+    """Make sure a URL isn't encoded"""
+    if "http" in reference:
+        reference = reference.replace("%2F", "/").replace("%3A", ":").replace("%3F", "?").replace("%26", "&").replace("%7B", "{").replace("%7D", "}")
+    return reference
+
+
 # Note 2025-11-24: Disabled caching due to issue w/ timed out URLs being used even though
 # the cache TTL should have already expired.
 # @pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
@@ -190,6 +204,9 @@ def _get_s3_url(bucket, key):
     key : str
         S3 key name
     """
+    if not bucket or not key:
+        return None
+    
     if "codeocean" in bucket:
         return codeocean_s3_client.generate_presigned_url(
             "get_object",
@@ -259,6 +276,20 @@ def _parse_sortingview(reference, data, media_obj):
             height=1000,
         ),
         curation_data,
+    )
+
+
+def _parse_ephys_gui_app(reference, raw_asset_s3, derived_asset_s3):
+    """Parse a sortingview URL and return the appropriate object"""
+    reference.replace("{derived_asset_location}", derived_asset_s3)
+    reference.replace("{raw_asset_location}", raw_asset_s3)
+    iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
+    return pn.Column(
+        pn.pane.HTML(
+            iframe_html,
+            sizing_mode="stretch_width",
+            height=1000,
+        ),
     )
 
 
