@@ -191,6 +191,7 @@ class Metrics(PyComponent):
         self.tag_to_value = {}
         self.value_to_reference = {}
         self.reference_to_media = {}
+        self.status = data.status
 
         self._init_panel_objects()
         self._construct_metrics(data)
@@ -267,7 +268,9 @@ class Metrics(PyComponent):
                 reference_to_value[reference].append(value_panel)
 
             # Build the accordion contents
-            tag_accordion = pn.Accordion(name=tag, active=[0])
+            statuses = [self.status[tag][i] for i in range(len(self.status[tag]))]
+            tab_name = f"{tag} ({"/".join(statuses)})"
+            tag_accordion = pn.Accordion(name=tab_name, active=[0])
             for reference in reference_to_value.keys():
                 media_panel = self.reference_to_media[reference]
                 value_panels = reference_to_value[reference]
@@ -278,14 +281,10 @@ class Metrics(PyComponent):
 
             self.tabs.append(tag_accordion)
 
-        print(active_tab)
-
         if len(self.tabs.objects) == 0:
             self.tabs.active = -1
         elif active_tab and active_tab < len(self.tabs):
             self.tabs.active = active_tab or 0
-
-        print(self.tabs.active)
 
         self.active_tab = self.tabs.active
 
