@@ -111,7 +111,7 @@ class MetricValue(PyComponent):
         """Create and return the MetricValue panel"""
 
         md = f"""
-#### {replace_markdown_with_html(10, f"{self.metric_name}")}  
+**{replace_markdown_with_html(10, f"{self.metric_name}")}**  
 *{replace_markdown_with_html(8, self.description if self.description else "*no description provided*")}*
 
 Modality: **{self.modality}** | Stage: **{self.stage}**  
