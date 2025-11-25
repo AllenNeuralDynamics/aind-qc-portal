@@ -18,10 +18,13 @@ class MetricValue(PyComponent):
     value = param.Parameter()
     status = param.String()
 
-    def __init__(self, name: str, description: str, value: Any, status: Any, callback: Callable):
+    def __init__(self, name: str, description: str, tags: list[str], stage: str, modality: str, value: Any, status: Any, callback: Callable):
         super().__init__()
         self.metric_name = name
         self.description = description
+        self.tags = tags
+        self.stage = stage
+        self.modality = modality
         self.value = value
         self.status = status
         self.callback = callback
@@ -108,8 +111,11 @@ class MetricValue(PyComponent):
         """Create and return the MetricValue panel"""
 
         md = f"""
-{replace_markdown_with_html(10, f"{self.metric_name}")}
-{replace_markdown_with_html(8, self.description if self.description else "*no description provided*")}
+#### {replace_markdown_with_html(10, f"{self.metric_name}")}  
+*{replace_markdown_with_html(8, self.description if self.description else "*no description provided*")}*
+
+Modality: **{self.modality}** | Stage: **{self.stage}**  
+Tags: **{', '.join(self.tags)}**
 """
 
         if pn.state.user == "guest":
@@ -205,6 +211,9 @@ class Metrics(PyComponent):
                 name=row["name"],
                 description=row["description"],
                 value=row["value"],
+                tags=row["tags"],
+                stage=row["stage"],
+                modality=row["modality"]["abbreviation"],
                 status=row["status_history"][-1]["status"],
                 callback=self.callback,
             )
