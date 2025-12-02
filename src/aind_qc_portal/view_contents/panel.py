@@ -33,7 +33,7 @@ class QCPanel(PyComponent):
 
         if self._data.dataframe.empty:
             self.no_content = pn.widgets.StaticText(
-                value=f"No data available for record: {self.record_name}", styles=OUTER_STYLE
+                value=f"No QC data available for record: {self.record_name}", styles=OUTER_STYLE
             )
             return
 
