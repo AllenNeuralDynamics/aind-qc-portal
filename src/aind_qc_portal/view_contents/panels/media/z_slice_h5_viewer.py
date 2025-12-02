@@ -57,7 +57,6 @@ class ZSliceH5Viewer(PyComponent):
         self.window_controls = self._build_max_projection_window_controls()
         self.contrast_controls = self._build_contrast_controls()
 
-        # Use param.watch with queued=True to debounce rapid changes
         self.param.watch(self.image_view, ["z", "window", "contrast"])
         self.image_view()
 
@@ -191,7 +190,6 @@ class ZSliceH5Viewer(PyComponent):
 
         filename_text_wiget = pn.widgets.StaticText(name="File Name", value=self.filename, align="center")
 
-        # image_view is reactive due to @pn.depends on image_view
         return pn.Column(
             filename_text_wiget,
             self.z_controls,
