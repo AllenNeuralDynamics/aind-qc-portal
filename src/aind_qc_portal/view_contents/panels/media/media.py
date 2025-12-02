@@ -11,8 +11,8 @@ from panel.custom import PyComponent
 from aind_qc_portal.view_contents.panels.media.utils import (
     Fullscreen,
     _get_s3_file,
-    _get_s3_url,
-    _parse_ephys_gui_app,
+    get_s3_url,
+    parse_ephys_gui_app,
     _parse_rrd,
     _parse_sortingview,
     reference_is_image,
@@ -20,12 +20,13 @@ from aind_qc_portal.view_contents.panels.media.utils import (
     reference_is_video,
     clean_reference_prefix,
     clean_reference_url,
+    is_presigned_url_valid,
 )
 
 
 class Media(PyComponent):
     """A Media object that can display images, videos, and other media types."""
-    
+
     media_type = param.String(default="", doc="Type of object being displayed")
 
     def __init__(self, reference: str, s3_bucket: str, s3_prefix: str, raw_s3_loc: str):
@@ -58,11 +59,11 @@ class Media(PyComponent):
             # S3 asset that is *not* in our bucket/key
             bucket = reference.split("/")[2]
             key = "/".join(reference.split("/")[3:])
-            reference_data = _get_s3_url(bucket, key)
+            reference_data = get_s3_url(bucket, key)
         else:
             # S3 asset in our bucket/key
             reference = clean_reference_prefix(reference)
-            reference_data = _get_s3_url(
+            reference_data = get_s3_url(
                 self.s3_bucket,
                 str(Path(self.s3_prefix) / reference),
             )
@@ -86,12 +87,18 @@ class Media(PyComponent):
 
         if reference_is_image(reference):
             self.media_type = "Image"
+            if not is_presigned_url_valid(reference_data):
+                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / reference))
             obj = pn.pane.Image(reference_data, sizing_mode="scale_width", max_width=1200)
         elif reference_is_pdf(reference):
             self.media_type = "PDF"
+            if not is_presigned_url_valid(reference_data):
+                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / reference))
             obj = pn.pane.PDF(reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
         elif reference_is_video(reference):
             self.media_type = "Video"
+            if not is_presigned_url_valid(reference_data):
+                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / reference))
             # Return the Video pane using the temporary file
             obj = pn.pane.Video(
                 reference_data,
@@ -115,7 +122,7 @@ class Media(PyComponent):
             )
         elif "ephys.allenneuraldynamics.org" in reference:
             self.media_type = "Ephys GUI"
-            obj = _parse_ephys_gui_app(reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}")
+            obj = parse_ephys_gui_app(reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}")
         elif "http" in reference:
             self.media_type = "Link"
             obj = pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
