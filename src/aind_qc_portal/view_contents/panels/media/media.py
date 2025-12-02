@@ -116,12 +116,12 @@ class Media(PyComponent):
         elif reference.endswith(".h5") or reference.endswith(".hdf5"):
             # For H5 files, open with fsspec and create a ZSliceH5Viewer
             import fsspec
-            print(f"Opening H5 file from S3: {self.reference_data}")
+            print(f"Opening H5 file from S3: {reference_data}")
 
             fs = fsspec.filesystem("s3", anon=False)
-            file_obj = fs.open(self.reference_data, "rb")
+            file_obj = fs.open(reference_data, "rb")
             # Extract filename from S3 path for display
-            filename = self.reference_data.split("/")[-1]
+            filename = reference_data.split("/")[-1]
             obj = ZSliceH5Viewer(file_obj, filename=filename)
         elif "rrd" in reference:
             # files should be in the format name_vX.Y.Z.rrd
