@@ -31,6 +31,10 @@ class ZSliceH5Viewer(PyComponent):
 
         self.file_obj = file_path_or_object
         self.dataset = "data"  # location within the H5 file
+        
+        # Open H5 file once and keep it open
+        self._h5file = h5py.File(self.file_obj, "r")
+        self._h5dset = self._h5file[self.dataset]
 
         # Determine filename for display
         if filename:
@@ -40,7 +44,7 @@ class ZSliceH5Viewer(PyComponent):
         else:
             self.filename = "H5 Data"
 
-        self.shape = self._get_volume_shape()  # (z, y, x)
+        self.shape = self._h5dset.shape  # (z, y, x)
 
         self.param.z.bounds = (0, self.shape[0] - 1)
         self.param.window.bounds = (0, self.shape[0] // 2)
@@ -53,21 +57,14 @@ class ZSliceH5Viewer(PyComponent):
         self.window_controls = self._build_max_projection_window_controls()
         self.contrast_controls = self._build_contrast_controls()
 
-        self.param.watch(self.image_view, "z")
-        self.param.watch(self.image_view, "window")
-        self.param.watch(self.image_view, "contrast")
+        # Use param.watch with queued=True to debounce rapid changes
+        self.param.watch(self.image_view, ["z", "window", "contrast"])
         self.image_view()
 
-    def _get_volume_shape(self):
-        """
-        Get the shape of the 3D volume stored in the H5 file.
-        Returns:
-            tuple: Shape of the volume as (z, y, x).
-
-        """
-        with h5py.File(self.file_obj, "r") as f:
-            data = f[self.dataset]
-            return data.shape  # (z, y, x)
+    def __del__(self):
+        """Close the H5 file when the object is destroyed."""
+        if hasattr(self, "_h5file") and self._h5file:
+            self._h5file.close()
 
     def _build_z_slider_controls(self) -> pn.Row:
         """Create slider and buttons to select z slice.
@@ -121,6 +118,28 @@ class ZSliceH5Viewer(PyComponent):
         )
         return pn.Row(self.contrast_slider, align="center")
 
+    @pn.cache()
+    def _get_cached_slice(self, z: int, w: int):
+        """
+        Load and cache max projection data over z-w:z+w.
+        Uses pn.cache() to avoid recomputing identical slices.
+
+        Args:
+            z (int): Center z-slice index for the max projection.
+            w (int): Half-window size; number of slices to include on each side of z.
+
+        Returns:
+            np.ndarray: Raw max projection array (float32).
+        """
+        z_start = max(0, z - w)
+        z_end = min(self.shape[0], z + w + 1)
+
+        # Read from already-open H5 dataset
+        vol = self._h5dset[z_start:z_end]
+        # Max projection along z
+        arr = np.max(vol, axis=0).astype(np.float32)
+        return arr
+
     def _load_slice_max(self, z: int, w: int) -> Image.Image:
         """
         Load max projection over z-w:z+w and return as a normalized PIL Image.
@@ -132,18 +151,8 @@ class ZSliceH5Viewer(PyComponent):
         Returns:
             PIL.Image.Image: Image containing the normalized max projection over the specified z window.
         """
-        z_start = max(0, z - w)
-        z_end = min(self.shape[0], z + w + 1)
-
-        with h5py.File(self.file_obj, "r") as f:
-            dset = f[self.dataset]
-            # shape: (z_window, y, x)
-            vol = dset[z_start:z_end]
-            # max projection along z
-            arr = np.max(vol, axis=0)
-
-        # Normalize to 0–255 uint8
-        arr = arr.astype(np.float32)
+        # Get cached slice data
+        arr = self._get_cached_slice(z, w)
 
         low_p, high_p = self.contrast  # in [0, 100]
 
@@ -172,9 +181,11 @@ class ZSliceH5Viewer(PyComponent):
     def image_view(self, event=None):
         """Render the current max-projected image as a Panel Image pane."""
         self.image.loading = True
-        img = self._load_slice_max(self.z, self.window)
-        self.image.loading = False
-        self.image.object = img
+        try:
+            img = self._load_slice_max(self.z, self.window)
+            self.image.object = img
+        finally:
+            self.image.loading = False
 
     def __panel__(self):
 
