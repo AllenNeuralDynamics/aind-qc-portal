@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "aind-qc-portal"
 description = "Generated from aind-library-template"
 license = {text = "MIT"}
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors = [
     {name = "Allen Institute for Neural Dynamics"}
 ]
@@ -27,8 +27,8 @@ dependencies = [
     'aind-qcportal-schema>=0.6.3',
     'httpx',
     'altair',
-    'zombie-squirrel',
     'h5py',
+    'zombie-squirrel>=0.5.4',
 ]
 
 [project.optional-dependencies]

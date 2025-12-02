@@ -1,5 +1,6 @@
 import os
 import tempfile
+from urllib.parse import unquote
 
 import boto3
 import httpx
@@ -7,6 +8,7 @@ import panel as pn
 import param
 from panel.custom import JSComponent
 from panel.reactive import ReactiveHTML
+import requests
 
 s3_client = boto3.client(
     "s3",
@@ -177,8 +179,45 @@ def reference_is_pdf(reference):
     return reference.endswith(".pdf")
 
 
-@pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
-def _get_s3_url(bucket, key):
+def clean_reference_prefix(reference: str):
+    if "results/" in reference:
+        reference = reference.split("results/")[1]
+
+    return reference
+
+
+def clean_reference_url(reference: str):
+    """Make sure a URL isn't encoded"""
+    if "http" in reference:
+        reference = unquote(reference)
+    return reference
+
+
+def is_presigned_url_valid(url: str) -> bool:
+    try:
+        # HEAD request to avoid downloading the object
+        response = requests.head(url, allow_redirects=True)
+
+        # Valid URLs typically return 200 OK or 206 Partial Content
+        if response.status_code in (200, 206):
+            return True
+
+        # Expired or invalid URLs from S3 return 403 Forbidden
+        # with specific S3 error codes in headers or body
+        if response.status_code == 403:
+            return False
+
+        # Other codes may indicate permissions or other problems
+        return False
+
+    except requests.RequestException:
+        return False
+
+
+# Note 2025-11-24: Disabled caching due to issue w/ timed out URLs being used even though
+# the cache TTL should have already expired.
+# @pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
+def get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
 
     Parameters
@@ -188,6 +227,9 @@ def _get_s3_url(bucket, key):
     key : str
         S3 key name
     """
+    if not bucket or not key:
+        return None
+
     if "codeocean" in bucket:
         return codeocean_s3_client.generate_presigned_url(
             "get_object",
@@ -257,6 +299,20 @@ def _parse_sortingview(reference, data, media_obj):
             height=1000,
         ),
         curation_data,
+    )
+
+
+def parse_ephys_gui_app(reference, data, raw_asset_s3, derived_asset_s3):
+    """Parse a sortingview URL and return the appropriate object"""
+    data = data.replace("{derived_asset_location}", f"s3://{derived_asset_s3}")
+    data = data.replace("{raw_asset_location}", f"s3://{raw_asset_s3}")
+    iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
+    return pn.Column(
+        pn.pane.HTML(
+            iframe_html,
+            sizing_mode="stretch_width",
+            height=1000,
+        ),
     )
 
 

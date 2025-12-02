@@ -69,9 +69,9 @@ You have a few options for where to store files. In general we *prefer* that you
 
 Neuroglancer, Figurl, and SortingView links should point to the exact URL that opens the view you want.
 
-**Q: Can I put links into the `description` field to other resources?**
+**Q: How does the `description` field get parsed?**
 
-The description field gets parsed as markdown, use the format `[text](url)`.
+The description field gets parsed as markdown. For links use the format `[text](url)`. For mathematical typesetting use [mathjax](https://docs.mathjax.org/en/latest/) styling.
 
 **Q: I saw fancy things like dropdowns in the QC Portal, how do I do that?**
 
@@ -266,22 +266,39 @@ Panel launches two apps `view` and `portal`. The entrypoints for each app `view.
 
 All classes used in the UI inherit from `panel.custom.PyComponent` which makes them `Parameterized`, i.e. they can define parameter variables and these can be watched using `object.param.watch(callback, [<param_name>])`. This is what makes the user interface update when data changes in the background.
 
+### ENV variables
+
+The QC portal requires an AWS profile to give you access to the media files in aind-open-data and the private codeocean buckets. AIND dev credentials will not work on the development branch for testing assets that have media in private buckets.
+
+Currently on the dev branch you also need to set the following to bypass the extra AUTH role we use on AWS to handle cross-account access.
+
+```bash
+export BYPASS_CODEOCEAN_S3=1
+```
+
+To test the OAUTH features you need to set these keys. Leave them unset to run the app in "guest" mode.
+
+```bash
+export PANEL_OAUTH_PROVIDER="azure" 
+export PANEL_OAUTH_KEY=""
+export PANEL_OAUTH_SECRET=""
+typeset -A PANEL_OAUTH_EXTRA_PARAMS
+PANEL_OAUTH_EXTRA_PARAMS[tenant_id]=""
+export PANEL_OAUTH_EXTRA_PARAMS
+export PANEL_COOKIE_SECRET=""
+export PANEL_OAUTH_ENCRYPTION="="
+```
+
 ### Launch
 
-```sh
-anel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py --dev --show --port 5007 --plugins aind_qc_portal.plugin --static-dirs images=./src/aind_qc_portal/images --oauth-redirect-uri=\"http://localhost:5007/qc_app\" --oauth-optional --index portal.py --num-threads 0
+```bash
+uv venv --python 3.12
+uv sync
 ```
 
-### CI/CD
-There is a `Dockerfile` which includes the entrypoint to launch the app.
-
-#### Local dev
-1. Build the Docker image locally and run a Docker container:
-```sh
-docker build -t aind-qc-portal .
-docker run -e ALLOW_WEBSOCKET_ORIGIN=localhost:8000 -p 8000:8000 aind-qc-portal
+```bash
+panel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py --dev --show --port 5007 --plugins aind_qc_portal.plugin --static-dirs images=./src/aind_qc_portal/images --oauth-redirect-uri=\"http://localhost:5007/qc_app\" --oauth-optional --index=portal --num-threads 0
 ```
-2. Navigate to 'localhost:8000` to view the app.
 
 #### AWS
 1. On pushes to the `dev` or `main` branch, a GitHub Action will run to publish a Docker image to `ghcr.io/allenneuraldynamics/aind-qc-portal:dev` or `ghcr.io/allenneuraldynamics/aind-qc-portal:latest`.

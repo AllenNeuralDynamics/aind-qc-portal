@@ -13,31 +13,18 @@ from aind_qc_portal.view_contents.panels.metric.metric import CustomMetricValue
 from aind_qc_portal.view_contents.panels.settings import Settings
 
 
-class MetricMedia(PyComponent):
-
-    def __init__(self, reference: str, s3_bucket: str, s3_prefix: str):
-        super().__init__()
-        self.reference = reference
-
-        if self.reference:
-            self.media = Media(reference, s3_bucket=s3_bucket, s3_prefix=s3_prefix)
-        else:
-            self.media = None
-
-    def __panel__(self):
-        """Create and return the MetricMedia panel"""
-        return self.media
-
-
 class MetricValue(PyComponent):
 
     value = param.Parameter()
     status = param.String()
 
-    def __init__(self, name: str, description: str, value: Any, status: Any, callback: Callable):
+    def __init__(self, name: str, description: str, tags: list[str], stage: str, modality: str, value: Any, status: Any, callback: Callable):
         super().__init__()
         self.metric_name = name
         self.description = description
+        self.tags = tags
+        self.stage = stage
+        self.modality = modality
         self.value = value
         self.status = status
         self.callback = callback
@@ -124,8 +111,11 @@ class MetricValue(PyComponent):
         """Create and return the MetricValue panel"""
 
         md = f"""
-{replace_markdown_with_html(10, f"{self.metric_name}")}
-{replace_markdown_with_html(8, self.description if self.description else "*no description provided*")}
+**{replace_markdown_with_html(10, f"{self.metric_name}")}**  
+*{replace_markdown_with_html(8, self.description if self.description else "*no description provided*")}*
+
+Modality: **{self.modality}** | Stage: **{self.stage}**  
+Tags: **{', '.join(self.tags)}**
 """
 
         if pn.state.user == "guest":
@@ -154,23 +144,23 @@ class MetricValue(PyComponent):
 class MetricTab(PyComponent):
     """Panel for displaying a single MetricMedia panel and its associated MetricValue panels"""
 
-    def __init__(self, name: str, metric_media: MetricMedia, metric_values: list[MetricValue]):
+    def __init__(self, name: str, metric_media: Media, metric_values: list[MetricValue]):
         super().__init__()
-        self.metric_name = name
-        self.metric_media = metric_media
-        self.metric_values = metric_values
+        self.tab_name = name
+        self.tab_media = metric_media
+        self.tab_values = metric_values
 
     def __panel__(self):
         """Create and return the MetricTab panel"""
 
-        value_col = pn.Column(*self.metric_values, width=METRIC_VALUE_WIDTH + MARGIN)
+        value_col = pn.Column(*self.tab_values, width=METRIC_VALUE_WIDTH + MARGIN)
 
-        # Combine them into a single column
+        # Put the value panels on the left and the media on the right
         tab_content = pn.Row(
             value_col,
-            self.metric_media,
+            self.tab_media,
             sizing_mode="stretch_width",
-            name=self.metric_name,
+            name=self.tab_name,
         )
 
         return tab_content
@@ -191,6 +181,7 @@ class Metrics(PyComponent):
         self.tag_to_value = {}
         self.value_to_reference = {}
         self.reference_to_media = {}
+        self.status = data.status
 
         self._init_panel_objects()
         self._construct_metrics(data)
@@ -220,6 +211,9 @@ class Metrics(PyComponent):
                 name=row["name"],
                 description=row["description"],
                 value=row["value"],
+                tags=row["tags"],
+                stage=row["stage"],
+                modality=row["modality"]["abbreviation"],
                 status=row["status_history"][-1]["status"],
                 callback=self.callback,
             )
@@ -237,9 +231,7 @@ class Metrics(PyComponent):
 
             # Only re-construct the MediaPanel if it doesn't already exist
             if reference not in self.reference_to_media:
-                location = data.record["location"].replace("s3://", "")
-                s3_bucket, s3_prefix = location.split("/", 1)
-                media_panel = MetricMedia(reference, s3_bucket=s3_bucket, s3_prefix=s3_prefix)
+                media_panel = Media(reference, s3_bucket=data.s3_bucket, s3_prefix=data.s3_prefix, raw_s3_loc=data.raw_s3_location)
                 self.reference_to_media[reference] = media_panel
 
     def _populate_metrics(self, event=None):
@@ -267,25 +259,23 @@ class Metrics(PyComponent):
                 reference_to_value[reference].append(value_panel)
 
             # Build the accordion contents
-            tag_accordion = pn.Accordion(name=tag, active=[0])
+            statuses = [self.status[tag][i] for i in range(len(self.status[tag]))]
+            tab_name = f"{tag} ({"/".join(statuses)})"
+            tag_accordion = pn.Accordion(name=tab_name, active=[0])
             for reference in reference_to_value.keys():
                 media_panel = self.reference_to_media[reference]
                 value_panels = reference_to_value[reference]
-                accordion_name = f"{tag}: {reference}" if reference else f"{tag}"
+                accordion_name = f"({media_panel.media_type}: {reference})" if reference else f"{tag}"
                 tab = MetricTab(name=accordion_name, metric_media=media_panel, metric_values=value_panels)
 
-                tag_accordion.append((tab.metric_name, tab))
+                tag_accordion.append((tab.tab_name, tab))
 
             self.tabs.append(tag_accordion)
-
-        print(active_tab)
 
         if len(self.tabs.objects) == 0:
             self.tabs.active = -1
         elif active_tab and active_tab < len(self.tabs):
             self.tabs.active = active_tab or 0
-
-        print(self.tabs.active)
 
         self.active_tab = self.tabs.active
 

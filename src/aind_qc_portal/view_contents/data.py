@@ -29,7 +29,7 @@ def upload_temporary_metadata(metadata: dict):
 class ViewData(param.Parameterized):
     """Database for the QC view application."""
 
-    name = param.String(default="")
+    asset_name = param.String(default="")
     record = param.Dict(default=None, allow_None=True)
     dataframe = param.DataFrame(default=pd.DataFrame())
     status = param.DataFrame(default=None, allow_None=True)
@@ -39,12 +39,28 @@ class ViewData(param.Parameterized):
     )
     dirty = param.Integer(default=0, doc="Number of unsaved changes")
 
-    def __init__(self, name: str, client: MetadataDbClient = client):
+    def __init__(self, asset_name: str, client: MetadataDbClient = client):
         super().__init__()
         self._client = client
-        self.name = name
+        self.asset_name = asset_name
 
         self._load_record()
+        self._parse_record()
+
+    @property
+    def s3_bucket(self) -> str:
+        """Get the S3 bucket for this record"""
+        return self._s3_bucket if hasattr(self, "_s3_bucket") else ""
+
+    @property
+    def s3_prefix(self) -> str:
+        """Get the S3 prefix for this record"""
+        return self._s3_prefix if hasattr(self, "_s3_prefix") else ""
+
+    @property
+    def raw_s3_location(self) -> str:
+        """Get the S3 location for the raw asset associated with this record"""
+        return f"s3://{self._raw_s3_bucket}/{self._raw_s3_prefix}" if hasattr(self, "_raw_s3_bucket") and hasattr(self, "_raw_s3_prefix") else ""
 
     def _add_change(self, metric_name: str, column_name: str, value: str):
         """Add a change to the changes DataFrame"""
@@ -233,7 +249,7 @@ class ViewData(param.Parameterized):
         # First try to pull record from DocDB
         records = client.retrieve_docdb_records(
             filter_query={
-                "name": self.name,
+                "name": self.asset_name,
             },
             projection={
                 "_id": 1,
@@ -241,14 +257,16 @@ class ViewData(param.Parameterized):
                 "name": 1,
                 "location": 1,
                 "data_description.project_name": 1,
+                "data_description.source_data": 1,
             },
         )
 
         if not records:
-            if hasattr(pn.state, "metadata") and self.name in pn.state.metadata:
-                self.record = pn.state.metadata[self.name]
-                print(f"Loaded record {self.name} from temporary metadata")
+            if hasattr(pn.state, "metadata") and self.asset_name in pn.state.metadata:
+                self.record = pn.state.metadata[self.asset_name]
+                print(f"Loaded record {self.asset_name} from temporary metadata")
             else:
+                print(f"Failed to load {self.asset_name} from local or DocDB")
                 return
         else:
             self.record = records[0]
@@ -287,3 +305,28 @@ class ViewData(param.Parameterized):
         # self.dataframe = (
         #     pd.DataFrame.from_records(quality_control["metrics"]) if quality_control and "metrics" in quality_control else None
         # )
+
+    def _parse_record(self):
+        """Parse the record and cache some data for faster access."""
+        if self.record and "location" in self.record:
+            location = self.record["location"].replace("s3://", "")
+            self._s3_bucket, self._s3_prefix = location.split("/", 1)
+
+        if self.record and "data_description" in self.record:
+            data_description = self.record["data_description"]
+            if "source_data" in data_description:
+                self._raw_asset_name = data_description["source_data"][0]
+                
+                # Pull the raw record to get its S3 location
+                raw_records = client.retrieve_docdb_records(
+                    filter_query={
+                        "name": self._raw_asset_name,
+                    },
+                    projection={
+                        "location": 1,
+                    },
+                )
+                
+                if raw_records:
+                    raw_location = raw_records[0]["location"].replace("s3://", "")
+                    self._raw_s3_bucket, self._raw_s3_prefix = raw_location.split("/", 1)
