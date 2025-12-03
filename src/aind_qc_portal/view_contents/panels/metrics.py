@@ -5,7 +5,7 @@ import panel as pn
 import param
 from panel.custom import PyComponent
 
-from aind_qc_portal.layout import MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE
+from aind_qc_portal.layout import MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE, LAZY_LOAD_THRESHOLD
 from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
 from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panels.media.media import Media
@@ -183,6 +183,10 @@ class Metrics(PyComponent):
         self.reference_to_media = {}
         self.status = data.status
 
+        # Determine if lazy loading should be used based on metric count
+        metric_count = len(data.dataframe)
+        self.use_lazy_load = metric_count > LAZY_LOAD_THRESHOLD
+
         self._init_panel_objects()
         self._construct_metrics(data)
 
@@ -231,7 +235,7 @@ class Metrics(PyComponent):
 
             # Only re-construct the MediaPanel if it doesn't already exist
             if reference not in self.reference_to_media:
-                media_panel = Media(reference, s3_bucket=data.s3_bucket, s3_prefix=data.s3_prefix, raw_s3_loc=data.raw_s3_location)
+                media_panel = Media(reference, s3_bucket=data.s3_bucket, s3_prefix=data.s3_prefix, raw_s3_loc=data.raw_s3_location, lazy_load=self.use_lazy_load)
                 self.reference_to_media[reference] = media_panel
 
     def _populate_metrics(self, event=None):
