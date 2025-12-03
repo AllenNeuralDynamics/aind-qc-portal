@@ -216,7 +216,7 @@ def is_presigned_url_valid(url: str) -> bool:
 
 # Note 2025-11-24: Disabled caching due to issue w/ timed out URLs being used even though
 # the cache TTL should have already expired.
-# @pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
+@pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
 def get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
 
