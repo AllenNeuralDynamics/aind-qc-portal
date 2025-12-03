@@ -114,10 +114,9 @@ class Media(PyComponent):
             reference_data = get_s3_url(bucket, key)
         else:
             # S3 asset in our bucket/key
-            reference = clean_reference_prefix(reference)
             reference_data = get_s3_url(
                 self.s3_bucket,
-                str(Path(self.s3_prefix) / reference),
+                str(Path(self.s3_prefix) / clean_reference_prefix(reference)),
             )
 
         return reference_data
@@ -140,17 +139,17 @@ class Media(PyComponent):
         if reference_is_image(reference):
             self.media_type = "Image"
             if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / reference))
+                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
             obj = pn.pane.Image(reference_data, sizing_mode="scale_width", max_width=1200)
         elif reference_is_pdf(reference):
             self.media_type = "PDF"
             if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / reference))
+                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
             obj = pn.pane.PDF(reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
         elif reference_is_video(reference):
             self.media_type = "Video"
             if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / reference))
+                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
             # Return the Video pane using the temporary file
             obj = pn.pane.Video(
                 reference_data,
