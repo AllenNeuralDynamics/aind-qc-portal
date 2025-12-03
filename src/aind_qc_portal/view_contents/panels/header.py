@@ -40,9 +40,18 @@ class Header(PyComponent):
 
     @pn.depends("record")
     def _header_panel(self):
+        # Get CO link if available
+        other_ids = self.record.get("other_identifiers", {})
+        if other_ids and "Code Ocean" in other_ids:
+            co_link = f"| [CO Link](https://codeocean.allenneuraldynamics.org/data-assets/{other_ids["Code Ocean"][0]})"
+        else:
+            co_link = ""
+
+        project_link = f"portal?projects=['{self.record.get('data_description', {}).get('project_name')}']"
+
         header_md = f"""
 ## {self.record["name"]}
-Return to [{self.record.get("data_description", {}).get("project_name")}](todo) | [S3 Link]({self.record.get("location")})
+Return to [{self.record.get("data_description", {}).get("project_name")}]({project_link}) {co_link}
 """
         self.header_text.object = header_md
 

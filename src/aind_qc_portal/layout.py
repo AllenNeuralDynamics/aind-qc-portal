@@ -2,6 +2,7 @@
 
 MARGIN = 10
 METRIC_VALUE_WIDTH = 300
+LAZY_LOAD_THRESHOLD = 50
 
 AIND_COLORS = colors = {
     "dark_blue": "#003057",

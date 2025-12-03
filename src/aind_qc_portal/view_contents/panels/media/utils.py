@@ -195,11 +195,13 @@ def clean_reference_url(reference: str):
 
 def is_presigned_url_valid(url: str) -> bool:
     try:
-        # HEAD request to avoid downloading the object
-        response = requests.head(url, allow_redirects=True)
+        # Use GET with Range header to fetch only 1 byte instead of HEAD
+        # S3 presigned URLs with SignedHeaders=host fail with HEAD due to extra headers
+        headers = {"Range": "bytes=0-0"}
+        response = requests.get(url, headers=headers, allow_redirects=True, timeout=5)
 
-        # Valid URLs typically return 200 OK or 206 Partial Content
-        if response.status_code in (200, 206):
+        # Valid URLs return 200 OK, 206 Partial Content, or 416 Range Not Satisfiable
+        if response.status_code in (200, 206, 416):
             return True
 
         # Expired or invalid URLs from S3 return 403 Forbidden
@@ -216,7 +218,7 @@ def is_presigned_url_valid(url: str) -> bool:
 
 # Note 2025-11-24: Disabled caching due to issue w/ timed out URLs being used even though
 # the cache TTL should have already expired.
-# @pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
+@pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
 def get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
 

@@ -256,6 +256,7 @@ class ViewData(param.Parameterized):
                 "quality_control": 1,
                 "name": 1,
                 "location": 1,
+                "other_identifiers": 1,
                 "data_description.project_name": 1,
                 "data_description.source_data": 1,
             },
@@ -272,6 +273,9 @@ class ViewData(param.Parameterized):
             self.record = records[0]
 
         quality_control = self.record.get("quality_control", {})
+        
+        if not quality_control or "metrics" not in quality_control:
+            return
 
         metrics_copy = []
         for metric in quality_control["metrics"]:
@@ -314,7 +318,7 @@ class ViewData(param.Parameterized):
 
         if self.record and "data_description" in self.record:
             data_description = self.record["data_description"]
-            if "source_data" in data_description:
+            if "source_data" in data_description and data_description["source_data"]:
                 self._raw_asset_name = data_description["source_data"][0]
                 
                 # Pull the raw record to get its S3 location

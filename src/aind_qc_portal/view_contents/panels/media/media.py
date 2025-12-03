@@ -29,27 +29,79 @@ class Media(PyComponent):
     """A Media object that can display images, videos, and other media types."""
 
     media_type = param.String(default="", doc="Type of object being displayed")
+    loaded = param.Boolean(default=False, doc="Whether the media has been loaded")
 
-    def __init__(self, reference: str, s3_bucket: str, s3_prefix: str, raw_s3_loc: str):
+    def __init__(self, reference: str, s3_bucket: str, s3_prefix: str, raw_s3_loc: str, lazy_load: bool = True):
         """Build a media object
 
         Parameters
         ----------
         reference : string
-        parent : _type_
+        s3_bucket : str
+        s3_prefix : str
+        raw_s3_loc : str
+        lazy_load : bool
+            If True, display a button that loads media when clicked. If False, load immediately.
         """
         super().__init__()
 
         self.s3_bucket = s3_bucket
         self.s3_prefix = s3_prefix
         self.raw_s3_loc = raw_s3_loc
+        self.reference = reference
+        self.lazy_load = lazy_load
 
         self._init_panel_objects()
-        self.parse_reference(reference)
+        
+        if not lazy_load:
+            self._load_media()
+        elif reference:
+            # Parse reference to determine media type without loading
+            self._determine_media_type(reference)
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
         self.content = pn.Column()
+        self.load_button = pn.widgets.Button(name="Load Media", width=200, button_type="primary")
+        self.load_button.on_click(self._on_load_click)
+
+    def _determine_media_type(self, reference: str):
+        """Determine the media type from the reference without loading the full media object"""
+        if not reference:
+            self.media_type = "Unknown"
+            return
+        
+        if reference_is_image(reference):
+            self.media_type = "Image"
+        elif reference_is_pdf(reference):
+            self.media_type = "PDF"
+        elif reference_is_video(reference):
+            self.media_type = "Video"
+        elif "rrd" in reference:
+            self.media_type = "Rerun"
+        elif "sortingview" in reference:
+            self.media_type = "Sortingview"
+        elif "neuroglancer" in reference:
+            self.media_type = "Neuroglancer"
+        elif "ephys.allenneuraldynamics.org" in reference:
+            self.media_type = "Ephys GUI"
+        elif "http" in reference:
+            self.media_type = "Link"
+        else:
+            self.media_type = "Text"
+
+    def _on_load_click(self, event):
+        """Handle the load button click event"""
+        if not self.loaded:
+            self._load_media()
+
+    def _load_media(self):
+        """Load and display the actual media content"""
+        self.loaded = True
+        self.content.clear()
+        self.content.loading = True
+        self.parse_reference(self.reference)
+        self.content.loading = False
 
     def _get_media_data(self, reference: str):
         """Parse a reference string and convert to a data object"""
@@ -70,10 +122,9 @@ class Media(PyComponent):
             reference_data = f"s3://{self.s3_bucket}/{str(Path(self.s3_prefix) / reference)}"
         else:
             # S3 asset in our bucket/key
-            reference = clean_reference_prefix(reference)
             reference_data = get_s3_url(
                 self.s3_bucket,
-                str(Path(self.s3_prefix) / reference),
+                str(Path(self.s3_prefix) / clean_reference_prefix(reference)),
             )
 
         return reference_data
@@ -96,17 +147,17 @@ class Media(PyComponent):
         if reference_is_image(reference):
             self.media_type = "Image"
             if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / reference))
+                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
             obj = pn.pane.Image(reference_data, sizing_mode="scale_width", max_width=1200)
         elif reference_is_pdf(reference):
             self.media_type = "PDF"
             if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / reference))
+                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
             obj = pn.pane.PDF(reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
         elif reference_is_video(reference):
             self.media_type = "Video"
             if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / reference))
+                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
             # Return the Video pane using the temporary file
             obj = pn.pane.Video(
                 reference_data,
@@ -183,6 +234,9 @@ class Media(PyComponent):
 
         self.content.append(obj)
 
+    @param.depends('loaded', watch=False)
     def __panel__(self):  # pragma: no cover
         """Return the media object as a Panel object"""
+        if self.lazy_load and not self.loaded:
+            return pn.Column(self.load_button, sizing_mode="stretch_width")
         return Fullscreen(self.content, sizing_mode="stretch_width", max_height=1200)
