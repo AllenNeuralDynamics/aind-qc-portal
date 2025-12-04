@@ -27,6 +27,7 @@ dependencies = [
     'aind-qcportal-schema>=0.6.3',
     'httpx',
     'altair',
+    'h5py',
     'zombie-squirrel>=0.5.4',
 ]
 
