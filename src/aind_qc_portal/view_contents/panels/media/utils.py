@@ -307,8 +307,8 @@ def _parse_sortingview(reference, data, media_obj):
 
 def parse_ephys_gui_app(reference, data, raw_asset_s3, derived_asset_s3):
     """Parse a sortingview URL and return the appropriate object"""
-    data = data.replace("{derived_asset_location}", f"s3://{derived_asset_s3}")
-    data = data.replace("{raw_asset_location}", f"s3://{raw_asset_s3}")
+    data = data.replace("{derived_asset_location}", f"s3://{derived_asset_s3.lstrip('s3://')}")
+    data = data.replace("{raw_asset_location}", f"s3://{raw_asset_s3.lstrip('s3://')}")
     data = quote(data, safe=":/?&=")
     iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
     return pn.Column(
