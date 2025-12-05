@@ -1,6 +1,6 @@
 import os
 import tempfile
-from urllib.parse import unquote
+from urllib.parse import unquote, quote
 
 import boto3
 import httpx
@@ -9,6 +9,7 @@ import param
 from panel.custom import JSComponent
 from panel.reactive import ReactiveHTML
 import requests
+import urllib
 
 s3_client = boto3.client(
     "s3",
@@ -308,6 +309,7 @@ def parse_ephys_gui_app(reference, data, raw_asset_s3, derived_asset_s3):
     """Parse a sortingview URL and return the appropriate object"""
     data = data.replace("{derived_asset_location}", f"s3://{derived_asset_s3}")
     data = data.replace("{raw_asset_location}", f"s3://{raw_asset_s3}")
+    data = quote(data, safe=":/?&=")
     iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
     return pn.Column(
         pn.pane.HTML(
