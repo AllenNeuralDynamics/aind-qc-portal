@@ -345,7 +345,7 @@ panel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py \
 
 #### Option 2: Using Docker (Recommended for deployment testing)
 
-Docker provides a closer match to the production deployment environment. Use this to test changes before they go live.
+Docker provides a closer match to the production deployment environment. Use this to test changes before they go live. 
 
 **Prerequisites:**
 - Docker installed and running
@@ -386,12 +386,13 @@ docker run \
 - Portal: http://localhost:8000/portal
 - View: http://localhost:8000/view?name=<asset-name>
 
+**Note**: Unlike `panel serve --dev` with auto-reload, Docker requires rebuilding the image after each code change. For rapid iteration, use the `uv` method above. Use Docker primarily for final testing before deployment.
+
+
 ### Deployment in AWS
 
 1. On pushes to the `dev` or `main` branch, a GitHub Action will run to publish a Docker image to `ghcr.io/allenneuraldynamics/aind-qc-portal:dev` or `ghcr.io/allenneuraldynamics/aind-qc-portal:latest`.
-2. The image can be used by a ECS Service in AWS to run a task container. Application Load Balancer can be used to serve the container from ECS. 
-3. The ECS task must be configured with the correct environment variables:
+2. The image can be used by a ECS Service in AWS to run a task container. Application Load Balancer can be used to serve the container from ECS. Please note that the task must be configured with the correct env variables.
    - `ALLOW_WEBSOCKET_ORIGIN=qc.allenneuraldynamics.org`
    - `OAUTH_REDIRECT=https://qc.allenneuraldynamics.org`
-   - OAuth variables (if authentication is enabled)
    - `BYPASS_CODEOCEAN_S3` should **NOT** be set in production (AWS task role provides proper permissions)
