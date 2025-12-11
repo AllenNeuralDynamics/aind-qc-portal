@@ -52,7 +52,7 @@ class Media(PyComponent):
         self.lazy_load = lazy_load
 
         self._init_panel_objects()
-        
+
         if not lazy_load:
             self._load_media()
         elif reference:
@@ -70,7 +70,7 @@ class Media(PyComponent):
         if not reference:
             self.media_type = "Unknown"
             return
-        
+
         if reference_is_image(reference):
             self.media_type = "Image"
         elif reference_is_pdf(reference):
@@ -147,17 +147,23 @@ class Media(PyComponent):
         if reference_is_image(reference):
             self.media_type = "Image"
             if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
+                reference_data = get_s3_url(
+                    self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
+                )
             obj = pn.pane.Image(reference_data, sizing_mode="scale_width", max_width=1200)
         elif reference_is_pdf(reference):
             self.media_type = "PDF"
             if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
+                reference_data = get_s3_url(
+                    self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
+                )
             obj = pn.pane.PDF(reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
         elif reference_is_video(reference):
             self.media_type = "Video"
             if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
+                reference_data = get_s3_url(
+                    self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
+                )
             # Return the Video pane using the temporary file
             obj = pn.pane.Video(
                 reference_data,
@@ -167,6 +173,7 @@ class Media(PyComponent):
         elif reference.endswith(".h5") or reference.endswith(".hdf5"):
             # For H5 files, open with fsspec and create a ZSliceH5Viewer
             import fsspec
+
             print(f"Opening H5 file from S3: {reference_data}")
 
             fs = fsspec.filesystem("s3", anon=False)
@@ -223,7 +230,7 @@ class Media(PyComponent):
             )
         else:
             # Single-media references
-            reference = reference.lstrip('/')
+            reference = reference.lstrip("/")
 
             reference_data = self._get_media_data(reference)
             if not reference_data:
@@ -234,7 +241,7 @@ class Media(PyComponent):
 
         self.content.append(obj)
 
-    @param.depends('loaded', watch=False)
+    @param.depends("loaded", watch=False)
     def __panel__(self):  # pragma: no cover
         """Return the media object as a Panel object"""
         if self.lazy_load and not self.loaded:

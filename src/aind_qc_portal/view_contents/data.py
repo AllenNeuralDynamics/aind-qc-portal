@@ -60,7 +60,11 @@ class ViewData(param.Parameterized):
     @property
     def raw_s3_location(self) -> str:
         """Get the S3 location for the raw asset associated with this record"""
-        return f"s3://{self._raw_s3_bucket}/{self._raw_s3_prefix}" if hasattr(self, "_raw_s3_bucket") and hasattr(self, "_raw_s3_prefix") else ""
+        return (
+            f"s3://{self._raw_s3_bucket}/{self._raw_s3_prefix}"
+            if hasattr(self, "_raw_s3_bucket") and hasattr(self, "_raw_s3_prefix")
+            else ""
+        )
 
     def _add_change(self, metric_name: str, column_name: str, value: str):
         """Add a change to the changes DataFrame"""
@@ -273,7 +277,7 @@ class ViewData(param.Parameterized):
             self.record = records[0]
 
         quality_control = self.record.get("quality_control", {})
-        
+
         if not quality_control or "metrics" not in quality_control:
             return
 
@@ -320,7 +324,7 @@ class ViewData(param.Parameterized):
             data_description = self.record["data_description"]
             if "source_data" in data_description and data_description["source_data"]:
                 self._raw_asset_name = data_description["source_data"][0]
-                
+
                 # Pull the raw record to get its S3 location
                 raw_records = client.retrieve_docdb_records(
                     filter_query={
@@ -330,7 +334,7 @@ class ViewData(param.Parameterized):
                         "location": 1,
                     },
                 )
-                
+
                 if raw_records:
                     raw_location = raw_records[0]["location"].replace("s3://", "")
                     self._raw_s3_bucket, self._raw_s3_prefix = raw_location.split("/", 1)

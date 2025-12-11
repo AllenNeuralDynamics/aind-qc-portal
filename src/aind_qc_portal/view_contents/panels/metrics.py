@@ -18,7 +18,17 @@ class MetricValue(PyComponent):
     value = param.Parameter()
     status = param.String()
 
-    def __init__(self, name: str, description: str, tags: list[str], stage: str, modality: str, value: Any, status: Any, callback: Callable):
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        tags: list[str],
+        stage: str,
+        modality: str,
+        value: Any,
+        status: Any,
+        callback: Callable,
+    ):
         super().__init__()
         self.metric_name = name
         self.description = description
@@ -235,7 +245,13 @@ class Metrics(PyComponent):
 
             # Only re-construct the MediaPanel if it doesn't already exist
             if reference not in self.reference_to_media:
-                media_panel = Media(reference, s3_bucket=data.s3_bucket, s3_prefix=data.s3_prefix, raw_s3_loc=data.raw_s3_location, lazy_load=self.use_lazy_load)
+                media_panel = Media(
+                    reference,
+                    s3_bucket=data.s3_bucket,
+                    s3_prefix=data.s3_prefix,
+                    raw_s3_loc=data.raw_s3_location,
+                    lazy_load=self.use_lazy_load,
+                )
                 self.reference_to_media[reference] = media_panel
 
     def _populate_metrics(self, event=None):

@@ -31,7 +31,7 @@ class ZSliceH5Viewer(PyComponent):
 
         self.file_obj = file_path_or_object
         self.dataset = "data"  # location within the H5 file
-        
+
         # Open H5 file once and keep it open
         self._h5file = h5py.File(self.file_obj, "r")
         self._h5dset = self._h5file[self.dataset]

@@ -1,4 +1,4 @@
-""" Main Panel object for the view app
+"""Main Panel object for the view app
 
 This only builds the columns/rows of the main layout. It shouldn't use the OUTER_STYLE styling in the layout
 (except for handling errors).
