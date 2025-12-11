@@ -266,40 +266,132 @@ Panel launches two apps `view` and `portal`. The entrypoints for each app `view.
 
 All classes used in the UI inherit from `panel.custom.PyComponent` which makes them `Parameterized`, i.e. they can define parameter variables and these can be watched using `object.param.watch(callback, [<param_name>])`. This is what makes the user interface update when data changes in the background.
 
-### ENV variables
+### Environment Variables
 
-The QC portal requires an AWS profile to give you access to the media files in aind-open-data and the private codeocean buckets. AIND dev credentials will not work on the development branch for testing assets that have media in private buckets.
+The following environment variables are used by the QC Portal:
 
-Currently on the dev branch you also need to set the following to bypass the extra AUTH role we use on AWS to handle cross-account access.
+#### Required for Local Development
 
-```bash
-export BYPASS_CODEOCEAN_S3=1
-```
+| Variable | Description | Example Value | Notes |
+|----------|-------------|---------------|-------|
+| `BYPASS_CODEOCEAN_S3` | Bypasses Code Ocean cross-account S3 access | `1` | **Required for local dev** unless you have the `AindCodeOceanBucketCrossAccountAccess` IAM role. Set to `1` to skip role assumption. |
+| `AWS_PROFILE` | AWS credentials profile to use | `dev` or `prod` | Required for accessing S3 media files in aind-open-data and the private codeocean buckets. AIND dev credentials will not work on the development branch for testing assets that have media in private buckets. |
 
-To test the OAUTH features you need to set these keys. Leave them unset to run the app in "guest" mode.
+#### Required for Panel Server (Docker & Production)
 
+| Variable | Description | Example Value | Notes |
+|----------|-------------|---------------|-------|
+| `ALLOW_WEBSOCKET_ORIGIN` | WebSocket origins allowed to connect | `localhost:8000` (local)<br>`qc.allenneuraldynamics.org` (prod) | Prevents WebSocket connection errors. For local dev use `localhost:<port>`. |
+| `OAUTH_REDIRECT` | OAuth callback URL | `http://localhost:8000` (local)<br>`https://qc.allenneuraldynamics.org` (prod) | Where OAuth provider redirects after authentication. Must match your OAuth app configuration. |
+
+#### Optional - OAuth Authentication
+
+Leave these unset to run in "guest" mode (read-only access):
+
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `PANEL_OAUTH_PROVIDER` | OAuth provider name | `azure` |
+| `PANEL_OAUTH_KEY` | OAuth application client ID | `<your-client-id>` |
+| `PANEL_OAUTH_SECRET` | OAuth application client secret | `<your-client-secret>` |
+| `PANEL_OAUTH_EXTRA_PARAMS[tenant_id]` | Azure AD tenant ID (Azure only) | `<your-tenant-id>` |
+| `PANEL_COOKIE_SECRET` | Secret for cookie encryption | `<your-cookie-secret>` |
+| `PANEL_OAUTH_ENCRYPTION` | OAuth token encryption key | `<your-encryption-key>` |
+
+**Setting OAuth variables (bash/zsh):**
 ```bash
 export PANEL_OAUTH_PROVIDER="azure" 
-export PANEL_OAUTH_KEY=""
-export PANEL_OAUTH_SECRET=""
+export PANEL_OAUTH_KEY="<your-client-id>"
+export PANEL_OAUTH_SECRET="<your-client-secret>"
 typeset -A PANEL_OAUTH_EXTRA_PARAMS
-PANEL_OAUTH_EXTRA_PARAMS[tenant_id]=""
+PANEL_OAUTH_EXTRA_PARAMS[tenant_id]="<your-tenant-id>"
 export PANEL_OAUTH_EXTRA_PARAMS
-export PANEL_COOKIE_SECRET=""
-export PANEL_OAUTH_ENCRYPTION="="
+export PANEL_COOKIE_SECRET="<your-cookie-secret>"
+export PANEL_OAUTH_ENCRYPTION="<your-encryption-key>"
 ```
 
-### Launch
+### Launch (Local Development)
 
+#### Option 1: Using uv (Recommended for quick iterative testing)
+
+**Setup:**
 ```bash
 uv venv --python 3.12
 uv sync
 ```
 
+**Set required environment variables:**
 ```bash
-panel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py --dev --show --port 5007 --plugins aind_qc_portal.plugin --static-dirs images=./src/aind_qc_portal/images --oauth-redirect-uri=\"http://localhost:5007/qc_app\" --oauth-optional --index=portal --num-threads 0
+export BYPASS_CODEOCEAN_S3=1
+export AWS_PROFILE="<your-profile>"
 ```
 
-#### AWS
+**Launch:**
+```bash
+panel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py \
+  --dev \
+  --show \
+  --port 5007 \
+  --plugins aind_qc_portal.plugin \
+  --static-dirs images=./src/aind_qc_portal/images \
+  --oauth-redirect-uri="http://localhost:5007" \
+  --oauth-optional \
+  --index=portal \
+  --num-threads 0
+```
+
+**Access the application:**
+- Portal: http://localhost:5007/portal
+- View: http://localhost:5007/view?name=<asset-name>
+
+#### Option 2: Using Docker (Recommended for deployment testing)
+
+Docker provides a closer match to the production deployment environment. Use this to test changes before they go live.
+
+**Prerequisites:**
+- Docker installed and running
+- AWS credentials configured in `~/.aws` (Windows: `%USERPROFILE%\.aws`)
+
+**Build the Docker image:**
+```bash
+docker build -t aind-qc-portal .
+```
+
+**Run the container:**
+
+For **Windows (Git Bash/MSYS2)**:
+```bash
+MSYS_NO_PATHCONV=1 docker run \
+  -v $USERPROFILE/.aws:/root/.aws:ro \
+  -e ALLOW_WEBSOCKET_ORIGIN=localhost:8000 \
+  -e OAUTH_REDIRECT=http://localhost:8000 \
+  -e AWS_PROFILE=<your-profile> \
+  -e BYPASS_CODEOCEAN_S3=1 \
+  -p 8000:8000 \
+  aind-qc-portal
+```
+
+For **Linux/macOS**:
+```bash
+docker run \
+  -v ~/.aws:/root/.aws:ro \
+  -e ALLOW_WEBSOCKET_ORIGIN=localhost:8000 \
+  -e OAUTH_REDIRECT=http://localhost:8000 \
+  -e AWS_PROFILE=<your-profile> \
+  -e BYPASS_CODEOCEAN_S3=1 \
+  -p 8000:8000 \
+  aind-qc-portal
+```
+
+**Access the application:**
+- Portal: http://localhost:8000/portal
+- View: http://localhost:8000/view?name=<asset-name>
+
+### Deployment in AWS
+
 1. On pushes to the `dev` or `main` branch, a GitHub Action will run to publish a Docker image to `ghcr.io/allenneuraldynamics/aind-qc-portal:dev` or `ghcr.io/allenneuraldynamics/aind-qc-portal:latest`.
-2. The image can be used by a ECS Service in AWS to run a task container. Application Load Balancer can be used to serve the container from ECS. Please note that the task must be configured with the correct env variables (e.g. `API_GATEWAY_HOST`, `ALLOW_WEBSOCKET_ORIGIN`).
+2. The image can be used by a ECS Service in AWS to run a task container. Application Load Balancer can be used to serve the container from ECS. 
+3. The ECS task must be configured with the correct environment variables:
+   - `ALLOW_WEBSOCKET_ORIGIN=qc.allenneuraldynamics.org`
+   - `OAUTH_REDIRECT=https://qc.allenneuraldynamics.org`
+   - OAuth variables (if authentication is enabled)
+   - `BYPASS_CODEOCEAN_S3` should **NOT** be set in production (AWS task role provides proper permissions)
