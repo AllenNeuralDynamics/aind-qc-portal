@@ -30,7 +30,7 @@ class CustomMetricValue:
                     self._auto_state = self._data.status is not None
                     self._dropdown_helper(data)
                 except Exception as e:
-                    print(f"Failed to validate dropdown metric: {data}")
+                    print(f"Failed to validate dropdown metric: {data} with error: {e}")
                     raise
             elif data["type"] == "checkbox":
                 self._data = CheckboxMetric.model_validate(data)

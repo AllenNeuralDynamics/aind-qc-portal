@@ -18,7 +18,7 @@ s3_client = boto3.client(
 )
 
 
-### TEMP CODE TO HANDLE AUTH ISSUES
+# TEMP CODE TO HANDLE AUTH ISSUES
 if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
     codeocean_s3_client = s3_client
 else:
@@ -48,7 +48,7 @@ else:
         region_name="us-west-2",
         config=boto3.session.Config(signature_version="s3v4"),
     )
-### END TEMP CODE TO HANDLE AUTH ISSUES
+# END TEMP CODE TO HANDLE AUTH ISSUES
 
 
 MEDIA_TTL = 3600  # 1 hour
@@ -263,6 +263,14 @@ def _get_s3_file(url, ext):
     except Exception as e:
         print(f"[ERROR] Failed to fetch asset {url}, error: {e}")
         return None
+
+
+def encode_url(url):
+    """Encode a URL"""
+    base_url, query_string = url.split("?")
+    encoded_query_string = urllib.parse.quote(query_string, safe="")
+
+    return f"{base_url}?{encoded_query_string}"
 
 
 def _parse_rrd(reference, data):

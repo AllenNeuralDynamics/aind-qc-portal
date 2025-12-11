@@ -13,6 +13,9 @@ from aind_qc_portal.view_contents.panels.metric.metric import CustomMetricValue
 from aind_qc_portal.view_contents.panels.settings import Settings
 
 
+WIDGET_WIDTH = METRIC_VALUE_WIDTH - MARGIN * 4
+
+
 class MetricValue(PyComponent):
 
     value = param.Parameter()
@@ -57,61 +60,63 @@ class MetricValue(PyComponent):
         """Update the status widget when the status changes"""
         self.callback(metric_name=self.metric_name, column_name="status", value=self.status)
 
+    def _init_dict_objects(self):
+        """Helper function for dictionary metric values"""
+        if CustomMetricValue.is_custom_metric(self.value):
+            self.value = CustomMetricValue(self.value, self.set_value, self.set_status)
+            self.auto_value = True
+            self.auto_state = self.value.auto_state
+            self.value_widget = self.value.panel()
+        else:
+            # first, check if every key/value pair has the same length, if so coerce to a dataframe
+            if all([isinstance(v, list) for v in self.value.values()]) and all(
+                [len(v) == len(self.value[list(self.value.keys())[0]]) for v in self.value.values()]
+            ):
+                self.auto_value = True
+                df = pd.DataFrame(df_scalar_to_list(self.value))
+                self.value_widget = pn.pane.DataFrame(df)
+            # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
+            elif all(
+                [isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in self.value.values()]
+            ):
+                self.auto_value = True
+                df = pd.DataFrame(df_scalar_to_list(self.value))
+                self.value_widget = pn.pane.DataFrame(df)
+            else:
+                self.value_widget = pn.widgets.JSONEditor(name=self.metric_name, width=WIDGET_WIDTH)
+
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
-
-        widget_width = METRIC_VALUE_WIDTH - MARGIN * 4
 
         self.state_selector = pn.widgets.Select.from_param(
             self.param.status,
             options=["Pass", "Fail", "Pending"],
             name="Metric status",
-            width=widget_width,
+            width=WIDGET_WIDTH,
         )
 
         self.auto_value = False
         self.auto_state = False
 
         if isinstance(self.value, bool):
-            self.value_widget = pn.widgets.Checkbox(name=self.metric_name, width=widget_width)
+            self.value_widget = pn.widgets.Checkbox(name=self.metric_name, width=WIDGET_WIDTH)
         elif not self.value or isinstance(self.value, str):
-            self.value_widget = pn.widgets.TextInput(name=self.metric_name, width=widget_width)
+            self.value_widget = pn.widgets.TextInput(name=self.metric_name, width=WIDGET_WIDTH)
             if not isinstance(self.value, str):
                 self.value = str(self.value)
         elif isinstance(self.value, float):
-            self.value_widget = pn.widgets.FloatInput(name=self.metric_name, width=widget_width)
+            self.value_widget = pn.widgets.FloatInput(name=self.metric_name, width=WIDGET_WIDTH)
         elif isinstance(self.value, int):
-            self.value_widget = pn.widgets.IntInput(name=self.metric_name, width=widget_width)
+            self.value_widget = pn.widgets.IntInput(name=self.metric_name, width=WIDGET_WIDTH)
         elif isinstance(self.value, list):
             df = pd.DataFrame({"values": self.value})
-            self.value_widget = pn.pane.DataFrame(df, width=widget_width)
+            self.value_widget = pn.pane.DataFrame(df, width=WIDGET_WIDTH)
             self.auto_value = True
         elif isinstance(self.value, dict):
-            if CustomMetricValue.is_custom_metric(self.value):
-                self.value = CustomMetricValue(self.value, self.set_value, self.set_status)
-                self.auto_value = True
-                self.auto_state = self.value.auto_state
-                self.value_widget = self.value.panel()
-            else:
-                # first, check if every key/value pair has the same length, if so coerce to a dataframe
-                if all([isinstance(v, list) for v in self.value.values()]) and all(
-                    [len(v) == len(self.value[list(self.value.keys())[0]]) for v in self.value.values()]
-                ):
-                    self.auto_value = True
-                    df = pd.DataFrame(df_scalar_to_list(self.value))
-                    self.value_widget = pn.pane.DataFrame(df)
-                # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
-                elif all(
-                    [isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in self.value.values()]
-                ):
-                    self.auto_value = True
-                    df = pd.DataFrame(df_scalar_to_list(self.value))
-                    self.value_widget = pn.pane.DataFrame(df)
-                else:
-                    self.value_widget = pn.widgets.JSONEditor(name=self.metric_name, width=widget_width)
+            self._init_dict_objects()
         else:
             self.value_widget = pn.widgets.StaticText(
-                value=f"Can't deal with type {type(self.value)}", width=widget_width
+                value=f"Can't deal with type {type(self.value)}", width=WIDGET_WIDTH
             )
 
         if not self.auto_value:
@@ -126,7 +131,7 @@ class MetricValue(PyComponent):
 
 Modality: **{self.modality}** | Stage: **{self.stage}**  
 Tags: **{', '.join(self.tags)}**
-"""
+"""  # noqa: W291
 
         if pn.state.user == "guest":
             self.value_widget.disabled = True
@@ -270,7 +275,8 @@ class Metrics(PyComponent):
             # Get the value panels, references, and media panels for this tag
             value_panels = self.tag_to_value.get(tag, [])
 
-            # Invert the reference mapping, i.e. calculate the reference_to_value mapping for the subset of values we are using
+            # Invert the reference mapping
+            # i.e. calculate the reference_to_value mapping for the subset of values we are using
             reference_to_value = {}
             for value_panel in value_panels:
                 reference = self.value_to_reference.get(value_panel, None)

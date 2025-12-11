@@ -114,7 +114,7 @@ class Media(PyComponent):
             key = "/".join(reference.split("/")[3:])
             reference_data = get_s3_url(bucket, key)
         elif "sha" in reference:
-            self.reference_data = _get_kachery_cloud_url(reference)
+            raise ValueError("Kachery cloud references are no longer supported")
         elif reference.endswith(".h5") or reference.endswith(".hdf5"):
             # Handle H5 files - we'll construct the S3 path and open with fsspec later
             if "results/" in reference:
@@ -141,72 +141,91 @@ class Media(PyComponent):
         if reference_data and "https://s3" in reference_data:
             reference_data = _get_s3_file(reference_data, os.path.splitext(reference)[1])
 
-            if not reference_data:
-                obj = pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
+        handlers = [
+            (reference_is_image(reference), self._handle_image),
+            (reference_is_pdf(reference), self._handle_pdf),
+            (reference_is_video(reference), self._handle_video),
+            (reference.endswith((".h5", ".hdf5")), self._handle_h5),
+            ("rrd" in reference, self._handle_rerun),
+            ("sortingview" in reference, self._handle_sortingview),
+            ("neuroglancer" in reference, self._handle_neuroglancer),
+            ("ephys.allenneuraldynamics.org" in reference, self._handle_ephys_gui),
+            ("http" in reference, self._handle_link),
+        ]
 
-        if reference_is_image(reference):
-            self.media_type = "Image"
-            if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(
-                    self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
-                )
-            obj = pn.pane.Image(reference_data, sizing_mode="scale_width", max_width=1200)
-        elif reference_is_pdf(reference):
-            self.media_type = "PDF"
-            if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(
-                    self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
-                )
-            obj = pn.pane.PDF(reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
-        elif reference_is_video(reference):
-            self.media_type = "Video"
-            if not is_presigned_url_valid(reference_data):
-                reference_data = get_s3_url(
-                    self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
-                )
-            # Return the Video pane using the temporary file
-            obj = pn.pane.Video(
-                reference_data,
-                sizing_mode="scale_width",
-                max_width=1200,
+        for condition, handler in handlers:
+            if condition:
+                return handler(reference, reference_data)
+
+        return self._handle_text(reference, reference_data)
+
+    def _handle_image(self, reference: str, reference_data: Any):
+        """Handle image media type"""
+        self.media_type = "Image"
+        if not is_presigned_url_valid(reference_data):
+            reference_data = get_s3_url(
+                self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
             )
-        elif reference.endswith(".h5") or reference.endswith(".hdf5"):
-            # For H5 files, open with fsspec and create a ZSliceH5Viewer
-            import fsspec
+        return pn.pane.Image(reference_data, sizing_mode="scale_width", max_width=1200)
 
-            print(f"Opening H5 file from S3: {reference_data}")
-
-            fs = fsspec.filesystem("s3", anon=False)
-            file_obj = fs.open(reference_data, "rb")
-            # Extract filename from S3 path for display
-            filename = reference_data.split("/")[-1]
-            obj = ZSliceH5Viewer(file_obj, filename=filename)
-        elif "rrd" in reference:
-            # files should be in the format name_vX.Y.Z.rrd
-            self.media_type = "Rerun"
-            obj = _parse_rrd(reference, reference_data)
-        elif "sortingview" in reference:
-            self.media_type = "Sortingview"
-            obj = _parse_sortingview(reference, reference_data, self)
-        elif "neuroglancer" in reference:
-            self.media_type = "Neuroglancer"
-            iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
-            obj = pn.pane.HTML(
-                iframe_html,
-                sizing_mode="stretch_width",
-                height=1000,
+    def _handle_pdf(self, reference: str, reference_data: Any):
+        """Handle PDF media type"""
+        self.media_type = "PDF"
+        if not is_presigned_url_valid(reference_data):
+            reference_data = get_s3_url(
+                self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
             )
-        elif "ephys.allenneuraldynamics.org" in reference:
-            self.media_type = "Ephys GUI"
-            obj = parse_ephys_gui_app(reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}")
-        elif "http" in reference:
-            self.media_type = "Link"
-            obj = pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
-        else:
-            self.media_type = "Text"
-            obj = pn.widgets.StaticText(value=reference_data)
+        return pn.pane.PDF(reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
 
-        return obj
+    def _handle_video(self, reference: str, reference_data: Any):
+        """Handle video media type"""
+        self.media_type = "Video"
+        if not is_presigned_url_valid(reference_data):
+            reference_data = get_s3_url(
+                self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
+            )
+        return pn.pane.Video(reference_data, sizing_mode="scale_width", max_width=1200)
+
+    def _handle_h5(self, reference: str, reference_data: Any):
+        """Handle H5/HDF5 files"""
+        import fsspec
+
+        print(f"Opening H5 file from S3: {reference_data}")
+        fs = fsspec.filesystem("s3", anon=False)
+        file_obj = fs.open(reference_data, "rb")
+        filename = reference_data.split("/")[-1]
+        return ZSliceH5Viewer(file_obj, filename=filename)
+
+    def _handle_rerun(self, reference: str, reference_data: Any):
+        """Handle Rerun media type"""
+        self.media_type = "Rerun"
+        return _parse_rrd(reference, reference_data)
+
+    def _handle_sortingview(self, reference: str, reference_data: Any):
+        """Handle Sortingview media type"""
+        self.media_type = "Sortingview"
+        return _parse_sortingview(reference, reference_data, self)
+
+    def _handle_neuroglancer(self, reference: str, reference_data: Any):
+        """Handle Neuroglancer media type"""
+        self.media_type = "Neuroglancer"
+        iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
+        return pn.pane.HTML(iframe_html, sizing_mode="stretch_width", height=1000)
+
+    def _handle_ephys_gui(self, reference: str, reference_data: Any):
+        """Handle Ephys GUI media type"""
+        self.media_type = "Ephys GUI"
+        return parse_ephys_gui_app(reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}")
+
+    def _handle_link(self, reference: str, reference_data: Any):
+        """Handle HTTP link media type"""
+        self.media_type = "Link"
+        return pn.widgets.StaticText(value=f'Reference: <a target="_blank" href="{reference}">link</a>')
+
+    def _handle_text(self, reference: str, reference_data: Any):
+        """Handle text media type (default fallback)"""
+        self.media_type = "Text"
+        return pn.widgets.StaticText(value=reference_data)
 
     def parse_reference(self, reference: Optional[str] = None):
         """Parse the reference string and build the media object
@@ -238,6 +257,9 @@ class Media(PyComponent):
                 return
 
             obj = self._get_media_object(reference, reference_data)
+
+        if not obj:
+            obj = pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
         self.content.append(obj)
 

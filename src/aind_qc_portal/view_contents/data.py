@@ -311,7 +311,8 @@ class ViewData(param.Parameterized):
         self.dataframe = pd.json_normalize(metrics_copy, max_level=0)
 
         # self.dataframe = (
-        #     pd.DataFrame.from_records(quality_control["metrics"]) if quality_control and "metrics" in quality_control else None
+        #     pd.DataFrame.from_records(quality_control["metrics"]) if
+        # quality_control and "metrics" in quality_control else None
         # )
 
     def _parse_record(self):
