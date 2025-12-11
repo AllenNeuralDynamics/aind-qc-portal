@@ -1,3 +1,4 @@
+"""Custom metrics"""
 from typing import Any, Callable
 
 import panel as pn
@@ -65,9 +66,7 @@ class CustomMetricValue:
             )
 
     def update_value(self, value):
-        """
-        Update to a new value and return what should be stored in the QCMetric.value field
-        """
+        """Update to a new value and return what should be stored in the QCMetric.value field"""
         if isinstance(self._data, DropdownMetric):
             print(f"Updating dropdown value to {value}")
             self._data.value = value

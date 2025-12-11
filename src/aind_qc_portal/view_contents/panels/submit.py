@@ -11,6 +11,7 @@ class SubmitPanel(PyComponent):
     """Panel for submitting QC data"""
 
     def __init__(self, data: ViewData):
+        """Initialize SubmitPanel with data"""
         super().__init__()
         self.data = data
         self._init_panel_objects()

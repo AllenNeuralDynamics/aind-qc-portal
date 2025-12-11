@@ -1,3 +1,4 @@
+"""Metrics"""
 from typing import Any, Callable
 
 import pandas as pd
@@ -17,6 +18,7 @@ WIDGET_WIDTH = METRIC_VALUE_WIDTH - MARGIN * 4
 
 
 class MetricValue(PyComponent):
+    """Panel for displaying a single metric value with status"""
 
     value = param.Parameter()
     status = param.String()
@@ -32,6 +34,7 @@ class MetricValue(PyComponent):
         status: Any,
         callback: Callable,
     ):
+        """Initialize MetricValue with metric properties"""
         super().__init__()
         self.metric_name = name
         self.description = description
@@ -87,7 +90,6 @@ class MetricValue(PyComponent):
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
-
         self.state_selector = pn.widgets.Select.from_param(
             self.param.status,
             options=["Pass", "Fail", "Pending"],
@@ -160,6 +162,7 @@ class MetricTab(PyComponent):
     """Panel for displaying a single MetricMedia panel and its associated MetricValue panels"""
 
     def __init__(self, name: str, metric_media: Media, metric_values: list[MetricValue]):
+        """Initialize MetricTab with name, media, and values"""
         super().__init__()
         self.tab_name = name
         self.tab_media = metric_media
@@ -187,6 +190,7 @@ class Metrics(PyComponent):
     active_tab = param.Integer(default=None, allow_None=True)
 
     def __init__(self, data: ViewData, settings: Settings, callback: Callable):
+        """Initialize Metrics with data, settings, and callback"""
         super().__init__()
         self.callback = callback
 
@@ -217,13 +221,13 @@ class Metrics(PyComponent):
         )
 
         def on_tab_change(event):
+            """Update active tab on change"""
             self.active_tab = event.new
 
         self.tabs.param.watch(on_tab_change, "active")
 
     def _construct_metrics(self, data: ViewData):
         """Build all MetricValue/MetricMedia panels"""
-
         for _, row in data.dataframe.iterrows():
             # Handle the metric value
             value_panel = MetricValue(

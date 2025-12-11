@@ -40,6 +40,7 @@ class ViewData(param.Parameterized):
     dirty = param.Integer(default=0, doc="Number of unsaved changes")
 
     def __init__(self, asset_name: str, client: MetadataDbClient = client):
+        """Initialize ViewData with asset name and metadata client"""
         super().__init__()
         self._client = client
         self.asset_name = asset_name

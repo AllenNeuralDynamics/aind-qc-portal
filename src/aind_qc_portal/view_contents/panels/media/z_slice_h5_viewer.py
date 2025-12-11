@@ -1,3 +1,4 @@
+"""ZSliceH5Viewer"""
 from pathlib import Path
 
 import h5py
@@ -27,6 +28,7 @@ class ZSliceH5Viewer(PyComponent):
     contrast = param.Range(default=(0, 99), bounds=(0, 100), step=1)
 
     def __init__(self, file_path_or_object, filename=None):
+        """Initialize ZSliceH5Viewer with file path or object"""
         super().__init__()
 
         self.file_obj = file_path_or_object
@@ -79,9 +81,11 @@ class ZSliceH5Viewer(PyComponent):
         btn_plus = pn.widgets.Button(name="+", width=40)
 
         def dec_z(event):
+            """Decrement z slice"""
             self.z = max(self.param.z.bounds[0], self.z - 1)
 
         def inc_z(event):
+            """Increment z slice"""
             self.z = min(self.param.z.bounds[1], self.z + 1)
 
         btn_minus.on_click(dec_z)
@@ -187,7 +191,7 @@ class ZSliceH5Viewer(PyComponent):
             self.image.loading = False
 
     def __panel__(self):
-
+        """Create and return the panel layout"""
         filename_text_wiget = pn.widgets.StaticText(name="File Name", value=self.filename, align="center")
 
         return pn.Column(

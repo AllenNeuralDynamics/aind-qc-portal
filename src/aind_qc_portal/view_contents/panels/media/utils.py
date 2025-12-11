@@ -1,3 +1,4 @@
+"""Util functions"""
 import os
 import tempfile
 from urllib.parse import unquote, quote
@@ -24,9 +25,7 @@ if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
 else:
 
     def get_role_session(role_arn, session_name="assumed-session"):
-        """
-        Assume a role and return a boto3 Session for it.
-        """
+        """Assume a role and return a boto3 Session for it"""
         # Use your default credentials (from ~/.aws/credentials or env vars)
         sts_client = boto3.client("sts")
 
@@ -181,6 +180,7 @@ def reference_is_pdf(reference):
 
 
 def clean_reference_prefix(reference: str):
+    """Remove results/ prefix from reference"""
     if "results/" in reference:
         reference = reference.split("results/")[1]
 
@@ -195,6 +195,7 @@ def clean_reference_url(reference: str):
 
 
 def is_presigned_url_valid(url: str) -> bool:
+    """Check if a presigned S3 URL is valid"""
     try:
         # Use GET with Range header to fetch only 1 byte instead of HEAD
         # S3 presigned URLs with SignedHeaders=host fail with HEAD due to extra headers

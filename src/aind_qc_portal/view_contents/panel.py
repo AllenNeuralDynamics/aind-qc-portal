@@ -22,6 +22,7 @@ class QCPanel(PyComponent):
     record_name: param.String
 
     def __init__(self, record_name, data: ViewData):
+        """Initialize QCPanel with record name and data"""
         super().__init__()
         self.record_name = record_name
         self._data = data

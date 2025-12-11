@@ -14,6 +14,7 @@ TOMORROW = datetime.today().date() + timedelta(days=1)
 
 
 class Portal(PyComponent):
+    """Portal app for viewing assets"""
 
     def __init__(self, database: Database):
         """Initialize the Portal app"""
@@ -27,7 +28,6 @@ class Portal(PyComponent):
 
     def _init_panel_components(self, project_names: list):
         """Initialize the components of the Portal app"""
-
         self.settings = settings
 
         # Import modal and create gear button

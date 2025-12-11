@@ -1,3 +1,4 @@
+"""Header"""
 import pandas as pd
 import panel as pn
 import param
@@ -15,6 +16,7 @@ class Header(PyComponent):
     status: param.DataFrame = param.DataFrame(default=pd.DataFrame())
 
     def __init__(self, record: dict, status: dict, settings: Settings):
+        """Initialize Header with record, status, and settings"""
         super().__init__()
         self._init_panel_objects()
 
@@ -31,7 +33,6 @@ class Header(PyComponent):
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
-
         self.header_text = pn.pane.Markdown()
         self.status_table = pn.pane.DataFrame(
             index=False,
@@ -40,6 +41,7 @@ class Header(PyComponent):
 
     @pn.depends("record")
     def _header_panel(self):
+        """Create header panel with record information"""
         # Get CO link if available
         other_ids = self.record.get("other_identifiers", {})
         if other_ids and "Code Ocean" in other_ids:
@@ -77,6 +79,7 @@ Return to [{self.record.get("data_description", {}).get("project_name")}]({proje
                 status_copy = status_copy[new_columns]
 
             def apply_styling(x):
+                """Apply styling to status table rows"""
                 styles = []
                 for i, val in enumerate(x):
                     col_name = status_copy.columns[i]

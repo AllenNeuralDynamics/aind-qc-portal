@@ -192,6 +192,7 @@ class AssetGroup(PyComponent):
 
             # Sort assets: raw first, then derived by processing date (earliest first)
             def get_sort_key(rec):
+                """Return a tuple for sorting: raw records first, then derived by processing date"""
                 if rec["data_description"]["data_level"] == "raw":
                     return (0, "")  # Raw records come first
 
@@ -281,4 +282,5 @@ class AssetGroup(PyComponent):
         self.panel.loading = False
 
     def __panel__(self):
+        """Return the Panel representation of the AssetGroup"""
         return self.panel
