@@ -1,4 +1,5 @@
 """Metrics"""
+
 from typing import Any, Callable
 
 import pandas as pd
@@ -79,9 +80,7 @@ class MetricValue(PyComponent):
                 df = pd.DataFrame(df_scalar_to_list(self.value))
                 self.value_widget = pn.pane.DataFrame(df)
             # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
-            elif all(
-                [isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in self.value.values()]
-            ):
+            elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in self.value.values()]):
                 self.auto_value = True
                 df = pd.DataFrame(df_scalar_to_list(self.value))
                 self.value_widget = pn.pane.DataFrame(df)

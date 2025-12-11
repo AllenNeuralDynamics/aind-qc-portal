@@ -163,27 +163,21 @@ class Media(PyComponent):
         """Handle image media type"""
         self.media_type = "Image"
         if not is_presigned_url_valid(reference_data):
-            reference_data = get_s3_url(
-                self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
-            )
+            reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
         return pn.pane.Image(reference_data, sizing_mode="scale_width", max_width=1200)
 
     def _handle_pdf(self, reference: str, reference_data: Any):
         """Handle PDF media type"""
         self.media_type = "PDF"
         if not is_presigned_url_valid(reference_data):
-            reference_data = get_s3_url(
-                self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
-            )
+            reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
         return pn.pane.PDF(reference_data, sizing_mode="scale_width", max_width=1200, height=1000)
 
     def _handle_video(self, reference: str, reference_data: Any):
         """Handle video media type"""
         self.media_type = "Video"
         if not is_presigned_url_valid(reference_data):
-            reference_data = get_s3_url(
-                self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference))
-            )
+            reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
         return pn.pane.Video(reference_data, sizing_mode="scale_width", max_width=1200)
 
     def _handle_h5(self, reference: str, reference_data: Any):

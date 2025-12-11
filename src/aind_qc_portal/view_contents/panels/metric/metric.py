@@ -1,4 +1,5 @@
 """Custom metrics"""
+
 from typing import Any, Callable
 
 import panel as pn

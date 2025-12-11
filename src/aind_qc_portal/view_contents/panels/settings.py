@@ -1,4 +1,5 @@
 """Settings"""
+
 import panel as pn
 import param
 from panel.custom import PyComponent
