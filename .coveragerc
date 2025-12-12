@@ -3,3 +3,11 @@ omit =
     src/aind_qc_portal/qc_app.py
     src/aind_qc_portal/qc_portal_app.py
     src/aind_qc_portal/qc_project_app.py
+
+[report]
+exclude_lines =
+    if __name__
+    from
+    import
+    pragma: no cover
+fail_under = 100
