@@ -6,8 +6,10 @@ from aind_qc_portal.view_contents.data import upload_temporary_metadata
 
 
 class UploadMetadataHandler(RequestHandler):
+    """Request handler for uploading metadata"""
 
     def post(self):
+        """Handle POST requests to upload metadata"""
         try:
             # Parse JSON from request body
             if self.request.body:

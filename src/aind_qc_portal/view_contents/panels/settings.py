@@ -1,3 +1,5 @@
+"""Settings"""
+
 import panel as pn
 import param
 from panel.custom import PyComponent
@@ -9,6 +11,7 @@ class Settings(PyComponent):
     group_by = param.List(default=[])
 
     def __init__(self, default_grouping: list, grouping_options: list):
+        """Initialize Settings with grouping options"""
         super().__init__()
 
         self.group_by = default_grouping

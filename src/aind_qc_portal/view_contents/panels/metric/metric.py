@@ -1,3 +1,5 @@
+"""Custom metrics"""
+
 from typing import Any, Callable
 
 import panel as pn
@@ -30,7 +32,7 @@ class CustomMetricValue:
                     self._auto_state = self._data.status is not None
                     self._dropdown_helper(data)
                 except Exception as e:
-                    print(f"Failed to validate dropdown metric: {data}")
+                    print(f"Failed to validate dropdown metric: {data} with error: {e}")
                     raise
             elif data["type"] == "checkbox":
                 self._data = CheckboxMetric.model_validate(data)
@@ -65,9 +67,7 @@ class CustomMetricValue:
             )
 
     def update_value(self, value):
-        """
-        Update to a new value and return what should be stored in the QCMetric.value field
-        """
+        """Update to a new value and return what should be stored in the QCMetric.value field"""
         if isinstance(self._data, DropdownMetric):
             print(f"Updating dropdown value to {value}")
             self._data.value = value
