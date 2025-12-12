@@ -24,6 +24,6 @@ jobs:
       run: | 
         uv pip install --system -e . --group dev
     - name: Run linter checks
-      run: flake8 . && interrogate --verbose .
+      run: flake8 . && interrogate -vv .
     - name: Run tests and coverage
-      run: coverage run -m unittest discover && coverage report
+      run: coverage run -m unittest discover && coverage report --fail-under=100
