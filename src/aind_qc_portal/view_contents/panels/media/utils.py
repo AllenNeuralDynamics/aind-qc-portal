@@ -1,3 +1,5 @@
+"""Util functions"""
+
 import os
 import tempfile
 from urllib.parse import unquote, quote
@@ -18,15 +20,13 @@ s3_client = boto3.client(
 )
 
 
-### TEMP CODE TO HANDLE AUTH ISSUES
+# TEMP CODE TO HANDLE AUTH ISSUES
 if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
     codeocean_s3_client = s3_client
 else:
 
     def get_role_session(role_arn, session_name="assumed-session"):
-        """
-        Assume a role and return a boto3 Session for it.
-        """
+        """Assume a role and return a boto3 Session for it"""
         # Use your default credentials (from ~/.aws/credentials or env vars)
         sts_client = boto3.client("sts")
 
@@ -48,7 +48,7 @@ else:
         region_name="us-west-2",
         config=boto3.session.Config(signature_version="s3v4"),
     )
-### END TEMP CODE TO HANDLE AUTH ISSUES
+# END TEMP CODE TO HANDLE AUTH ISSUES
 
 
 MEDIA_TTL = 3600  # 1 hour
@@ -181,6 +181,7 @@ def reference_is_pdf(reference):
 
 
 def clean_reference_prefix(reference: str):
+    """Remove results/ prefix from reference"""
     if "results/" in reference:
         reference = reference.split("results/")[1]
 
@@ -195,6 +196,7 @@ def clean_reference_url(reference: str):
 
 
 def is_presigned_url_valid(url: str) -> bool:
+    """Check if a presigned S3 URL is valid"""
     try:
         # Use GET with Range header to fetch only 1 byte instead of HEAD
         # S3 presigned URLs with SignedHeaders=host fail with HEAD due to extra headers
@@ -265,6 +267,14 @@ def _get_s3_file(url, ext):
         return None
 
 
+def encode_url(url):
+    """Encode a URL"""
+    base_url, query_string = url.split("?")
+    encoded_query_string = urllib.parse.quote(query_string, safe="")
+
+    return f"{base_url}?{encoded_query_string}"
+
+
 def _parse_rrd(reference, data):
     """Parse an RRD file and return the appropriate object"""
     if "_v" in reference:
@@ -325,7 +335,7 @@ class CurationData(JSComponent):
 
     curation_json = param.Dict()
 
-    _esm = """
+    _esm = r"""
     export function render({ model }) {
         window.addEventListener('message', (event) => {
             // Check if the message is from the expected origin

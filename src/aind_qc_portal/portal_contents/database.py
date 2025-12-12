@@ -29,6 +29,7 @@ FIELDS = [
     "processing.data_processes.start_date_time",
     "subject.subject_details.genotype",
     "location",
+    "other_identifiers",
 ]
 
 TTL_DAY = 24 * 60 * 60

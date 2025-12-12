@@ -3,6 +3,9 @@
 from datetime import datetime
 import pandas as pd
 import param
+
+from aind_metadata_utils.data_assets import co_id_to_co_link
+
 from aind_qc_portal.portal_contents.database import Database
 from aind_qc_portal.portal_contents.settings import settings
 from aind_qc_portal.layout import OUTER_STYLE
@@ -130,9 +133,11 @@ class AssetGroup(PyComponent):
         else:
             processed_modalities = ""
 
-        # Build S3 link
-        s3_link = record.get("location", "")
-        s3_html = format_link(s3_link, "link") if s3_link else ""
+        # Build CO link
+        co_id = record.get("other_identifiers", {}).get("Code Ocean", [])
+        if co_id and isinstance(co_id, list):
+            co_id = co_id[0]
+        co_html = co_id_to_co_link(co_id) if co_id else "No S3"
 
         # Build QC link
         if "quality_control" in record and record["quality_control"]:
@@ -145,7 +150,7 @@ class AssetGroup(PyComponent):
             "Data Level": record.get("data_description", {}).get("data_level", ""),
             "Processed": processed_display,
             "Modalities": processed_modalities,
-            "S3 Link": s3_html,
+            "CO Link": co_html,
             "QC Link": qc_html,
         }
 
@@ -192,6 +197,7 @@ class AssetGroup(PyComponent):
 
             # Sort assets: raw first, then derived by processing date (earliest first)
             def get_sort_key(rec):
+                """Return a tuple for sorting: raw records first, then derived by processing date"""
                 if rec["data_description"]["data_level"] == "raw":
                     return (0, "")  # Raw records come first
 
@@ -241,16 +247,16 @@ class AssetGroup(PyComponent):
             sizing_mode="stretch_width",
             show_index=False,
             widths={
-                "Data Level": 120,
-                "Processed": 100,
-                "S3 Link": 80,
-                "QC Link": 80,
+                "Data Level": 80,
+                "Processed": 120,
+                "CO Link": 100,
+                "QC Link": 100,
             },
             configuration={
                 "rowHeight": 30,
             },
             formatters={
-                "S3 Link": {"type": "html"},
+                "CO Link": {"type": "html"},
                 "QC Link": {"type": "html"},
             },
         )
@@ -281,4 +287,5 @@ class AssetGroup(PyComponent):
         self.panel.loading = False
 
     def __panel__(self):
+        """Return the Panel representation of the AssetGroup"""
         return self.panel
