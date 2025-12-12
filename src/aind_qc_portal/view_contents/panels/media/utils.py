@@ -335,7 +335,7 @@ class CurationData(JSComponent):
 
     curation_json = param.Dict()
 
-    _esm = """
+    _esm = r"""
     export function render({ model }) {
         window.addEventListener('message', (event) => {
             // Check if the message is from the expected origin
