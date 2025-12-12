@@ -281,8 +281,8 @@ The following environment variables are used by the QC Portal:
 
 | Variable | Description | Example Value | Notes |
 |----------|-------------|---------------|-------|
-| `ALLOW_WEBSOCKET_ORIGIN` | WebSocket origins allowed to connect | `localhost:8000` (local)<br>`qc.allenneuraldynamics.org` (prod) | Prevents WebSocket connection errors. For local dev use `localhost:<port>`. |
-| `OAUTH_REDIRECT` | OAuth callback URL | `http://localhost:8000` (local)<br>`https://qc.allenneuraldynamics.org` (prod) | Where OAuth provider redirects after authentication. Must match your OAuth app configuration. |
+| `ALLOW_WEBSOCKET_ORIGIN` | WebSocket origins allowed to connect | `localhost:5007` (local)<br>`qc.allenneuraldynamics.org` (prod) | Prevents WebSocket connection errors. For local dev use `localhost:<port>`. |
+| `OAUTH_REDIRECT` | OAuth callback URL | `http://localhost:5007` (local)<br>`https://qc.allenneuraldynamics.org` (prod) | Where OAuth provider redirects after authentication. Must match your OAuth app configuration. |
 
 #### Optional - OAuth Authentication
 
@@ -362,11 +362,11 @@ For **Windows (Git Bash/MSYS2)**:
 ```bash
 MSYS_NO_PATHCONV=1 docker run \
   -v $USERPROFILE/.aws:/root/.aws:ro \
-  -e ALLOW_WEBSOCKET_ORIGIN=localhost:8000 \
-  -e OAUTH_REDIRECT=http://localhost:8000 \
+  -e ALLOW_WEBSOCKET_ORIGIN=localhost:5007 \
+  -e OAUTH_REDIRECT=http://localhost:5007 \
   -e AWS_PROFILE=<your-profile> \
   -e BYPASS_CODEOCEAN_S3=1 \
-  -p 8000:8000 \
+  -p 5007:5007 \
   aind-qc-portal
 ```
 
@@ -374,17 +374,17 @@ For **Linux/macOS**:
 ```bash
 docker run \
   -v ~/.aws:/root/.aws:ro \
-  -e ALLOW_WEBSOCKET_ORIGIN=localhost:8000 \
-  -e OAUTH_REDIRECT=http://localhost:8000 \
+  -e ALLOW_WEBSOCKET_ORIGIN=localhost:5007 \
+  -e OAUTH_REDIRECT=http://localhost:5007 \
   -e AWS_PROFILE=<your-profile> \
   -e BYPASS_CODEOCEAN_S3=1 \
-  -p 8000:8000 \
+  -p 5007:5007 \
   aind-qc-portal
 ```
 
 **Access the application:**
-- Portal: http://localhost:8000/portal
-- View: http://localhost:8000/view?name=<asset-name>
+- Portal: http://localhost:5007/portal
+- View: http://localhost:5007/view?name=<asset-name>
 
 **Note**: Unlike `panel serve --dev` with auto-reload, Docker requires rebuilding the image after each code change. For rapid iteration, use the `uv` method above. Use Docker primarily for final testing before deployment.
 
