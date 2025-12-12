@@ -64,11 +64,21 @@ wheels = [
 ]
 
 [[package]]
+name = "aind-metadata-utils"
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/24/9201a70ab24fbc68767e2a63ab2216b1efcc07b893c36a91339ffab4dfe7/aind_metadata_utils-0.1.2.tar.gz", hash = "sha256:9ca910acf6a3b07dc664820eb53048fab76739c12dc8c25108f2a399bd380f57", size = 3752, upload-time = "2025-12-12T17:20:29.639Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/14/ed/6383c525d77b7231184145f38d8fc6ca2e90c073f98e5fe9a30398ea4346/aind_metadata_utils-0.1.2-py3-none-any.whl", hash = "sha256:c554cb61023475bf00e02b0aa6f5c70bbb12c787c1b47d366cd8cea97fc301c3", size = 3489, upload-time = "2025-12-12T17:20:28.619Z" },
+]
+
+[[package]]
 name = "aind-qc-portal"
 source = { editable = "." }
 dependencies = [
     { name = "aind-data-access-api", extra = ["docdb"] },
     { name = "aind-data-schema" },
+    { name = "aind-metadata-utils" },
     { name = "aind-qcportal-schema" },
     { name = "altair" },
     { name = "boto3" },
@@ -80,7 +90,7 @@ dependencies = [
     { name = "zombie-squirrel" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "black" },
     { name = "coverage" },
@@ -95,24 +105,28 @@ dev = [
 requires-dist = [
     { name = "aind-data-access-api", extras = ["docdb"] },
     { name = "aind-data-schema", specifier = ">=2.0.0" },
+    { name = "aind-metadata-utils", specifier = ">=0.1.2,<2" },
     { name = "aind-qcportal-schema", specifier = ">=0.6.3" },
     { name = "altair" },
-    { name = "black", marker = "extra == 'dev'" },
     { name = "boto3" },
-    { name = "coverage", marker = "extra == 'dev'" },
-    { name = "flake8", marker = "extra == 'dev'" },
-    { name = "furo", marker = "extra == 'dev'" },
     { name = "h5py" },
     { name = "httpx" },
-    { name = "interrogate", marker = "extra == 'dev'" },
-    { name = "isort", marker = "extra == 'dev'" },
     { name = "panel", specifier = ">=1.8.2" },
     { name = "pydantic" },
     { name = "s3fs" },
-    { name = "watchfiles", marker = "extra == 'dev'" },
     { name = "zombie-squirrel", specifier = ">=0.5.4" },
 ]
-provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "black" },
+    { name = "coverage" },
+    { name = "flake8" },
+    { name = "furo" },
+    { name = "interrogate" },
+    { name = "isort" },
+    { name = "watchfiles" },
+]
 
 [[package]]
 name = "aind-qcportal-schema"

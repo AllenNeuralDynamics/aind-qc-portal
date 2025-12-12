@@ -29,9 +29,10 @@ dependencies = [
     'altair',
     'h5py',
     'zombie-squirrel>=0.5.4',
+    'aind-metadata-utils>=0.1.2,<2',
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     'black',
     'coverage',
