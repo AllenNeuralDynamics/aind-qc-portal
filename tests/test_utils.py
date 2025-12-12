@@ -77,6 +77,8 @@ class TestGetUserName(unittest.TestCase):
 
 
 class TestFormatCssBackground(unittest.TestCase):
+    """Tests for format_css_background function"""
+
     @patch('aind_qc_portal.utils.pn.state')
     @patch('aind_qc_portal.utils.pn.config')
     def test_default_background(self, mock_config, mock_state):
@@ -225,4 +227,5 @@ class TestDfScalarToList(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    """Run the unit tests"""
     unittest.main()
