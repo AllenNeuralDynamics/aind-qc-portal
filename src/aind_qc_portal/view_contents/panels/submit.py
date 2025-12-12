@@ -11,6 +11,7 @@ class SubmitPanel(PyComponent):
     """Panel for submitting QC data"""
 
     def __init__(self, data: ViewData):
+        """Initialize SubmitPanel with data"""
         super().__init__()
         self.data = data
         self._init_panel_objects()
@@ -34,18 +35,19 @@ class SubmitPanel(PyComponent):
             return
 
         # Push the changes to DocDB
-        response = qc_update_to_id(self.id, self.data)
+        raise NotImplementedError("Submitting changes is not yet implemented")
+        # response = qc_update_to_id(self.id, self.data)
 
-        # Deal with errors, on success refresh page to pull new data
-        if response.status_code != 200:
-            self.submit_error.value = f"Error ({response.status_code}) submitting changes: {response.text}"
-            self.submit_button.button_type = "danger"
-            return
-        else:
-            self.submit_button.disabled = True
-            self.changes = 0
-            self.change_info.value = f"{self.changes} pending changes"
-            self._refresh()
+        # # Deal with errors, on success refresh page to pull new data
+        # if response.status_code != 200:
+        #     self.submit_error.value = f"Error ({response.status_code}) submitting changes: {response.text}"
+        #     self.submit_button.button_type = "danger"
+        #     return
+        # else:
+        #     self.submit_button.disabled = True
+        #     self.changes = 0
+        #     self.change_info.value = f"{self.changes} pending changes"
+        #     self._refresh()
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""

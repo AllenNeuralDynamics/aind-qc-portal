@@ -1,4 +1,4 @@
-""" Individual asset panel: shows one raw asset and its derived assets """
+"""Individual asset panel: shows one raw asset and its derived assets"""
 
 from datetime import datetime
 import pandas as pd

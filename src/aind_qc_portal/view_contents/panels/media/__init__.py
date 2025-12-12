@@ -1,0 +1,1 @@
+"""Media panels module"""

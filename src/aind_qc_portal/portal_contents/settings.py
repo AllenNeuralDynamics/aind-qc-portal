@@ -1,9 +1,12 @@
+"""Settings"""
+
 import panel as pn
 from panel.custom import PyComponent
 import param
 
 
 class Settings(PyComponent):
+    """Settings for the Portal app"""
 
     show_full_metadata_path = param.Boolean(default=True)
     show_query_editor = param.Boolean(default=False)
@@ -15,7 +18,6 @@ class Settings(PyComponent):
 
     def _init_panel_components(self):
         """Initialize the components of the Settings app"""
-
         metadata_toggle = pn.widgets.Checkbox.from_param(
             self.param.show_full_metadata_path,
             name="Show Full Metadata Path",

@@ -1,4 +1,4 @@
-""" Utility functions for the AIND QC Portal """
+"""Utility functions for the AIND QC Portal"""
 
 import re
 
