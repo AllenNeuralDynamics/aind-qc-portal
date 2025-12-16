@@ -37,16 +37,16 @@ docdb = [
 
 [[package]]
 name = "aind-data-schema"
-version = "2.1.0"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aind-data-schema-models" },
     { name = "pydantic" },
     { name = "semver" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/93/a283d16a6ffb59f9cd558edcb0fcea5b1099d81921c3ac167a43cc3c4f3d/aind_data_schema-2.1.0.tar.gz", hash = "sha256:899d1a209211c742ece04c9506500983f0a8ffc7e0911f0e82e4d9501f50134e", size = 750414, upload-time = "2025-10-20T18:30:42.133Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/5e/d01331ca4246c0d5f9f170c5464cca8db20bb763e83ef48b3d3d25df489d/aind_data_schema-2.3.0.tar.gz", hash = "sha256:34ef480ac09cf75df24235a6bbc5ff1cc39895fbfd7a6f78e35c3027445630c0", size = 866894, upload-time = "2025-12-15T23:13:30.317Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/1c/40593876feb8cb106ca45b9d25a708abf68db544358286abfd950074a109/aind_data_schema-2.1.0-py3-none-any.whl", hash = "sha256:0b59880cc3c22f703b2f8f99249d178cd177b2ab6fd2cb115e37251606404957", size = 86103, upload-time = "2025-10-20T18:30:40.413Z" },
+    { url = "https://files.pythonhosted.org/packages/88/c5/f34857be5e1ce1418ec7419fec6a31742bfc75a4c53466d42a7be761653e/aind_data_schema-2.3.0-py3-none-any.whl", hash = "sha256:34b175d9cc8a8bec1aae538f027b174de420e28d50822b952a9ab502d5c76aec", size = 88471, upload-time = "2025-12-15T23:13:28.911Z" },
 ]
 
 [[package]]
@@ -85,6 +85,7 @@ dependencies = [
     { name = "h5py" },
     { name = "httpx" },
     { name = "panel" },
+    { name = "panel-material-ui" },
     { name = "pydantic" },
     { name = "s3fs" },
     { name = "zombie-squirrel" },
@@ -104,14 +105,15 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "aind-data-access-api", extras = ["docdb"] },
-    { name = "aind-data-schema", specifier = ">=2.0.0" },
+    { name = "aind-data-schema", specifier = ">=2.3.0" },
     { name = "aind-metadata-utils", specifier = ">=0.1.2,<2" },
     { name = "aind-qcportal-schema", specifier = ">=0.6.3" },
     { name = "altair" },
     { name = "boto3" },
     { name = "h5py" },
     { name = "httpx" },
-    { name = "panel", specifier = ">=1.8.2" },
+    { name = "panel", specifier = ">=1.8.4" },
+    { name = "panel-material-ui" },
     { name = "pydantic" },
     { name = "s3fs" },
     { name = "zombie-squirrel", specifier = ">=0.5.4" },
@@ -1270,7 +1272,7 @@ wheels = [
 
 [[package]]
 name = "panel"
-version = "1.8.3"
+version = "1.8.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bleach" },
@@ -1288,9 +1290,23 @@ dependencies = [
     { name = "tqdm" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/22/92/c37607052d34c5ca9a9ec0c75b9cef7a38ef341178665d5c91852682ed8c/panel-1.8.3.tar.gz", hash = "sha256:192a25fa4afdb25c5d0bf00d3749bb1b3601f25cddb76492e355fa278f91fce8", size = 32093790, upload-time = "2025-11-10T11:17:43.691Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/62/9147e3e5b8a4971606c1aa1ecf66d889ea7529914899e4192f4c5125430b/panel-1.8.4.tar.gz", hash = "sha256:c4d6e7e3a895d3a42b6b69ee30d3acc191580619a2d1b8cd18f7f6684246a67f", size = 32098216, upload-time = "2025-12-02T18:08:02.51Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/59/f6/6dd8932f59f0e1e2649a2b2ae4a9e849218aa3d6ae8fdbbd01f5457b3b9b/panel-1.8.3-py3-none-any.whl", hash = "sha256:0e435406c608c382dd3378251d16db4d8189ca44ca508c281e1bfd6c80f47689", size = 30175744, upload-time = "2025-11-10T11:17:40.422Z" },
+    { url = "https://files.pythonhosted.org/packages/27/39/796ffe83cf6a1a6458f42db0a5c2ea7671478651e8945386e89625af5fdc/panel-1.8.4-py3-none-any.whl", hash = "sha256:d0e0f316c78159c87544a403d4600f7f056a6cafdc035df5b13c9c8667c36c96", size = 30184708, upload-time = "2025-12-02T18:07:59.568Z" },
+]
+
+[[package]]
+name = "panel-material-ui"
+version = "0.7.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "bokeh" },
+    { name = "packaging" },
+    { name = "panel" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f2/d8/241ed926580786e480f782e26521aa437574cacba6a58ae099c19587ddd2/panel_material_ui-0.7.0.tar.gz", hash = "sha256:73bdc14ff828d0cf3a49f3ac3739f7cc1ce843d9eb04ce7a3ab8b03eb78d9024", size = 3826904, upload-time = "2025-11-25T13:54:45.084Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/58/f7540d65c3e4af4cbede4d0b52ec2e1a883ec7c5da1a5a822e6f64f28b26/panel_material_ui-0.7.0-py3-none-any.whl", hash = "sha256:203ee7ed4a4a8b769182de64af5f7dda40cfe51c8cee9eb870fc5cbb545b89d2", size = 1620151, upload-time = "2025-11-25T13:54:43.405Z" },
 ]
 
 [[package]]

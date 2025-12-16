@@ -45,7 +45,7 @@ class QCPanel(PyComponent):
 
         # Other panels have a dependency on settings
         self.header = Header(record=self._data.record, status=self._data.status, settings=self.settings)
-        self.metrics = Metrics(data=self._data, settings=self.settings, callback=self._data.submit_change)
+        self.metrics = Metrics(data=self._data, callback=self._data.submit_change)
 
     def __panel__(self):
         """Create and return the Panel layout"""

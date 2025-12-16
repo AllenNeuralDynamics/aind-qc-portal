@@ -4,6 +4,7 @@ from typing import Any, Callable
 
 import pandas as pd
 import panel as pn
+import panel_material_ui as pmui
 import param
 from panel.custom import PyComponent
 
@@ -12,7 +13,6 @@ from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
 from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.metric.metric import CustomMetricValue
-from aind_qc_portal.view_contents.panels.settings import Settings
 
 
 WIDGET_WIDTH = METRIC_VALUE_WIDTH - MARGIN * 4
@@ -28,7 +28,7 @@ class MetricValue(PyComponent):
         self,
         name: str,
         description: str,
-        tags: list[str],
+        tags: dict[str, str],
         stage: str,
         modality: str,
         value: Any,
@@ -39,7 +39,7 @@ class MetricValue(PyComponent):
         super().__init__()
         self.metric_name = name
         self.description = description
-        self.tags = tags
+        self._tags = tags
         self.stage = stage
         self.modality = modality
         self.value = value
@@ -126,12 +126,14 @@ class MetricValue(PyComponent):
     def __panel__(self):
         """Create and return the MetricValue panel"""
 
+        tags_display = " | ".join([f"{k}: **{v}**" for k, v in self._tags.items()]) if self._tags else "*no tags*"
+        
         md = f"""
 **{replace_markdown_with_html(10, f"{self.metric_name}")}**  
 *{replace_markdown_with_html(8, self.description if self.description else "*no description provided*")}*
 
 Modality: **{self.modality}** | Stage: **{self.stage}**  
-Tags: **{', '.join(self.tags)}**
+Tags: {tags_display}
 """  # noqa: W291
 
         if pn.state.user == "guest":
@@ -169,66 +171,141 @@ class MetricTab(PyComponent):
 
     def __panel__(self):
         """Create and return the MetricTab panel"""
-
         value_col = pn.Column(*self.tab_values, width=METRIC_VALUE_WIDTH + MARGIN)
-
-        # Put the value panels on the left and the media on the right
         tab_content = pn.Row(
             value_col,
             self.tab_media,
             sizing_mode="stretch_width",
             name=self.tab_name,
         )
-
         return tab_content
 
 
 class Metrics(PyComponent):
     """Panel for displaying the metrics"""
 
-    active_tab = param.Integer(default=None, allow_None=True)
-
-    def __init__(self, data: ViewData, settings: Settings, callback: Callable):
-        """Initialize Metrics with data, settings, and callback"""
+    def __init__(self, data: ViewData, callback: Callable):
+        """Initialize Metrics with data and callback"""
         super().__init__()
         self.callback = callback
-
-        pn.state.location.sync(self, {"active_tab": "active_tab"})
-
-        # Initialize some helpers we'll use to map between tags/references/metrics
-        self.tag_to_value = {}
-        self.value_to_reference = {}
-        self.reference_to_media = {}
-        self.status = data.status
-
-        # Determine if lazy loading should be used based on metric count
+        self.data = data
+        self.metric_lookup = {}
+        self.media_cache = {}
+        
         metric_count = len(data.dataframe)
         self.use_lazy_load = metric_count > LAZY_LOAD_THRESHOLD
 
         self._init_panel_objects()
-        self._construct_metrics(data)
-
-        self.settings = settings
-        self.settings.param.watch(self._populate_metrics, "group_by")
-        self._populate_metrics()
+        self._build_tree()
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
-        self.tabs = pn.Tabs(
+        self.tree = pmui.Tree(
+            name="Metrics Tree",
             styles=OUTER_STYLE,
-            tabs_location="left",
+            active=[],
+            max_width=300,
+            sizing_mode="stretch_height",
         )
+        
+        self.content_panel = pn.Column(
+            pn.pane.Markdown("*Select a metric from the tree*"),
+            sizing_mode="stretch_both",
+            styles=OUTER_STYLE,
+        )
+        
+        self.tree.param.watch(self._on_tree_selection, "active")
 
-        def on_tab_change(event):
-            """Update active tab on change"""
-            self.active_tab = event.new
+    def _build_tree(self):
+        """Build tree structure based on default_grouping tags"""
+        grouping_levels = self.data.default_grouping
+        
+        print("Grouping levels:", grouping_levels)
+        
+        def build_tree_level(metrics, level_idx, path_prefix=""):
+            if level_idx >= len(grouping_levels):
+                return None
+            
+            tag_keys = grouping_levels[level_idx]
+            level_data = {}
+            
+            for row in metrics:
+                metric_tags = row.get("tags", {})
+                
+                for tag_key in tag_keys:
+                    tag_value = metric_tags.get(tag_key)
+                    if tag_value:
+                        key = (tag_key, tag_value)
+                        if key not in level_data:
+                            level_data[key] = []
+                        level_data[key].append(row)
+            
+            nodes = []
+            for (tag_key, tag_value), tag_metrics in level_data.items():
+                node_id = f"{path_prefix}{tag_key}:{tag_value}"
+                children = build_tree_level(tag_metrics, level_idx + 1, f"{node_id}/")
+                
+                node = {
+                    "label": f"{tag_key}: {tag_value} ({len(tag_metrics)})",
+                    "metric_rows": tag_metrics
+                }
+                
+                if children:
+                    node["items"] = children
+                else:
+                    self.metric_lookup[node_id] = tag_metrics
+                
+                nodes.append(node)
+            
+            return nodes if nodes else None
+        
+        all_metrics = [row for _, row in self.data.dataframe.iterrows()]
+        tree_nodes = build_tree_level(all_metrics, 0)
+        
+        def print_tree(nodes, indent=0):
+            if not nodes:
+                return
+            for node in nodes:
+                print("  " * indent + node.get("label", ""))
+                if "items" in node:
+                    print_tree(node["items"], indent + 1)
+        
+        print("\nTree structure:")
+        print_tree(tree_nodes)
+        print()
+        
+        self.tree.items = tree_nodes if tree_nodes else []
+        
+        def collect_all_paths(nodes, current_path=()):
+            paths = []
+            for idx, node in enumerate(nodes):
+                node_path = current_path + (idx,)
+                if "items" in node and node["items"]:
+                    paths.append(node_path)
+                    paths.extend(collect_all_paths(node["items"], node_path))
+            return paths
+        
+        if tree_nodes:
+            all_paths = collect_all_paths(tree_nodes)
+            self.tree.expanded = all_paths
 
-        self.tabs.param.watch(on_tab_change, "active")
-
-    def _construct_metrics(self, data: ViewData):
-        """Build all MetricValue/MetricMedia panels"""
-        for _, row in data.dataframe.iterrows():
-            # Handle the metric value
+    def _on_tree_selection(self, event):
+        """Handle tree selection changes"""
+        if not event.new or len(event.new) == 0:
+            return
+        
+        selected_item = self.tree.value[0] if self.tree.value else None
+        if not selected_item:
+            return
+        
+        metric_rows = selected_item.get("metric_rows", [])
+        if not metric_rows:
+            return
+        
+        reference_to_values = {}
+        for row in metric_rows:
+            reference = row.get("reference")
+            
             value_panel = MetricValue(
                 name=row["name"],
                 description=row["description"],
@@ -239,76 +316,39 @@ class Metrics(PyComponent):
                 status=row["status_history"][-1]["status"],
                 callback=self.callback,
             )
-
-            # Populate the tag -> value dictionary
-            for tag in row["tags"] + [row["modality"]["abbreviation"]]:
-                if tag not in self.tag_to_value:
-                    self.tag_to_value[tag] = [value_panel]
-                else:
-                    self.tag_to_value[tag].append(value_panel)
-
-            reference = row["reference"]
-            # Populate the value -> reference dictionary
-            self.value_to_reference[value_panel] = reference
-
-            # Only re-construct the MediaPanel if it doesn't already exist
-            if reference not in self.reference_to_media:
+            
+            if reference not in reference_to_values:
+                reference_to_values[reference] = []
+            reference_to_values[reference].append(value_panel)
+        
+        tabs = []
+        for reference, value_panels in reference_to_values.items():
+            if reference not in self.media_cache:
                 media_panel = Media(
                     reference,
-                    s3_bucket=data.s3_bucket,
-                    s3_prefix=data.s3_prefix,
-                    raw_s3_loc=data.raw_s3_location,
+                    s3_bucket=self.data.s3_bucket,
+                    s3_prefix=self.data.s3_prefix,
+                    raw_s3_loc=self.data.raw_s3_location,
                     lazy_load=self.use_lazy_load,
                 )
-                self.reference_to_media[reference] = media_panel
-
-    def _populate_metrics(self, event=None):
-        """Populate the metrics tabs with data
-
-        Use the group_by tags to pull together which references will be shown
-        Then group all the value panels by their media reference
-        """
-        active_tab = self.tabs.active if self.tabs.active > 0 else self.active_tab
-
-        self.tabs.clear()
-
-        print(f"Populating metrics with group_by: {self.settings.group_by}")
-
-        for tag in self.settings.group_by:
-            # Get the value panels, references, and media panels for this tag
-            value_panels = self.tag_to_value.get(tag, [])
-
-            # Invert the reference mapping
-            # i.e. calculate the reference_to_value mapping for the subset of values we are using
-            reference_to_value = {}
-            for value_panel in value_panels:
-                reference = self.value_to_reference.get(value_panel, None)
-                if reference not in reference_to_value:
-                    reference_to_value[reference] = []
-                reference_to_value[reference].append(value_panel)
-
-            # Build the accordion contents
-            statuses = [self.status[tag][i] for i in range(len(self.status[tag]))]
-            tab_name = f"{tag} ({"/".join(statuses)})"
-            tag_accordion = pn.Accordion(name=tab_name, active=[0])
-            for reference in reference_to_value.keys():
-                media_panel = self.reference_to_media[reference]
-                value_panels = reference_to_value[reference]
-                accordion_name = f"({media_panel.media_type}: {reference})" if reference else f"{tag}"
-                tab = MetricTab(name=accordion_name, metric_media=media_panel, metric_values=value_panels)
-
-                tag_accordion.append((tab.tab_name, tab))
-
-            self.tabs.append(tag_accordion)
-
-        if len(self.tabs.objects) == 0:
-            self.tabs.active = -1
-        elif active_tab and active_tab < len(self.tabs):
-            self.tabs.active = active_tab or 0
-
-        self.active_tab = self.tabs.active
+                self.media_cache[reference] = media_panel
+            else:
+                media_panel = self.media_cache[reference]
+            
+            tab_name = f"({media_panel.media_type}: {reference})" if reference else "Metrics"
+            tab = MetricTab(name=tab_name, metric_media=media_panel, metric_values=value_panels)
+            tabs.append((tab.tab_name, tab))
+        
+        if tabs:
+            accordion = pn.Accordion(*tabs, sizing_mode="stretch_both", active=[0])
+            self.content_panel.objects = [accordion]
+        else:
+            self.content_panel.objects = [pn.pane.Markdown("*No metrics found*")]
 
     def __panel__(self):
         """Create and return the metrics panel"""
-
-        return self.tabs
+        return pn.Row(
+            self.tree,
+            self.content_panel,
+            sizing_mode="stretch_both",
+        )
