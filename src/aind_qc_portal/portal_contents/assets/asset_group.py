@@ -63,6 +63,10 @@ class AssetGroup(PyComponent):
                 "rowHeight": 35,
                 "headerSort": True,
             },
+            widths={
+                "Subject ID": 120,
+                "Acquisition Time (local)": 220,
+            }
         )
 
         self.main_col = pn.Column(
@@ -94,14 +98,13 @@ class AssetGroup(PyComponent):
 
         # Format acquisition time for display
         try:
-            acquisition_display = datetime.fromisoformat(acquisition_time).strftime("%Y-%m-%d %H:%M")
+            acquisition_display = datetime.fromisoformat(acquisition_time).strftime("%Y-%m-%d %H:%M%z")
         except Exception:
             acquisition_display = acquisition_time
 
         return {
-            "Asset Name": record.get("name", ""),
-            "Acquisition Time": acquisition_display,
             "Subject ID": subject_id,
+            "Acquisition Time (local)": acquisition_display,
             "Project": project_name,
             "Genotype": genotype,
         }
