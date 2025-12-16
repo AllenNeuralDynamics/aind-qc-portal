@@ -228,6 +228,8 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
 class Metrics(PyComponent):
     """Panel for displaying the metrics"""
 
+    active_path = param.String(default="")
+
     def __init__(self, data: ViewData, callback: Callable, settings):
         """Initialize Metrics with data and callback"""
         super().__init__()
@@ -236,9 +238,12 @@ class Metrics(PyComponent):
         self.settings = settings
         self.metric_lookup = {}
         self.media_cache = {}
+        self._syncing = False
 
         self._init_panel_objects()
         self._build_tree()
+
+        pn.state.location.sync(self, {"active_path": "active_path"})
 
         self.settings.param.watch(self._on_grouping_change, "default_grouping")
 
@@ -249,7 +254,7 @@ class Metrics(PyComponent):
             styles=OUTER_STYLE,
             active=[],
             max_width=300,
-            sizing_mode="stretch_height",
+            # sizing_mode="stretch_height",
         )
 
         self.content_panel = pn.Column(
@@ -259,14 +264,45 @@ class Metrics(PyComponent):
         )
 
         self.tree.param.watch(self._on_tree_selection, "active")
+        self.param.watch(self._restore_active_from_url, "active_path")
 
     def _on_grouping_change(self, event):
         """Rebuild tree when default_grouping changes"""
         self._build_tree()
 
+    def _restore_active_from_url(self, event=None):
+        """Restore tree selection from URL parameter after tree is built"""
+        if self._syncing or not self.active_path or not self.tree.items:
+            return
+
+        try:
+            path_tuple = eval(self.active_path)
+            self._syncing = True
+            self.tree.active = [path_tuple]
+        except (SyntaxError, ValueError, TypeError):
+            return
+        finally:
+            self._syncing = False
+
+    def _update_active_path_from_tree(self):
+        """Update URL parameter when tree selection changes"""
+        if self._syncing:
+            return
+
+        self._syncing = True
+        try:
+            if self.tree.active and len(self.tree.active) > 0:
+                self.active_path = str(self.tree.active[0])
+            else:
+                self.active_path = ""
+        finally:
+            self._syncing = False
+
     def _build_tree(self):
         """Build tree structure based on default_grouping tags"""
         grouping_levels = self.settings.default_grouping
+
+        self.metric_lookup.clear()
 
         all_metrics = [row for _, row in self.data.dataframe.iterrows()]
         tree_nodes = build_tree_level(grouping_levels, all_metrics, self.metric_lookup, 0)
@@ -294,8 +330,12 @@ class Metrics(PyComponent):
             all_paths = collect_all_paths(tree_nodes)
             self.tree.expanded = all_paths
 
+        self._restore_active_from_url()
+
     def _on_tree_selection(self, event):
         """Handle tree selection changes"""
+        self._update_active_path_from_tree()
+
         if not event.new or len(event.new) == 0:
             return
 
