@@ -346,7 +346,7 @@ class Metrics(PyComponent):
         metric_rows = selected_item.get("metric_rows", [])
         if not metric_rows:
             return
-        
+
         self.content_panel.loading = True
 
         reference_to_values = {}
