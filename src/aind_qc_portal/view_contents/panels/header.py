@@ -14,15 +14,13 @@ class Header(PyComponent):
     """Header for the QC view application"""
 
     record: param.Dict = param.Dict(default={})
-    status: param.DataFrame = param.DataFrame(default=pd.DataFrame())
 
-    def __init__(self, record: dict, status: dict, settings: Settings):
+    def __init__(self, record: dict, settings: Settings):
         """Initialize Header with record, status, and settings"""
         super().__init__()
         self._init_panel_objects()
 
         self.record = record
-        self.status = status
         self.settings = settings
 
         self.settings.param.watch(self._update_status_panel, "default_grouping")
@@ -34,10 +32,6 @@ class Header(PyComponent):
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
         self.header_text = pn.pane.Markdown()
-        self.status_table = pn.pane.DataFrame(
-            index=False,
-            escape=False,
-        )
 
     @pn.depends("record")
     def _header_panel(self):
@@ -63,66 +57,22 @@ Return to <a href="{project_link}" target="_blank">{project_name}</a> {co_link}
 
         return self.header_text
 
-    @pn.depends("status", watch=True)
-    def _status_panel(self):
-        """Create a table to display the status of the QC metrics"""
-        if not self.status.empty:
-            status_copy = self.status.copy()
-
-            if hasattr(self, "settings"):
-                all_grouping_keys = [key for level in self.settings.default_grouping for key in level]
-
-                new_columns = [self.status.columns[0]]
-                new_columns += [col for col in self.status.columns if col in all_grouping_keys]
-                new_columns += [
-                    col for col in self.status.columns if col not in all_grouping_keys and col != self.status.columns[0]
-                ]
-                status_copy = status_copy[new_columns]
-
-            def apply_styling(x):
-                """Apply styling to status table rows"""
-                styles = []
-                for i, val in enumerate(x):
-                    col_name = status_copy.columns[i]
-                    if i == 0:
-                        styles.append("")
-                    elif col_name in all_grouping_keys:
-                        styles.append(qc_status_color_css(val))
-                    elif col_name not in all_grouping_keys:
-                        styles.append("color: #999; background-color: #f5f5f5")
-                return styles
-
-            styled_df = (
-                status_copy.style.apply(apply_styling, axis=1)
-                .hide(axis="index")
-                .set_table_styles(
-                    [
-                        {"selector": "table", "props": [("border-collapse", "collapse")]},
-                        {"selector": "th, td", "props": [("border", "1px solid #ddd"), ("padding", "8px")]},
-                    ]
-                )
-            )
-
-            self.status_table.object = styled_df
-        else:
-            self.status_table.object = status_copy
-
-        return self.status_table
-
     def __panel__(self):
         """Create and return the header layout"""
 
-        content = pn.Column(self._header_panel(), self._status_panel(), styles=OUTER_STYLE, sizing_mode="stretch_width")
+        content = pn.Column(self._header_panel(), styles=OUTER_STYLE, sizing_mode="stretch_width")
 
         gear_button_wrapper = pn.Row(
             self.settings,
             styles={
                 "position": "absolute",
                 "top": "10px",
-                "right": "10px",
+                "right": "40px",
                 "z-index": "1000",
             },
             sizing_mode="fixed",
+            width=40,
+            height=40,
         )
 
         return pn.Column(content, gear_button_wrapper, styles={"position": "relative"}, sizing_mode="stretch_width")

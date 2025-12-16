@@ -32,7 +32,7 @@ class ViewData(param.Parameterized):
     asset_name = param.String(default="")
     record = param.Dict(default=None, allow_None=True)
     dataframe = param.DataFrame(default=pd.DataFrame())
-    status = param.DataFrame(default=None, allow_None=True)
+    metric_status = param.DataFrame(default=pd.DataFrame())
 
     changes = param.DataFrame(
         default=pd.DataFrame(columns=["metric_name", "column_name", "value"]),
@@ -215,52 +215,6 @@ class ViewData(param.Parameterized):
 
         return modalities + tags
 
-    @pn.depends("dataframe", watch=True)
-    def _compute_status(self):
-        """Compute the status for modalities, stages, and default_grouping tags"""
-        statuses = []
-
-        # Get all the relevant tags
-        qc = self.get_quality_control()
-
-        modalities = qc.modalities
-        stages = qc.stages
-        default_grouping = qc.default_grouping
-
-        # For each stage, compute the status of each modality and grouping tag
-        for stage in stages:
-            for modality in modalities:
-                cstatus = qc.evaluate_status(
-                    stage=stage,
-                    modality=modality,
-                )
-                statuses.append(
-                    {
-                        "stage": stage,
-                        "tag": modality.abbreviation,
-                        "status": cstatus.value,
-                    }
-                )
-
-            for tag in default_grouping:
-                cstatus = qc.evaluate_status(
-                    stage=stage,
-                    modality=None,
-                    tag=tag,
-                )
-                statuses.append(
-                    {
-                        "stage": stage,
-                        "tag": tag,
-                        "status": cstatus.value,
-                    }
-                )
-
-        # Re-organize the DataFrame from long form to wide, with stage as rows and tags as columns
-        self.status = pd.DataFrame(statuses).pivot(index="stage", columns="tag", values="status")
-        self.status.columns.name = None
-        self.status.reset_index(inplace=True)
-
     # @pn.cache(max_items=1000, policy="LFU")
     def _load_record(self):
         """Get a QualityControl object from the database by its name."""
@@ -330,6 +284,31 @@ class ViewData(param.Parameterized):
         # quality_control and "metrics" in quality_control else None
         # )
 
+        # Compute the evaluated status for each metric
+        self._compute_metric_statuses()
+
+    def _compute_metric_statuses(self):
+        """Compute the evaluated status for each metric using the metric's status_history"""
+        if self.dataframe.empty:
+            return
+
+        # Build a separate status dataframe with metric name and evaluated status
+        status_data = []
+        for _, row in self.dataframe.iterrows():
+            # Get the current status from the metric's status_history
+            status_history = row.get("status_history", [])
+            if status_history:
+                current_status = status_history[-1].get("status", "Pending")
+            else:
+                current_status = "Pending"
+            
+            status_data.append({
+                "name": row.get("name"),
+                "evaluated_status": current_status
+            })
+
+        self.metric_status = pd.DataFrame(status_data)
+    
     def _parse_record(self):
         """Parse the record and cache some data for faster access."""
         if self.record and "location" in self.record:

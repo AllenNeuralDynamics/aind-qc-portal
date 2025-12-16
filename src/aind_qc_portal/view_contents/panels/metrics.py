@@ -8,7 +8,7 @@ import panel_material_ui as pmui
 import param
 from panel.custom import PyComponent
 
-from aind_qc_portal.layout import MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE
+from aind_qc_portal.layout import MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE, AIND_COLORS
 from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
 from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panels.media.media import Media
@@ -181,7 +181,40 @@ class MetricTab(PyComponent):
         return tab_content
 
 
-def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx, path_prefix=""):
+def aggregate_status(metrics, status_df):
+    """Aggregate status from a list of metrics.
+    
+    Rules:
+    - If ANY metric has status "Fail", return "Fail"
+    - Otherwise, if ANY metric has status "Pending", return "Pending"
+    - Otherwise, return "Pass"
+    
+    Args:
+        metrics: List of metric row dictionaries
+        status_df: DataFrame with columns ['name', 'evaluated_status']
+    """
+    metric_names = [m.get("name") for m in metrics]
+    statuses = status_df[status_df["name"].isin(metric_names)]["evaluated_status"].tolist()
+    
+    if "Fail" in statuses:
+        return "Fail"
+    elif "Pending" in statuses:
+        return "Pending"
+    else:
+        return "Pass"
+
+
+def get_status_color(status):
+    """Get the color for a given status"""
+    if status == "Fail":
+        return AIND_COLORS["red"]
+    elif status == "Pending":
+        return AIND_COLORS["light_blue"]
+    else:  # Pass
+        return AIND_COLORS["green"]
+
+
+def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx, path_prefix="", status_df=None):
     if level_idx >= len(grouping_levels):
         return None
 
@@ -211,9 +244,25 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
     nodes = []
     for (tag_key, tag_value), tag_metrics in level_data.items():
         node_id = f"{path_prefix}{tag_key}:{tag_value}"
-        children = build_tree_level(grouping_levels, tag_metrics, metric_lookup_callback, level_idx + 1, f"{node_id}/")
+        children = build_tree_level(grouping_levels, tag_metrics, metric_lookup_callback, level_idx + 1, f"{node_id}/", status_df)
 
-        node = {"label": f"{tag_key}: {tag_value} ({len(tag_metrics)})", "metric_rows": tag_metrics}
+        # Aggregate status from tag_metrics and their children
+        aggregated_status = aggregate_status(tag_metrics, status_df) if status_df is not None else "Pending"
+        
+        # Add status indicator icon
+        if aggregated_status == "Fail":
+            icon = "cancel"
+        elif aggregated_status == "Pending":
+            icon = "help"
+        else:  # Pass
+            icon = "check_circle"
+
+        node = {
+            "label": f"{tag_key}: {tag_value} ({len(tag_metrics)})",
+            "icon": icon,
+            "metric_rows": tag_metrics,
+            "status": aggregated_status
+        }
 
         if children:
             node["items"] = children
@@ -305,7 +354,13 @@ class Metrics(PyComponent):
         self.metric_lookup.clear()
 
         all_metrics = [row for _, row in self.data.dataframe.iterrows()]
-        tree_nodes = build_tree_level(grouping_levels, all_metrics, self.metric_lookup, 0)
+        tree_nodes = build_tree_level(
+            grouping_levels,
+            all_metrics,
+            self.metric_lookup,
+            0,
+            status_df=self.data.metric_status
+        )
 
         def print_tree(nodes, indent=0):
             if not nodes:

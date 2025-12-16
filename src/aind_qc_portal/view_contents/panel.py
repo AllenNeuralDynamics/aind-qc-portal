@@ -45,7 +45,7 @@ class QCPanel(PyComponent):
         self.submit_panel = SubmitPanel(data=self._data)
 
         # Other panels have a dependency on settings
-        self.header = Header(record=self._data.record, status=self._data.status, settings=self.settings)
+        self.header = Header(record=self._data.record, settings=self.settings)
         self.metrics = Metrics(data=self._data, callback=self._data.submit_change, settings=self.settings)
 
     def __panel__(self):
