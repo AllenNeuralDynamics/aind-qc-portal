@@ -38,14 +38,15 @@ class QCPanel(PyComponent):
             )
             return
 
-        self.settings = Settings(
-            default_grouping=self._data.default_grouping, grouping_options=self._data.grouping_options
-        )
+        default_grouping = self._data.default_grouping
+        grouping_options = self._data.grouping_options
+
+        self.settings = Settings(default_grouping=default_grouping, grouping_options=grouping_options)
         self.submit_panel = SubmitPanel(data=self._data)
 
         # Other panels have a dependency on settings
         self.header = Header(record=self._data.record, status=self._data.status, settings=self.settings)
-        self.metrics = Metrics(data=self._data, callback=self._data.submit_change)
+        self.metrics = Metrics(data=self._data, callback=self._data.submit_change, settings=self.settings)
 
     def __panel__(self):
         """Create and return the Panel layout"""
@@ -54,13 +55,6 @@ class QCPanel(PyComponent):
         if self._data.dataframe.empty:
             return pn.Row(pn.HSpacer(), self.no_content, pn.HSpacer(), sizing_mode="stretch_width")
 
-        settings_row = pn.Row(
-            pn.HSpacer(),
-            self.settings,
-            sizing_mode="stretch_width",
-            styles={"position": "relative"},
-        )
-        
         header_submit_row = pn.Row(self.header, self.submit_panel, sizing_mode="stretch_width")
         content_row = pn.Row(
             self.metrics,
@@ -68,7 +62,6 @@ class QCPanel(PyComponent):
         )
 
         return pn.Column(
-            settings_row,
             header_submit_row,
             content_row,
             sizing_mode="stretch_width",

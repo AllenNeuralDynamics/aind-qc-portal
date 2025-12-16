@@ -45,11 +45,14 @@ class Header(PyComponent):
         # Get CO link if available
         other_ids = self.record.get("other_identifiers", {})
         if other_ids and "Code Ocean" in other_ids:
-            co_link = f'| <a href="https://codeocean.allenneuraldynamics.org/data-assets/{other_ids["Code Ocean"][0]}" target="_blank">CO Link</a>'
+            co_link = (
+                '| <a href="https://codeocean.allenneuraldynamics.org/data-assets/'
+                f'{other_ids["Code Ocean"][0]}" target="_blank">CO Link</a>'
+            )
         else:
             co_link = ""
 
-        project_name = self.record.get('data_description', {}).get('project_name')
+        project_name = self.record.get("data_description", {}).get("project_name")
         project_link = f"/portal?projects=['{project_name}']"
 
         header_md = f"""
@@ -68,13 +71,11 @@ Return to <a href="{project_link}" target="_blank">{project_name}</a> {co_link}
 
             if hasattr(self, "settings"):
                 all_grouping_keys = [key for level in self.settings.default_grouping for key in level]
-                
+
                 new_columns = [self.status.columns[0]]
                 new_columns += [col for col in self.status.columns if col in all_grouping_keys]
                 new_columns += [
-                    col
-                    for col in self.status.columns
-                    if col not in all_grouping_keys and col != self.status.columns[0]
+                    col for col in self.status.columns if col not in all_grouping_keys and col != self.status.columns[0]
                 ]
                 status_copy = status_copy[new_columns]
 
@@ -111,13 +112,8 @@ Return to <a href="{project_link}" target="_blank">{project_name}</a> {co_link}
     def __panel__(self):
         """Create and return the header layout"""
 
-        content = pn.Column(
-            self._header_panel(), 
-            self._status_panel(), 
-            styles=OUTER_STYLE, 
-            sizing_mode="stretch_width"
-        )
-        
+        content = pn.Column(self._header_panel(), self._status_panel(), styles=OUTER_STYLE, sizing_mode="stretch_width")
+
         gear_button_wrapper = pn.Row(
             self.settings,
             styles={
@@ -128,10 +124,5 @@ Return to <a href="{project_link}" target="_blank">{project_name}</a> {co_link}
             },
             sizing_mode="fixed",
         )
-        
-        return pn.Column(
-            content,
-            gear_button_wrapper,
-            styles={"position": "relative"},
-            sizing_mode="stretch_width"
-        )
+
+        return pn.Column(content, gear_button_wrapper, styles={"position": "relative"}, sizing_mode="stretch_width")

@@ -62,8 +62,6 @@ class Media(PyComponent):
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
         self.content = pn.Column()
-        self.load_button = pn.widgets.Button(name="Load Media", width=200, button_type="primary")
-        self.load_button.on_click(self._on_load_click)
 
     def _determine_media_type(self, reference: str):
         """Determine the media type from the reference without loading the full media object"""
@@ -90,8 +88,8 @@ class Media(PyComponent):
         else:
             self.media_type = "Text"
 
-    def _on_load_click(self, event):
-        """Handle the load button click event"""
+    def load(self):
+        """Public method to trigger media loading"""
         if not self.loaded:
             self._load_media()
 
@@ -261,5 +259,5 @@ class Media(PyComponent):
     def __panel__(self):  # pragma: no cover
         """Return the media object as a Panel object"""
         if self.lazy_load and not self.loaded:
-            return pn.Column(self.load_button, sizing_mode="stretch_width")
+            return pn.Column(pn.pane.Markdown("*Loading...*"), sizing_mode="stretch_width")
         return Fullscreen(self.content, sizing_mode="stretch_width", max_height=1200)

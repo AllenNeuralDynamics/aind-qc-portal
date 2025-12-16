@@ -61,14 +61,14 @@ class TestFormatLink(unittest.TestCase):
 class TestGetUserName(unittest.TestCase):
     """Tests for get_user_name function"""
 
-    @patch('aind_qc_portal.utils.pn.state')
+    @patch("aind_qc_portal.utils.pn.state")
     def test_with_user(self, mock_state):
         """Test when a user is logged in"""
         mock_state.user = "testuser"
         result = get_user_name()
         self.assertEqual(result, "testuser")
 
-    @patch('aind_qc_portal.utils.pn.state')
+    @patch("aind_qc_portal.utils.pn.state")
     def test_guest(self, mock_state):
         """Test when no user is logged in (guest)"""
         mock_state.user = None
@@ -79,8 +79,8 @@ class TestGetUserName(unittest.TestCase):
 class TestFormatCssBackground(unittest.TestCase):
     """Tests for format_css_background function"""
 
-    @patch('aind_qc_portal.utils.pn.state')
-    @patch('aind_qc_portal.utils.pn.config')
+    @patch("aind_qc_portal.utils.pn.state")
+    @patch("aind_qc_portal.utils.pn.config")
     def test_default_background(self, mock_config, mock_state):
         """Test default background color when no query param is set"""
         mock_state.location.query_params = {}
@@ -89,8 +89,8 @@ class TestFormatCssBackground(unittest.TestCase):
         self.assertEqual(len(mock_config.raw_css), 1)
         self.assertIn("#003057", mock_config.raw_css[0])
 
-    @patch('aind_qc_portal.utils.pn.state')
-    @patch('aind_qc_portal.utils.pn.config')
+    @patch("aind_qc_portal.utils.pn.state")
+    @patch("aind_qc_portal.utils.pn.config")
     def test_custom_background(self, mock_config, mock_state):
         """Test custom background color from query param"""
         mock_state.location.query_params = {"background": "green"}
@@ -199,7 +199,7 @@ class TestReplaceMarkdownWithHtml(unittest.TestCase):
         result = replace_markdown_with_html(14, "[first](http://one.com) and [second](http://two.com)")
         self.assertIn('<a href="http://one.com" target="_blank">first</a>', result)
         self.assertIn('<a href="http://two.com" target="_blank">second</a>', result)
-        self.assertIn('font-size:14pt', result)
+        self.assertIn("font-size:14pt", result)
 
     def test_no_links(self):
         """Test string with no markdown links"""

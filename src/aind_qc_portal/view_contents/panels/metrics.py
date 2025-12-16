@@ -8,7 +8,7 @@ import panel_material_ui as pmui
 import param
 from panel.custom import PyComponent
 
-from aind_qc_portal.layout import MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE, LAZY_LOAD_THRESHOLD
+from aind_qc_portal.layout import MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE
 from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
 from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panels.media.media import Media
@@ -127,7 +127,7 @@ class MetricValue(PyComponent):
         """Create and return the MetricValue panel"""
 
         tags_display = " | ".join([f"{k}: **{v}**" for k, v in self._tags.items()]) if self._tags else "*no tags*"
-        
+
         md = f"""
 **{replace_markdown_with_html(10, f"{self.metric_name}")}**  
 *{replace_markdown_with_html(8, self.description if self.description else "*no description provided*")}*
@@ -181,22 +181,66 @@ class MetricTab(PyComponent):
         return tab_content
 
 
+def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx, path_prefix=""):
+    if level_idx >= len(grouping_levels):
+        return None
+
+    # tag_keys can be a string ('operational') or tuple ('tag1', 'tag2')
+    level_keys = grouping_levels[level_idx]
+    if isinstance(level_keys, str):
+        tag_keys = [level_keys]
+    elif isinstance(level_keys, tuple):
+        tag_keys = list(level_keys)
+    else:
+        tag_keys = level_keys
+
+    level_data = {}
+
+    for row in metrics:
+        metric_tags = row.get("tags", {})
+        print(metric_tags)
+
+        for tag_key in tag_keys:
+            tag_value = metric_tags.get(tag_key)
+            if tag_value:
+                key = (tag_key, tag_value)
+                if key not in level_data:
+                    level_data[key] = []
+                level_data[key].append(row)
+
+    nodes = []
+    for (tag_key, tag_value), tag_metrics in level_data.items():
+        node_id = f"{path_prefix}{tag_key}:{tag_value}"
+        children = build_tree_level(grouping_levels, tag_metrics, metric_lookup_callback, level_idx + 1, f"{node_id}/")
+
+        node = {"label": f"{tag_key}: {tag_value} ({len(tag_metrics)})", "metric_rows": tag_metrics}
+
+        if children:
+            node["items"] = children
+        else:
+            metric_lookup_callback[node_id] = tag_metrics
+
+        nodes.append(node)
+
+    return nodes if nodes else None
+
+
 class Metrics(PyComponent):
     """Panel for displaying the metrics"""
 
-    def __init__(self, data: ViewData, callback: Callable):
+    def __init__(self, data: ViewData, callback: Callable, settings):
         """Initialize Metrics with data and callback"""
         super().__init__()
         self.callback = callback
         self.data = data
+        self.settings = settings
         self.metric_lookup = {}
         self.media_cache = {}
-        
-        metric_count = len(data.dataframe)
-        self.use_lazy_load = metric_count > LAZY_LOAD_THRESHOLD
 
         self._init_panel_objects()
         self._build_tree()
+
+        self.settings.param.watch(self._on_grouping_change, "default_grouping")
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
@@ -207,61 +251,26 @@ class Metrics(PyComponent):
             max_width=300,
             sizing_mode="stretch_height",
         )
-        
+
         self.content_panel = pn.Column(
             pn.pane.Markdown("*Select a metric from the tree*"),
             sizing_mode="stretch_both",
             styles=OUTER_STYLE,
         )
-        
+
         self.tree.param.watch(self._on_tree_selection, "active")
+
+    def _on_grouping_change(self, event):
+        """Rebuild tree when default_grouping changes"""
+        self._build_tree()
 
     def _build_tree(self):
         """Build tree structure based on default_grouping tags"""
-        grouping_levels = self.data.default_grouping
-        
-        print("Grouping levels:", grouping_levels)
-        
-        def build_tree_level(metrics, level_idx, path_prefix=""):
-            if level_idx >= len(grouping_levels):
-                return None
-            
-            tag_keys = grouping_levels[level_idx]
-            level_data = {}
-            
-            for row in metrics:
-                metric_tags = row.get("tags", {})
-                
-                for tag_key in tag_keys:
-                    tag_value = metric_tags.get(tag_key)
-                    if tag_value:
-                        key = (tag_key, tag_value)
-                        if key not in level_data:
-                            level_data[key] = []
-                        level_data[key].append(row)
-            
-            nodes = []
-            for (tag_key, tag_value), tag_metrics in level_data.items():
-                node_id = f"{path_prefix}{tag_key}:{tag_value}"
-                children = build_tree_level(tag_metrics, level_idx + 1, f"{node_id}/")
-                
-                node = {
-                    "label": f"{tag_key}: {tag_value} ({len(tag_metrics)})",
-                    "metric_rows": tag_metrics
-                }
-                
-                if children:
-                    node["items"] = children
-                else:
-                    self.metric_lookup[node_id] = tag_metrics
-                
-                nodes.append(node)
-            
-            return nodes if nodes else None
-        
+        grouping_levels = self.settings.default_grouping
+
         all_metrics = [row for _, row in self.data.dataframe.iterrows()]
-        tree_nodes = build_tree_level(all_metrics, 0)
-        
+        tree_nodes = build_tree_level(grouping_levels, all_metrics, self.metric_lookup, 0)
+
         def print_tree(nodes, indent=0):
             if not nodes:
                 return
@@ -269,13 +278,9 @@ class Metrics(PyComponent):
                 print("  " * indent + node.get("label", ""))
                 if "items" in node:
                     print_tree(node["items"], indent + 1)
-        
-        print("\nTree structure:")
-        print_tree(tree_nodes)
-        print()
-        
+
         self.tree.items = tree_nodes if tree_nodes else []
-        
+
         def collect_all_paths(nodes, current_path=()):
             paths = []
             for idx, node in enumerate(nodes):
@@ -284,7 +289,7 @@ class Metrics(PyComponent):
                     paths.append(node_path)
                     paths.extend(collect_all_paths(node["items"], node_path))
             return paths
-        
+
         if tree_nodes:
             all_paths = collect_all_paths(tree_nodes)
             self.tree.expanded = all_paths
@@ -293,19 +298,19 @@ class Metrics(PyComponent):
         """Handle tree selection changes"""
         if not event.new or len(event.new) == 0:
             return
-        
+
         selected_item = self.tree.value[0] if self.tree.value else None
         if not selected_item:
             return
-        
+
         metric_rows = selected_item.get("metric_rows", [])
         if not metric_rows:
             return
-        
+
         reference_to_values = {}
         for row in metric_rows:
             reference = row.get("reference")
-            
+
             value_panel = MetricValue(
                 name=row["name"],
                 description=row["description"],
@@ -316,11 +321,11 @@ class Metrics(PyComponent):
                 status=row["status_history"][-1]["status"],
                 callback=self.callback,
             )
-            
+
             if reference not in reference_to_values:
                 reference_to_values[reference] = []
             reference_to_values[reference].append(value_panel)
-        
+
         tabs = []
         for reference, value_panels in reference_to_values.items():
             if reference not in self.media_cache:
@@ -329,16 +334,19 @@ class Metrics(PyComponent):
                     s3_bucket=self.data.s3_bucket,
                     s3_prefix=self.data.s3_prefix,
                     raw_s3_loc=self.data.raw_s3_location,
-                    lazy_load=self.use_lazy_load,
+                    lazy_load=True,
                 )
                 self.media_cache[reference] = media_panel
             else:
                 media_panel = self.media_cache[reference]
-            
+
+            if not media_panel.loaded:
+                media_panel.load()
+
             tab_name = f"({media_panel.media_type}: {reference})" if reference else "Metrics"
             tab = MetricTab(name=tab_name, metric_media=media_panel, metric_values=value_panels)
             tabs.append((tab.tab_name, tab))
-        
+
         if tabs:
             accordion = pn.Accordion(*tabs, sizing_mode="stretch_both", active=[0])
             self.content_panel.objects = [accordion]

@@ -182,10 +182,18 @@ class ViewData(param.Parameterized):
     def default_grouping(self) -> list:
         """Get the default grouping for this record"""
         if self.dataframe.empty:
+            print("[ViewData.default_grouping] Dataframe is empty, returning []")
             return []
 
         qc = self.get_quality_control()
-        return qc.default_grouping
+        print(f"[ViewData.default_grouping] Retrieved from QC: {qc.default_grouping}")
+        # Unwrap any tuples of length 1 into just string
+        default_grouping = qc.default_grouping
+        for i, level in enumerate(default_grouping):
+            if isinstance(level, tuple) and len(level) == 1:
+                default_grouping[i] = level[0]
+
+        return default_grouping
 
     @property
     def grouping_options(self) -> list:
@@ -197,7 +205,13 @@ class ViewData(param.Parameterized):
 
         # Get all the modalities and tags
         modalities = [m.abbreviation for m in qc.modalities]
-        tags = qc.default_grouping
+        tags = []
+        for metric in qc.metrics:
+            metric_tags = metric.tags if metric.tags else {}
+            for tag_key in metric_tags.keys():
+                if tag_key not in tags:
+                    tags.append(tag_key)
+        tags = list(set(tags))  # Unique tags
 
         return modalities + tags
 
