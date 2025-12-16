@@ -346,6 +346,8 @@ class Metrics(PyComponent):
         metric_rows = selected_item.get("metric_rows", [])
         if not metric_rows:
             return
+        
+        self.content_panel.loading = True
 
         reference_to_values = {}
         for row in metric_rows:
@@ -392,6 +394,8 @@ class Metrics(PyComponent):
             self.content_panel.objects = [accordion]
         else:
             self.content_panel.objects = [pn.pane.Markdown("*No metrics found*")]
+
+        self.content_panel.loading = False
 
     def __panel__(self):
         """Create and return the metrics panel"""
