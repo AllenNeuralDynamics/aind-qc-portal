@@ -25,11 +25,10 @@ class Header(PyComponent):
         self.status = status
         self.settings = settings
 
-        # Watch for changes in settings.group_by
-        self.settings.param.watch(self._update_status_panel, "group_by")
+        self.settings.param.watch(self._update_status_panel, "default_grouping")
 
     def _update_status_panel(self, event):
-        """Trigger update when group_by changes"""
+        """Trigger update when default_grouping changes"""
         self.param.trigger("status")
 
     def _init_panel_objects(self):
@@ -66,16 +65,15 @@ Return to [{self.record.get("data_description", {}).get("project_name")}]({proje
         if not self.status.empty:
             status_copy = self.status.copy()
 
-            # Get column names excluding the first column
-            # Re-order self.status columns so that the group_by columns are first
-            # Make sure the first column stays in place
             if hasattr(self, "settings"):
+                all_grouping_keys = [key for level in self.settings.default_grouping for key in level]
+                
                 new_columns = [self.status.columns[0]]
-                new_columns += [col for col in self.status.columns if col in self.settings.group_by]
+                new_columns += [col for col in self.status.columns if col in all_grouping_keys]
                 new_columns += [
                     col
                     for col in self.status.columns
-                    if col not in self.settings.group_by and col != self.status.columns[0]
+                    if col not in all_grouping_keys and col != self.status.columns[0]
                 ]
                 status_copy = status_copy[new_columns]
 
@@ -86,9 +84,9 @@ Return to [{self.record.get("data_description", {}).get("project_name")}]({proje
                     col_name = status_copy.columns[i]
                     if i == 0:
                         styles.append("")
-                    elif col_name in self.settings.group_by:
+                    elif col_name in all_grouping_keys:
                         styles.append(qc_status_color_css(val))
-                    elif col_name not in self.settings.group_by:
+                    elif col_name not in all_grouping_keys:
                         styles.append("color: #999; background-color: #f5f5f5")
                 return styles
 

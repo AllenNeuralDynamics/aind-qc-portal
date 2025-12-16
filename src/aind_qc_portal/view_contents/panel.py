@@ -54,6 +54,13 @@ class QCPanel(PyComponent):
         if self._data.dataframe.empty:
             return pn.Row(pn.HSpacer(), self.no_content, pn.HSpacer(), sizing_mode="stretch_width")
 
+        settings_row = pn.Row(
+            pn.HSpacer(),
+            self.settings,
+            sizing_mode="stretch_width",
+            styles={"position": "relative"},
+        )
+        
         header_submit_row = pn.Row(self.header, self.submit_panel, sizing_mode="stretch_width")
         content_row = pn.Row(
             self.metrics,
@@ -61,6 +68,7 @@ class QCPanel(PyComponent):
         )
 
         return pn.Column(
+            settings_row,
             header_submit_row,
             content_row,
             sizing_mode="stretch_width",
