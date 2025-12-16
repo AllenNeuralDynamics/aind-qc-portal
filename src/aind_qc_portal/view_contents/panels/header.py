@@ -45,15 +45,16 @@ class Header(PyComponent):
         # Get CO link if available
         other_ids = self.record.get("other_identifiers", {})
         if other_ids and "Code Ocean" in other_ids:
-            co_link = f"| [CO Link](https://codeocean.allenneuraldynamics.org/data-assets/{other_ids["Code Ocean"][0]})"
+            co_link = f'| <a href="https://codeocean.allenneuraldynamics.org/data-assets/{other_ids["Code Ocean"][0]}" target="_blank">CO Link</a>'
         else:
             co_link = ""
 
-        project_link = f"portal?projects=['{self.record.get('data_description', {}).get('project_name')}']"
+        project_name = self.record.get('data_description', {}).get('project_name')
+        project_link = f"/portal?projects=['{project_name}']"
 
         header_md = f"""
 ## {self.record["name"]}
-Return to [{self.record.get("data_description", {}).get("project_name")}]({project_link}) {co_link}
+Return to <a href="{project_link}" target="_blank">{project_name}</a> {co_link}
 """
         self.header_text.object = header_md
 
@@ -110,7 +111,27 @@ Return to [{self.record.get("data_description", {}).get("project_name")}]({proje
     def __panel__(self):
         """Create and return the header layout"""
 
-        full_column = pn.Column(
-            self._header_panel(), self._status_panel(), self.settings, styles=OUTER_STYLE, sizing_mode="stretch_width"
+        content = pn.Column(
+            self._header_panel(), 
+            self._status_panel(), 
+            styles=OUTER_STYLE, 
+            sizing_mode="stretch_width"
         )
-        return full_column
+        
+        gear_button_wrapper = pn.Row(
+            self.settings,
+            styles={
+                "position": "absolute",
+                "top": "10px",
+                "right": "10px",
+                "z-index": "1000",
+            },
+            sizing_mode="fixed",
+        )
+        
+        return pn.Column(
+            content,
+            gear_button_wrapper,
+            styles={"position": "relative"},
+            sizing_mode="stretch_width"
+        )
