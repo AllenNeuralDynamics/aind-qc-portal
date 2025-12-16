@@ -34,6 +34,7 @@ class MetricValue(PyComponent):
         value: Any,
         status: Any,
         callback: Callable,
+        settings,
     ):
         """Initialize MetricValue with metric properties"""
         super().__init__()
@@ -45,8 +46,12 @@ class MetricValue(PyComponent):
         self.value = value
         self.status = status
         self.callback = callback
+        self.settings = settings
 
         self._init_panel_objects()
+        
+        # Watch for changes in allow_value_edits
+        self.settings.param.watch(self._on_allow_value_edits_change, "allow_value_edits")
 
     def set_value(self, new_value):
         """Set the value of the metric and trigger the callback"""
@@ -123,6 +128,22 @@ class MetricValue(PyComponent):
         if not self.auto_value:
             self.value_widget.link(self, value="value", bidirectional=True)
 
+    def _on_allow_value_edits_change(self, event):
+        """Update value widget disabled state when allow_value_edits changes"""
+        self._update_value_widget_state()
+
+    def _update_value_widget_state(self):
+        """Update the disabled state of the value widget based on user and settings"""
+        # Disable if user is guest OR if allow_value_edits is False OR if metric has a value
+        if isinstance(self.value, CustomMetricValue):
+            value = self.value.data.value
+        else:
+            value = self.value
+
+        should_disable = pn.state.user == "guest" or (self.settings.allow_value_edits and value is not None)
+        print(pn.state.user, self.settings.allow_value_edits, value, should_disable)
+        self.value_widget.disabled = should_disable
+
     def __panel__(self):
         """Create and return the MetricValue panel"""
 
@@ -136,8 +157,8 @@ Modality: **{self.modality}** | Stage: **{self.stage}**
 Tags: {tags_display}
 """  # noqa: W291
 
-        if pn.state.user == "guest":
-            self.value_widget.disabled = True
+        # Update value widget state based on user and settings
+        self._update_value_widget_state()
 
         if pn.state.user == "guest":
             self.state_selector.disabled = True
@@ -417,6 +438,7 @@ class Metrics(PyComponent):
                 modality=row["modality"]["abbreviation"],
                 status=row["status_history"][-1]["status"],
                 callback=self.callback,
+                settings=self.settings,
             )
 
             if reference not in reference_to_values:
