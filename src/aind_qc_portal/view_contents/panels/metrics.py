@@ -245,6 +245,7 @@ def get_tag_keys_from_level(level):
 
 
 def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx, path_prefix="", status_df=None):
+    """Recursively build tree levels based on grouping levels and metrics"""
     if level_idx >= len(grouping_levels):
         return None
 
@@ -386,6 +387,7 @@ class Metrics(PyComponent):
         )
 
         def print_tree(nodes, indent=0):
+            """Helper function to print tree structure for debugging"""
             if not nodes:
                 return
             for node in nodes:
@@ -396,6 +398,7 @@ class Metrics(PyComponent):
         self.tree.items = tree_nodes if tree_nodes else []
 
         def collect_all_paths(nodes, current_path=()):
+            """Helper function to collect all expandable paths"""
             paths = []
             for idx, node in enumerate(nodes):
                 node_path = current_path + (idx,)
