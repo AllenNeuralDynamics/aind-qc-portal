@@ -1,6 +1,4 @@
-# This file downloads the QC json from the DocDB client
-# Replaces the tags for the metrics with the new dictionary system
-# And then re-uploads to the V2 portal
+"""Script to replace QC tags in the metadata database records."""
 
 from aind_data_access_api.document_db import MetadataDbClient
 import json
@@ -25,6 +23,7 @@ qc = record["quality_control"]
 
 
 def transform_tags(metric):
+    """Transform old tags to new tag structure"""
     old_tags = metric.get("tags", [])
     if not old_tags or len(old_tags) == 0:
         return {}
