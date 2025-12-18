@@ -299,12 +299,14 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
     nodes = []
     for (tag_key, tag_value), tag_metrics in level_data.items():
         node_id = f"{path_prefix}{tag_key}:{tag_value}"
+        # Create a copy of tag_metrics to avoid sharing references
+        tag_metrics_copy = list(tag_metrics)
         children = build_tree_level(
-            grouping_levels, tag_metrics, metric_lookup_callback, level_idx + 1, f"{node_id}/", status_df
+            grouping_levels, tag_metrics_copy, metric_lookup_callback, level_idx + 1, f"{node_id}/", status_df
         )
 
         # Aggregate status from tag_metrics and their children
-        aggregated_status = aggregate_status(tag_metrics, status_df) if status_df is not None else "Pending"
+        aggregated_status = aggregate_status(tag_metrics_copy, status_df) if status_df is not None else "Pending"
 
         # Add status indicator icon
         if aggregated_status == "Fail":
@@ -315,16 +317,16 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
             icon = "check_circle"
 
         node = {
-            "label": f"{tag_key}: {tag_value} ({len(tag_metrics)})",
+            "label": f"{tag_key}: {tag_value} ({len(tag_metrics_copy)})",
             "icon": icon,
-            "metric_rows": tag_metrics,
+            "metric_rows": tag_metrics_copy,
             "status": aggregated_status,
         }
 
         if children:
             node["items"] = children
         else:
-            metric_lookup_callback[node_id] = tag_metrics
+            metric_lookup_callback[node_id] = tag_metrics_copy
 
         nodes.append(node)
 
