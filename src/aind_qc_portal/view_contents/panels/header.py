@@ -1,12 +1,10 @@
 """Header"""
 
-import pandas as pd
 import panel as pn
 import param
 from panel.custom import PyComponent
 
 from aind_qc_portal.layout import OUTER_STYLE
-from aind_qc_portal.utils import qc_status_color_css
 from aind_qc_portal.view_contents.panels.settings import Settings
 
 

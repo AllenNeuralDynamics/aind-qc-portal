@@ -34,6 +34,7 @@ class MetricValue(PyComponent):
         value: Any,
         status: Any,
         callback: Callable,
+        settings,
     ):
         """Initialize MetricValue with metric properties"""
         super().__init__()
@@ -45,8 +46,12 @@ class MetricValue(PyComponent):
         self.value = value
         self.status = status
         self.callback = callback
+        self.settings = settings
 
         self._init_panel_objects()
+
+        # Watch for changes in allow_value_edits
+        self.settings.param.watch(self._on_allow_value_edits_change, "allow_value_edits")
 
     def set_value(self, new_value):
         """Set the value of the metric and trigger the callback"""
@@ -123,6 +128,21 @@ class MetricValue(PyComponent):
         if not self.auto_value:
             self.value_widget.link(self, value="value", bidirectional=True)
 
+    def _on_allow_value_edits_change(self, event):
+        """Update value widget disabled state when allow_value_edits changes"""
+        self._update_value_widget_state()
+
+    def _update_value_widget_state(self):
+        """Update the disabled state of the value widget based on user and settings"""
+        # Disable if user is guest OR if allow_value_edits is False OR if metric has a value
+        if isinstance(self.value, CustomMetricValue):
+            value = self.value.data.value
+        else:
+            value = self.value
+
+        should_disable = pn.state.user == "guest" or not self.settings.allow_value_edits or not value
+        self.value_widget.disabled = should_disable
+
     def __panel__(self):
         """Create and return the MetricValue panel"""
 
@@ -136,8 +156,8 @@ Modality: **{self.modality}** | Stage: **{self.stage}**
 Tags: {tags_display}
 """  # noqa: W291
 
-        if pn.state.user == "guest":
-            self.value_widget.disabled = True
+        # Update value widget state based on user and settings
+        self._update_value_widget_state()
 
         if pn.state.user == "guest":
             self.state_selector.disabled = True
@@ -183,19 +203,19 @@ class MetricTab(PyComponent):
 
 def aggregate_status(metrics, status_df):
     """Aggregate status from a list of metrics.
-    
+
     Rules:
     - If ANY metric has status "Fail", return "Fail"
     - Otherwise, if ANY metric has status "Pending", return "Pending"
     - Otherwise, return "Pass"
-    
+
     Args:
         metrics: List of metric row dictionaries
         status_df: DataFrame with columns ['name', 'evaluated_status']
     """
     metric_names = [m.get("name") for m in metrics]
     statuses = status_df[status_df["name"].isin(metric_names)]["evaluated_status"].tolist()
-    
+
     if "Fail" in statuses:
         return "Fail"
     elif "Pending" in statuses:
@@ -214,18 +234,24 @@ def get_status_color(status):
         return AIND_COLORS["green"]
 
 
+def get_tag_keys_from_level(level):
+    """Get the tag keys from a grouping level"""
+    if isinstance(level, str):
+        return [level]
+    elif isinstance(level, tuple):
+        return list(level)
+    else:
+        return level
+
+
 def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx, path_prefix="", status_df=None):
+    """Recursively build tree levels based on grouping levels and metrics"""
     if level_idx >= len(grouping_levels):
         return None
 
     # tag_keys can be a string ('operational') or tuple ('tag1', 'tag2')
     level_keys = grouping_levels[level_idx]
-    if isinstance(level_keys, str):
-        tag_keys = [level_keys]
-    elif isinstance(level_keys, tuple):
-        tag_keys = list(level_keys)
-    else:
-        tag_keys = level_keys
+    tag_keys = get_tag_keys_from_level(level_keys)
 
     level_data = {}
 
@@ -244,11 +270,13 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
     nodes = []
     for (tag_key, tag_value), tag_metrics in level_data.items():
         node_id = f"{path_prefix}{tag_key}:{tag_value}"
-        children = build_tree_level(grouping_levels, tag_metrics, metric_lookup_callback, level_idx + 1, f"{node_id}/", status_df)
+        children = build_tree_level(
+            grouping_levels, tag_metrics, metric_lookup_callback, level_idx + 1, f"{node_id}/", status_df
+        )
 
         # Aggregate status from tag_metrics and their children
         aggregated_status = aggregate_status(tag_metrics, status_df) if status_df is not None else "Pending"
-        
+
         # Add status indicator icon
         if aggregated_status == "Fail":
             icon = "cancel"
@@ -261,7 +289,7 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
             "label": f"{tag_key}: {tag_value} ({len(tag_metrics)})",
             "icon": icon,
             "metric_rows": tag_metrics,
-            "status": aggregated_status
+            "status": aggregated_status,
         }
 
         if children:
@@ -355,14 +383,11 @@ class Metrics(PyComponent):
 
         all_metrics = [row for _, row in self.data.dataframe.iterrows()]
         tree_nodes = build_tree_level(
-            grouping_levels,
-            all_metrics,
-            self.metric_lookup,
-            0,
-            status_df=self.data.metric_status
+            grouping_levels, all_metrics, self.metric_lookup, 0, status_df=self.data.metric_status
         )
 
         def print_tree(nodes, indent=0):
+            """Helper function to print tree structure for debugging"""
             if not nodes:
                 return
             for node in nodes:
@@ -373,6 +398,7 @@ class Metrics(PyComponent):
         self.tree.items = tree_nodes if tree_nodes else []
 
         def collect_all_paths(nodes, current_path=()):
+            """Helper function to collect all expandable paths"""
             paths = []
             for idx, node in enumerate(nodes):
                 node_path = current_path + (idx,)
@@ -417,6 +443,7 @@ class Metrics(PyComponent):
                 modality=row["modality"]["abbreviation"],
                 status=row["status_history"][-1]["status"],
                 callback=self.callback,
+                settings=self.settings,
             )
 
             if reference not in reference_to_values:
