@@ -1,5 +1,6 @@
 """Login and submit panels"""
 
+import pandas as pd
 import panel as pn
 from panel.custom import PyComponent
 
@@ -16,9 +17,9 @@ class SubmitPanel(PyComponent):
         self.data = data
         self._init_panel_objects()
 
-    def _get_change_info(self, dirty: int):
+    def _get_change_info(self, dirty: pd.DataFrame):
         """Wrap the change count in a static text widget"""
-        self._change_info.value = f"Pending changes: {dirty}"
+        self._change_info.value = f"Pending changes: {len(dirty)}"
         return self._change_info
 
     def _redirect_to_login(self):
@@ -61,7 +62,7 @@ class SubmitPanel(PyComponent):
             on_click=self._submit_changes,
         )
         self._change_info = pn.widgets.StaticText(value="")
-        self.change_info = pn.bind(self._get_change_info, self.data.param.dirty)
+        self.change_info = pn.bind(self._get_change_info, self.data.param.changes)
 
     def __panel__(self):
         """Create and return the SubmitPanel layout"""

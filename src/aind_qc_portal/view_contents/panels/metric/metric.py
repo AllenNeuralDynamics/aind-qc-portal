@@ -70,13 +70,10 @@ class CustomMetricValue:
     def update_value(self, value):
         """Update to a new value and return what should be stored in the QCMetric.value field"""
         if isinstance(self._data, DropdownMetric):
-            print(f"Updating dropdown value to {value}")
             self._data.value = value
         elif isinstance(self._data, CheckboxMetric):
-            print(f"Updating checkbox value to {value}")
             self._data.value = value
         else:
-            print(f"Updating dictionary value to {value}")
             self._data.value = value
 
         return self._data
@@ -102,8 +99,11 @@ class CustomMetricValue:
         # Update the metric's value
         new_value = self.update_value(event.new)
 
+        # Convert to dict for storage
+        new_value_dict = new_value.model_dump() if hasattr(new_value, 'model_dump') else new_value
+
         # Update the metric value stored in the metric object
-        self._value_callback(new_value)
+        self._value_callback(new_value_dict)
 
         # # Update the status if it is supposed to be updated automatically
         if self._auto_state:

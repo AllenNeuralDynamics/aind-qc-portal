@@ -1,5 +1,6 @@
 """Metrics"""
 
+import json
 from typing import Any, Callable
 
 import pandas as pd
@@ -10,7 +11,7 @@ from panel.custom import PyComponent
 
 from aind_qc_portal.layout import MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE, AIND_COLORS
 from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
-from aind_qc_portal.view_contents.data import ViewData
+from aind_qc_portal.view_contents.data import ViewData, decode_dict_value
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.metric.metric import CustomMetricValue
 
@@ -52,6 +53,10 @@ class MetricValue(PyComponent):
 
         # Watch for changes in allow_value_edits
         self.settings.param.watch(self._on_allow_value_edits_change, "allow_value_edits")
+        
+        # Watch for changes to value and status to trigger callbacks
+        self.param.watch(self._on_value_change, "value")
+        self.param.watch(self._on_status_change, "status")
 
     def set_value(self, new_value):
         """Set the value of the metric and trigger the callback"""
@@ -59,15 +64,37 @@ class MetricValue(PyComponent):
 
     def set_status(self, new_status):
         """Set the status of the metric and trigger the callback"""
+        # Convert Status enum to string if needed
+        if hasattr(new_status, 'value'):
+            new_status = new_status.value
+        # Ensure it's a valid status value
+        if new_status and new_status not in ["Pass", "Fail", "Pending"]:
+            print(f"Warning: Invalid status value '{new_status}', ignoring")
+            return
         self.status = new_status
 
-    def _update_value(self):
-        """Update the value widget when the value changes"""
-        self.callback(metric_name=self.metric_name, column_name="value", value=self.value)
+    def _on_value_change(self, event):
+        """Called when value changes, triggers callback to submit change"""
+        # For CustomMetricValue, we need to compare properly
+        # Since CustomMetricValue wraps the actual value, we can't use simple equality
+        # Instead, check if both old and new are the same object type
+        if isinstance(event.old, CustomMetricValue) and isinstance(event.new, dict):
+            # This is the initial setup or a dict update - always process
+            should_process = True
+        elif isinstance(event.old, dict) and isinstance(event.new, dict):
+            # Compare dicts
+            should_process = event.new != event.old
+        else:
+            # For other types, use default comparison
+            should_process = event.new != event.old
+            
+        if should_process:
+            self.callback(metric_name=self.metric_name, column_name="value", value=event.new)
 
-    def _update_status(self):
-        """Update the status widget when the status changes"""
-        self.callback(metric_name=self.metric_name, column_name="status", value=self.status)
+    def _on_status_change(self, event):
+        """Called when status changes, triggers callback to submit change"""
+        if event.new != event.old:
+            self.callback(metric_name=self.metric_name, column_name="status", value=event.new)
 
     def _init_dict_objects(self):
         """Helper function for dictionary metric values"""
@@ -103,26 +130,32 @@ class MetricValue(PyComponent):
 
         self.auto_value = False
         self.auto_state = False
+        
+        # Decode JSON string if present
+        decoded_value = self.value
+        if isinstance(self.value, str) and self.value.startswith("json:"):
+            decoded_value = json.loads(self.value[5:])  # Remove 'json:' prefix and parse
+            self.value = decoded_value  # Update self.value with decoded dict
 
-        if isinstance(self.value, bool):
+        if isinstance(decoded_value, bool):
             self.value_widget = pn.widgets.Checkbox(name=self.metric_name, width=WIDGET_WIDTH)
-        elif not self.value or isinstance(self.value, str):
+        elif not decoded_value or isinstance(decoded_value, str):
             self.value_widget = pn.widgets.TextInput(name=self.metric_name, width=WIDGET_WIDTH)
-            if not isinstance(self.value, str):
-                self.value = str(self.value)
-        elif isinstance(self.value, float):
+            if not isinstance(decoded_value, str):
+                self.value = str(decoded_value)
+        elif isinstance(decoded_value, float):
             self.value_widget = pn.widgets.FloatInput(name=self.metric_name, width=WIDGET_WIDTH)
-        elif isinstance(self.value, int):
+        elif isinstance(decoded_value, int):
             self.value_widget = pn.widgets.IntInput(name=self.metric_name, width=WIDGET_WIDTH)
-        elif isinstance(self.value, list):
-            df = pd.DataFrame({"values": self.value})
+        elif isinstance(decoded_value, list):
+            df = pd.DataFrame({"values": decoded_value})
             self.value_widget = pn.pane.DataFrame(df, width=WIDGET_WIDTH)
             self.auto_value = True
-        elif isinstance(self.value, dict):
+        elif isinstance(decoded_value, dict):
             self._init_dict_objects()
         else:
             self.value_widget = pn.widgets.StaticText(
-                value=f"Can't deal with type {type(self.value)}", width=WIDGET_WIDTH
+                value=f"Can't deal with type {type(decoded_value)}", width=WIDGET_WIDTH
             )
 
         if not self.auto_value:
@@ -256,8 +289,7 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
     level_data = {}
 
     for row in metrics:
-        metric_tags = row.get("tags", {})
-        print(metric_tags)
+        metric_tags = decode_dict_value(row.get("tags", {}))
 
         for tag_key in tag_keys:
             tag_value = metric_tags.get(tag_key)
@@ -310,7 +342,8 @@ class Metrics(PyComponent):
     def __init__(self, data: ViewData, callback: Callable, settings):
         """Initialize Metrics with data and callback"""
         super().__init__()
-        self.callback = callback
+        self._submit_change_callback = callback  # Store the original callback
+        self.callback = self._handle_change  # Use wrapper for all metric callbacks
         self.data = data
         self.settings = settings
         self.metric_lookup = {}
@@ -323,6 +356,15 @@ class Metrics(PyComponent):
         pn.state.location.sync(self, {"active_path": "active_path"})
 
         self.settings.param.watch(self._on_grouping_change, "default_grouping")
+
+    def _handle_change(self, metric_name: str, column_name: str, value: str):
+        """Wrapper for change callback that updates tree icons after submitting changes"""
+        # Submit the change to the database
+        self._submit_change_callback(metric_name, column_name, value)
+        
+        # Update tree icons if this was a status change
+        if column_name == "status":
+            self._update_tree_icons()
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
@@ -413,6 +455,53 @@ class Metrics(PyComponent):
 
         self._restore_active_from_url()
 
+    def _update_tree_icons(self):
+        """Update tree icons based on current metric_status without rebuilding the entire tree"""
+        def update_node_recursive(nodes):
+            """Recursively update node icons and statuses"""
+            if not nodes:
+                return
+            
+            for node in nodes:
+                # Get metrics for this node
+                metric_rows = node.get("metric_rows", [])
+                
+                if metric_rows:
+                    # Recalculate aggregated status
+                    aggregated_status = aggregate_status(metric_rows, self.data.metric_status)
+                    
+                    # Update icon based on status
+                    if aggregated_status == "Fail":
+                        icon = "cancel"
+                    elif aggregated_status == "Pending":
+                        icon = "help"
+                    else:  # Pass
+                        icon = "check_circle"
+                    
+                    # Update node
+                    node["status"] = aggregated_status
+                    node["icon"] = icon
+                
+                # Recurse into children
+                if "items" in node:
+                    update_node_recursive(node["items"])
+        
+        # Update all nodes in the tree
+        if self.tree.items:
+            # Save current state
+            current_expanded = self.tree.expanded
+            current_active = self.tree.active
+            
+            current_items = self.tree.items
+            update_node_recursive(current_items)
+            # Force refresh by reassigning
+            self.tree.items = []
+            self.tree.items = current_items
+            
+            # Restore state
+            self.tree.expanded = current_expanded
+            self.tree.active = current_active
+
     def _on_tree_selection(self, event):
         """Handle tree selection changes"""
         self._update_active_path_from_tree()
@@ -437,8 +526,8 @@ class Metrics(PyComponent):
             value_panel = MetricValue(
                 name=row["name"],
                 description=row["description"],
-                value=row["value"],
-                tags=row["tags"],
+                value=decode_dict_value(row["value"]),
+                tags=decode_dict_value(row["tags"]),
                 stage=row["stage"],
                 modality=row["modality"]["abbreviation"],
                 status=row["status_history"][-1]["status"],

@@ -1,5 +1,6 @@
 """Database for the QC view application."""
 
+import json
 import pandas as pd
 import panel as pn
 import param
@@ -14,6 +15,20 @@ client = MetadataDbClient(
     host="api.allenneuraldynamics.org",
     version="v2",
 )
+
+
+def encode_dict_value(value):
+    """Encode a dict value as a JSON string with 'json:' prefix."""
+    if isinstance(value, dict):
+        return f"json:{json.dumps(value)}"
+    return value
+
+
+def decode_dict_value(value):
+    """Decode a 'json:' prefixed string back to a dict."""
+    if isinstance(value, str) and value.startswith("json:"):
+        return json.loads(value[5:])  # Remove 'json:' prefix and parse
+    return value
 
 
 def upload_temporary_metadata(metadata: dict):
@@ -37,7 +52,6 @@ class ViewData(param.Parameterized):
     changes = param.DataFrame(
         default=pd.DataFrame(columns=["metric_name", "column_name", "value"]),
     )
-    dirty = param.Integer(default=0, doc="Number of unsaved changes")
 
     def __init__(self, asset_name: str, client: MetadataDbClient = client):
         """Initialize ViewData with asset name and metadata client"""
@@ -69,15 +83,16 @@ class ViewData(param.Parameterized):
 
     def _add_change(self, metric_name: str, column_name: str, value: str):
         """Add a change to the changes DataFrame"""
-        self.changes = self.changes.append(
-            {
-                "metric_name": metric_name,
-                "column_name": column_name,
-                "value": value,
-            },
-            ignore_index=True,
+        new_row = pd.DataFrame(
+            [
+                {
+                    "metric_name": metric_name,
+                    "column_name": column_name,
+                    "value": value,
+                }
+            ]
         )
-        self._dirty += 1
+        self.changes = pd.concat([self.changes, new_row], ignore_index=True)
 
     def _remove_change(self, metric_name: str, column_name: str):
         """Remove a change from the changes DataFrame"""
@@ -85,10 +100,9 @@ class ViewData(param.Parameterized):
             self.changes = self.changes[
                 ~((self.changes["metric_name"] == metric_name) & (self.changes["column_name"] == column_name))
             ]
-            self._dirty -= 1
 
     def submit_change(self, metric_name: str, column_name: str, value: str):
-        """Submit a change to the database"""
+        """Submit a change to the database (stores in pending changes, does not modify original data)"""
 
         if self.dataframe.empty:
             raise ValueError("Dataframe is not loaded")
@@ -96,29 +110,52 @@ class ViewData(param.Parameterized):
         if metric_name not in self.dataframe["name"].values:
             raise ValueError(f"Metric {metric_name} not found in dataframe")
 
-        if column_name not in self.dataframe.columns:
-            raise ValueError(f"Column {column_name} not found in dataframe")
+        # Get the original value from the dataframe
+        if column_name == "status":
+            status_history = self.dataframe.loc[self.dataframe["name"] == metric_name, "status_history"].values[0]
+            original_value = status_history[-1].get("status", "Pending") if status_history else "Pending"
+        else:
+            if column_name not in self.dataframe.columns:
+                raise ValueError(f"Column {column_name} not found in dataframe")
+            original_value = self.dataframe.loc[self.dataframe["name"] == metric_name, column_name].values[0]
 
-        # Only update if the value is different from the original value
-        original_value = self.dataframe.loc[self.dataframe["name"] == metric_name, column_name].values[0]
-        if value != original_value:
-            # Check if the value is already in the changes DataFrame
+        # Convert Status enum to string if needed
+        if hasattr(value, 'value'):
+            value = value.value
+
+        # Encode the value for comparison (to match how it's stored in dataframe)
+        encoded_value = encode_dict_value(value)
+
+        # Check if this change reverts to the original value
+        if encoded_value == original_value:
+            # Remove the change if it exists
             if not self.changes.empty:
                 existing_change = self.changes[
                     (self.changes["metric_name"] == metric_name) & (self.changes["column_name"] == column_name)
                 ]
                 if not existing_change.empty:
-                    # Update the existing change
-                    self.changes.loc[existing_change.index[0], "value"] = value
-                else:
-                    self._add_change(metric_name, column_name, value)
-        else:
-            # If the value is the same, remove the change if it exists
-            if not self.changes.empty:
-                if not self.changes[
-                    (self.changes["metric_name"] == metric_name) & (self.changes["column_name"] == column_name)
-                ].empty:
                     self._remove_change(metric_name, column_name)
+                    
+            # Update metric_status to reflect reversion to original
+            if column_name == "status":
+                self.metric_status.loc[self.metric_status["name"] == metric_name, "evaluated_status"] = original_value
+            return
+
+        # Value differs from original - add or update the change
+        if not self.changes.empty:
+            existing_change = self.changes[
+                (self.changes["metric_name"] == metric_name) & (self.changes["column_name"] == column_name)
+            ]
+            if not existing_change.empty:
+                self.changes.loc[existing_change.index[0], "value"] = encoded_value
+            else:
+                self._add_change(metric_name, column_name, encoded_value)
+        else:
+            self._add_change(metric_name, column_name, encoded_value)
+        
+        # Update metric_status to reflect pending change
+        if column_name == "status":
+            self.metric_status.loc[self.metric_status["name"] == metric_name, "evaluated_status"] = value
 
     def upsert_quality_control(self):
         """Upsert the quality control data to the database including all pending changes."""
@@ -151,12 +188,16 @@ class ViewData(param.Parameterized):
             return None
 
         # Each row in the dataframe should be rebuilt as either a QCMetric or CurationMetric
-        # This can happen automatically if we turn everything back into dictionaries
         quality_control = self.record.get("quality_control", {})
 
         metrics = []
         for _, row in self.dataframe.iterrows():
             metric_dict = row.to_dict()
+            
+            # Decode any JSON-encoded values back to dicts
+            for key, value in metric_dict.items():
+                metric_dict[key] = decode_dict_value(value)
+            
             if "object_type" in metric_dict:
                 if metric_dict["object_type"] == "QC metric":
                     # Remove dataframe columns that are not part of the QCMetric model
@@ -232,6 +273,7 @@ class ViewData(param.Parameterized):
                 "other_identifiers": 1,
                 "data_description.project_name": 1,
                 "data_description.source_data": 1,
+                "data_description.modalities": 1,
             },
         )
 
@@ -250,39 +292,19 @@ class ViewData(param.Parameterized):
         if not quality_control or "metrics" not in quality_control:
             return
 
+        # Encode dict values as JSON strings for cleaner dataframe storage
         metrics_copy = []
         for metric in quality_control["metrics"]:
             metric_copy = metric.copy()
-
-            # Fix the bug: normalize DropdownMetric values that got converted to lists
-            if (
-                isinstance(metric_copy.get("value"), dict)
-                and metric_copy["value"].get("type") == "dropdown"
-                and isinstance(metric_copy["value"].get("value"), list)
-            ):
-
-                # Convert list back to proper format
-                value_list = metric_copy["value"]["value"]
-                if len(value_list) == 0:
-                    # Empty list should be None or empty string for dropdown
-                    metric_copy["value"]["value"] = None
-                elif len(value_list) == 1:
-                    # Single item list should be the string value
-                    metric_copy["value"]["value"] = value_list[0]
-                else:
-                    # Multiple items - this shouldn't happen for dropdown, but log it
-                    print(f"WARNING: DropdownMetric has multiple values: {value_list}")
-                    metric_copy["value"]["value"] = value_list[0]  # Take the first one
-
+            
+            # Encode any dict values (including nested dicts in 'value' field)
+            metric_copy['value'] = encode_dict_value(metric_copy['value'])
+            metric_copy['tags'] = encode_dict_value(metric_copy['tags'])
+            
             metrics_copy.append(metric_copy)
 
-        # Use json_normalize with max_level=0 to prevent flattening of nested objects
-        self.dataframe = pd.json_normalize(metrics_copy, max_level=0)
-
-        # self.dataframe = (
-        #     pd.DataFrame.from_records(quality_control["metrics"]) if
-        # quality_control and "metrics" in quality_control else None
-        # )
+        # Create dataframe from records - dicts are now stored as JSON strings
+        self.dataframe = pd.DataFrame.from_records(metrics_copy)
 
         # Compute the evaluated status for each metric
         self._compute_metric_statuses()

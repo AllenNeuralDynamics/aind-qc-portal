@@ -47,10 +47,13 @@ class Header(PyComponent):
         project_name = self.record.get("data_description", {}).get("project_name")
         project_link = f"/portal?projects=['{project_name}']"
 
+        modalities = [modality["abbreviation"] for modality in self.record.get("data_description", {}).get("modalities", [])]
+
         header_md = f"""
 ## {self.record["name"]}
+Modalities: **{', '.join(modalities)}**  
 Return to <a href="{project_link}" target="_blank">{project_name}</a> {co_link}
-"""
+"""  # noqa: W291
         self.header_text.object = header_md
 
         return self.header_text
