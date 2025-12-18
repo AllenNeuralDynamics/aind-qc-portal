@@ -12,7 +12,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Poor vasculature image quality",
@@ -41,14 +41,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.949998-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:32:55.851269+00:00"
         }
       ],
       "description": "Vasculature image to assess brain health and window clarity",
       "reference": "/results/vasculature/vasculature.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Window Clarity"
-      },
+      "tags": [
+        "Op. QC: Window Clarity"
+      ],
       "evaluated_assets": null
     },
     {
@@ -60,7 +65,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -77,15 +82,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:44.006333-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:08.058789+00:00"
         }
       ],
       "description": "VISp_0, with actual imaging-depth: 154 paired with averaged PNG at scanfield_z: 48.0",
       "reference": "/results/matched_tiff_vals/1480565699_merged.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Field-of-view Matching",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Op. QC: Field-of-view Matching"
+      ],
       "evaluated_assets": null
     },
     {
@@ -97,7 +106,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -114,15 +123,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:44.270267-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:12.136729+00:00"
         }
       ],
       "description": "VISp_1, with actual imaging-depth: 205 paired with averaged PNG at scanfield_z: 89.0",
       "reference": "/results/matched_tiff_vals/1480565701_merged.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Field-of-view Matching",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Op. QC: Field-of-view Matching"
+      ],
       "evaluated_assets": null
     },
     {
@@ -134,7 +147,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -151,15 +164,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:44.522587-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:22.689758+00:00"
         }
       ],
       "description": "VISp_2, with actual imaging-depth: 124 paired with averaged PNG at scanfield_z: 18.0",
       "reference": "/results/matched_tiff_vals/1480565702_merged.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Field-of-view Matching",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Op. QC: Field-of-view Matching"
+      ],
       "evaluated_assets": null
     },
     {
@@ -171,7 +188,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -188,15 +205,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:44.775714-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:26.248702+00:00"
         }
       ],
       "description": "VISp_3, with actual imaging-depth: 241 paired with averaged PNG at scanfield_z: 125.0",
       "reference": "/results/matched_tiff_vals/1480565704_merged.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Field-of-view Matching",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Op. QC: Field-of-view Matching"
+      ],
       "evaluated_assets": null
     },
     {
@@ -208,7 +229,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -225,15 +246,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.046092-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:30.249635+00:00"
         }
       ],
       "description": "VISp_4, with actual imaging-depth: 82 paired with averaged PNG at scanfield_z: 24.0",
       "reference": "/results/matched_tiff_vals/1480565705_merged.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Field-of-view Matching",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Op. QC: Field-of-view Matching"
+      ],
       "evaluated_assets": null
     },
     {
@@ -245,7 +270,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -262,15 +287,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.314640-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:45.653114+00:00"
         }
       ],
       "description": "VISp_5, with actual imaging-depth: 280 paired with averaged PNG at scanfield_z: 164.0",
       "reference": "/results/matched_tiff_vals/1480565707_merged.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Field-of-view Matching",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Op. QC: Field-of-view Matching"
+      ],
       "evaluated_assets": null
     },
     {
@@ -282,7 +311,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -299,15 +328,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.558538-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:51.159940+00:00"
         }
       ],
       "description": "VISp_6, with actual imaging-depth: 45 paired with averaged PNG at scanfield_z: 61.0",
       "reference": "/results/matched_tiff_vals/1480565708_merged.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Field-of-view Matching",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Op. QC: Field-of-view Matching"
+      ],
       "evaluated_assets": null
     },
     {
@@ -319,7 +352,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -336,15 +369,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.833571-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:00.256598+00:00"
         }
       ],
       "description": "VISp_7, with actual imaging-depth: 320 paired with averaged PNG at scanfield_z: 204.0",
       "reference": "/results/matched_tiff_vals/1480565710_merged.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Field-of-view Matching",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Op. QC: Field-of-view Matching"
+      ],
       "evaluated_assets": null
     },
     {
@@ -379,15 +416,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:25:24.271813+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:54.241842+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
       "reference": "VISp_0/motion_correction/VISp_0_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -399,7 +440,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -420,15 +461,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:25:24.096975+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:54.276656+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
       "reference": "VISp_0/motion_correction/VISp_0_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -463,15 +508,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:23:23.485149+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:54.341973+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
       "reference": "VISp_1/motion_correction/VISp_1_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -483,7 +532,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -504,15 +553,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:23:23.313986+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:54.497644+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
       "reference": "VISp_1/motion_correction/VISp_1_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -547,15 +600,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:00.330309+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:58.348619+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
       "reference": "VISp_2/motion_correction/VISp_2_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -567,7 +624,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -588,15 +645,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:00.164416+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:59.898557+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
       "reference": "VISp_2/motion_correction/VISp_2_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -631,15 +692,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:29:22.456552+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:05.410996+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
       "reference": "VISp_3/motion_correction/VISp_3_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -651,7 +716,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -672,15 +737,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:29:22.286261+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:06.812173+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
       "reference": "VISp_3/motion_correction/VISp_3_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -715,15 +784,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:04.127765+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:20.161597+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
       "reference": "VISp_4/motion_correction/VISp_4_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -735,7 +808,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -756,15 +829,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:03.958170+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:22.082740+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
       "reference": "VISp_4/motion_correction/VISp_4_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -799,15 +876,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:43.122357+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:25.294374+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
       "reference": "VISp_5/motion_correction/VISp_5_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -819,7 +900,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -840,15 +921,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:42.947902+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:26.770610+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
       "reference": "VISp_5/motion_correction/VISp_5_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -883,15 +968,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:28:02.121765+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:29.965837+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
       "reference": "VISp_6/motion_correction/VISp_6_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -903,7 +992,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -924,15 +1013,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:28:01.949199+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:31.349756+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
       "reference": "VISp_6/motion_correction/VISp_6_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -967,15 +1060,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 15:08:11.123901+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:34.544292+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
       "reference": "VISp_7/motion_correction/VISp_7_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -987,7 +1084,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -1008,15 +1105,19 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 15:08:10.892619+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:35.902125+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
       "reference": "VISp_7/motion_correction/VISp_7_registration_summary.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Motion Correction",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Op. QC: Motion Correction"
+      ],
       "evaluated_assets": null
     },
     {
@@ -1703,11 +1804,9 @@
       ],
       "description": "",
       "reference": "VISp_0/extraction/VISp_0_detected_ROIs_withIDs.png",
-      "tags": {
-        "operational": "false",
-        "type": "Extracted ROIs",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Extracted ROIs"
+      ],
       "evaluated_assets": null
     },
     {
@@ -2334,11 +2433,9 @@
       ],
       "description": "",
       "reference": "VISp_1/extraction/VISp_1_detected_ROIs_withIDs.png",
-      "tags": {
-        "operational": "false",
-        "type": "Extracted ROIs",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Extracted ROIs"
+      ],
       "evaluated_assets": null
     },
     {
@@ -3053,11 +3150,9 @@
       ],
       "description": "",
       "reference": "VISp_2/extraction/VISp_2_detected_ROIs_withIDs.png",
-      "tags": {
-        "operational": "false",
-        "type": "Extracted ROIs",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Extracted ROIs"
+      ],
       "evaluated_assets": null
     },
     {
@@ -3628,11 +3723,9 @@
       ],
       "description": "",
       "reference": "VISp_3/extraction/VISp_3_detected_ROIs_withIDs.png",
-      "tags": {
-        "operational": "false",
-        "type": "Extracted ROIs",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Extracted ROIs"
+      ],
       "evaluated_assets": null
     },
     {
@@ -3981,11 +4074,9 @@
       ],
       "description": "",
       "reference": "VISp_4/extraction/VISp_4_detected_ROIs_withIDs.png",
-      "tags": {
-        "operational": "false",
-        "type": "Extracted ROIs",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Extracted ROIs"
+      ],
       "evaluated_assets": null
     },
     {
@@ -4466,11 +4557,9 @@
       ],
       "description": "",
       "reference": "VISp_5/extraction/VISp_5_detected_ROIs_withIDs.png",
-      "tags": {
-        "operational": "false",
-        "type": "Extracted ROIs",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Extracted ROIs"
+      ],
       "evaluated_assets": null
     },
     {
@@ -4603,11 +4692,9 @@
       ],
       "description": "",
       "reference": "VISp_6/extraction/VISp_6_detected_ROIs_withIDs.png",
-      "tags": {
-        "operational": "false",
-        "type": "Extracted ROIs",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Extracted ROIs"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5004,11 +5091,9 @@
       ],
       "description": "",
       "reference": "VISp_7/extraction/VISp_7_detected_ROIs_withIDs.png",
-      "tags": {
-        "operational": "false",
-        "type": "Extracted ROIs",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Extracted ROIs"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5020,7 +5105,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Timeseries shuffled between planes",
@@ -5039,14 +5124,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 11:34:45.034421-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:42.644075+00:00"
         }
       ],
       "description": "Comparison of planes ['VISp_0', 'VISp_1'] to examine residual cross-talk.",
       "reference": "/results/VISp_0/decrosstalk/VISp_0_coupled_fov_max.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Crosstalk"
-      },
+      "tags": [
+        "Op. QC: Crosstalk"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5058,7 +5148,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Timeseries shuffled between planes",
@@ -5077,14 +5167,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 11:34:45.494983-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:47.618050+00:00"
         }
       ],
       "description": "Comparison of planes ['VISp_2', 'VISp_3'] to examine residual cross-talk.",
       "reference": "/results/VISp_2/decrosstalk/VISp_2_coupled_fov_max.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Crosstalk"
-      },
+      "tags": [
+        "Op. QC: Crosstalk"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5096,7 +5191,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Timeseries shuffled between planes",
@@ -5115,14 +5210,19 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 11:34:45.954566-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:52.650443+00:00"
         }
       ],
       "description": "Comparison of planes ['VISp_4', 'VISp_5'] to examine residual cross-talk.",
       "reference": "/results/VISp_4/decrosstalk/VISp_4_coupled_fov_max.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Crosstalk"
-      },
+      "tags": [
+        "Op. QC: Crosstalk"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5134,7 +5234,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Timeseries shuffled between planes",
@@ -5153,14 +5253,25 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 11:34:46.471819-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Fail",
+          "timestamp": "2025-12-15 20:35:56.799058+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:36:01.329452+00:00"
         }
       ],
       "description": "Comparison of planes ['VISp_6', 'VISp_7'] to examine residual cross-talk.",
       "reference": "/results/VISp_6/decrosstalk/VISp_6_coupled_fov_max.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Crosstalk"
-      },
+      "tags": [
+        "Op. QC: Crosstalk"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5193,11 +5304,9 @@
       ],
       "description": "Classification of ROIs as soma or dendrite",
       "reference": "VISp_0/classification/VISp_0_combined_classifications.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5230,11 +5339,9 @@
       ],
       "description": "ROIs that are on the border of the FOV",
       "reference": "VISp_0/classification/VISp_0_border_rois.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5267,11 +5374,9 @@
       ],
       "description": "Classification of ROIs as soma or dendrite",
       "reference": "VISp_1/classification/VISp_1_combined_classifications.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5304,11 +5409,9 @@
       ],
       "description": "ROIs that are on the border of the FOV",
       "reference": "VISp_1/classification/VISp_1_border_rois.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5341,11 +5444,9 @@
       ],
       "description": "Classification of ROIs as soma or dendrite",
       "reference": "VISp_2/classification/VISp_2_combined_classifications.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5378,11 +5479,9 @@
       ],
       "description": "ROIs that are on the border of the FOV",
       "reference": "VISp_2/classification/VISp_2_border_rois.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5415,11 +5514,9 @@
       ],
       "description": "Classification of ROIs as soma or dendrite",
       "reference": "VISp_3/classification/VISp_3_combined_classifications.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5452,11 +5549,9 @@
       ],
       "description": "ROIs that are on the border of the FOV",
       "reference": "VISp_3/classification/VISp_3_border_rois.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5489,11 +5584,9 @@
       ],
       "description": "Classification of ROIs as soma or dendrite",
       "reference": "VISp_4/classification/VISp_4_combined_classifications.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5526,11 +5619,9 @@
       ],
       "description": "ROIs that are on the border of the FOV",
       "reference": "VISp_4/classification/VISp_4_border_rois.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5563,11 +5654,9 @@
       ],
       "description": "Classification of ROIs as soma or dendrite",
       "reference": "VISp_5/classification/VISp_5_combined_classifications.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5600,11 +5689,9 @@
       ],
       "description": "ROIs that are on the border of the FOV",
       "reference": "VISp_5/classification/VISp_5_border_rois.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5637,11 +5724,9 @@
       ],
       "description": "Classification of ROIs as soma or dendrite",
       "reference": "VISp_6/classification/VISp_6_combined_classifications.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5674,11 +5759,9 @@
       ],
       "description": "ROIs that are on the border of the FOV",
       "reference": "VISp_6/classification/VISp_6_border_rois.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5711,11 +5794,9 @@
       ],
       "description": "Classification of ROIs as soma or dendrite",
       "reference": "VISp_7/classification/VISp_7_combined_classifications.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5748,11 +5829,9 @@
       ],
       "description": "ROIs that are on the border of the FOV",
       "reference": "VISp_7/classification/VISp_7_border_rois.png",
-      "tags": {
-        "operational": "false",
-        "type": "Classification",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Classification"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5774,11 +5853,9 @@
       ],
       "description": "This metric estimates the probability of epileptiform activity in the movie using deconvolution and event detection. The signal is denoised and events are detected; events with prominence > 10 and width between 0.1 and 0.3 seconds are considered epileptic. The metric is the fraction of such events among all detected events.Status is automatically assigned: PASS if probability is 0, FAIL otherwise. If FAIL, inspect the event plot for clusters of large, brief events.",
       "reference": "VISp_0/movie_qc/VISp_0_registered_epilepsy_probability.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC Epilepsy",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Op. QC Epilepsy"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5800,11 +5877,9 @@
       ],
       "description": "This metric estimates the probability of epileptiform activity in the movie using deconvolution and event detection. The signal is denoised and events are detected; events with prominence > 10 and width between 0.1 and 0.3 seconds are considered epileptic. The metric is the fraction of such events among all detected events.Status is automatically assigned: PASS if probability is 0, FAIL otherwise. If FAIL, inspect the event plot for clusters of large, brief events.",
       "reference": "VISp_1/movie_qc/VISp_1_registered_epilepsy_probability.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC Epilepsy",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Op. QC Epilepsy"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5826,11 +5901,9 @@
       ],
       "description": "This metric estimates the probability of epileptiform activity in the movie using deconvolution and event detection. The signal is denoised and events are detected; events with prominence > 10 and width between 0.1 and 0.3 seconds are considered epileptic. The metric is the fraction of such events among all detected events.Status is automatically assigned: PASS if probability is 0, FAIL otherwise. If FAIL, inspect the event plot for clusters of large, brief events.",
       "reference": "VISp_2/movie_qc/VISp_2_registered_epilepsy_probability.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC Epilepsy",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Op. QC Epilepsy"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5852,11 +5925,9 @@
       ],
       "description": "This metric estimates the probability of epileptiform activity in the movie using deconvolution and event detection. The signal is denoised and events are detected; events with prominence > 10 and width between 0.1 and 0.3 seconds are considered epileptic. The metric is the fraction of such events among all detected events.Status is automatically assigned: PASS if probability is 0, FAIL otherwise. If FAIL, inspect the event plot for clusters of large, brief events.",
       "reference": "VISp_3/movie_qc/VISp_3_registered_epilepsy_probability.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC Epilepsy",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Op. QC Epilepsy"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5878,11 +5949,9 @@
       ],
       "description": "This metric estimates the probability of epileptiform activity in the movie using deconvolution and event detection. The signal is denoised and events are detected; events with prominence > 10 and width between 0.1 and 0.3 seconds are considered epileptic. The metric is the fraction of such events among all detected events.Status is automatically assigned: PASS if probability is 0, FAIL otherwise. If FAIL, inspect the event plot for clusters of large, brief events.",
       "reference": "VISp_4/movie_qc/VISp_4_registered_epilepsy_probability.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC Epilepsy",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Op. QC Epilepsy"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5904,11 +5973,9 @@
       ],
       "description": "This metric estimates the probability of epileptiform activity in the movie using deconvolution and event detection. The signal is denoised and events are detected; events with prominence > 10 and width between 0.1 and 0.3 seconds are considered epileptic. The metric is the fraction of such events among all detected events.Status is automatically assigned: PASS if probability is 0, FAIL otherwise. If FAIL, inspect the event plot for clusters of large, brief events.",
       "reference": "VISp_5/movie_qc/VISp_5_registered_epilepsy_probability.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC Epilepsy",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Op. QC Epilepsy"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5930,11 +5997,9 @@
       ],
       "description": "This metric estimates the probability of epileptiform activity in the movie using deconvolution and event detection. The signal is denoised and events are detected; events with prominence > 10 and width between 0.1 and 0.3 seconds are considered epileptic. The metric is the fraction of such events among all detected events.Status is automatically assigned: PASS if probability is 0, FAIL otherwise. If FAIL, inspect the event plot for clusters of large, brief events.",
       "reference": "VISp_6/movie_qc/VISp_6_registered_epilepsy_probability.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC Epilepsy",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Op. QC Epilepsy"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5956,11 +6021,9 @@
       ],
       "description": "This metric estimates the probability of epileptiform activity in the movie using deconvolution and event detection. The signal is denoised and events are detected; events with prominence > 10 and width between 0.1 and 0.3 seconds are considered epileptic. The metric is the fraction of such events among all detected events.Status is automatically assigned: PASS if probability is 0, FAIL otherwise. If FAIL, inspect the event plot for clusters of large, brief events.",
       "reference": "VISp_7/movie_qc/VISp_7_registered_epilepsy_probability.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC Epilepsy",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Op. QC Epilepsy"
+      ],
       "evaluated_assets": null
     },
     {
@@ -5982,11 +6045,9 @@
       ],
       "description": "This metric quantifies the percent change in mean pixel intensity from the start to the end of the movie. It is calculated as 100 * (end_mean - start_mean) / start_mean, where start_mean and end_mean are the average pixel values in the first and last 200 frames (ignoring the first and last 300 frames). A large negative value indicates photobleaching or instability.Status is automatically assigned: PASS if |change| < 10%, PENDING if 10% <= |change| < 20%, FAIL if |change| >= 20%. If the status is not PASS, review the intensity progression plot for abrupt drops or trends.",
       "reference": "VISp_0/movie_qc/VISp_0_registered_physio_intensity_plot.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Intensity Drift",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Op. QC: Intensity Drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6008,11 +6069,9 @@
       ],
       "description": "This metric quantifies the percent change in mean pixel intensity from the start to the end of the movie. It is calculated as 100 * (end_mean - start_mean) / start_mean, where start_mean and end_mean are the average pixel values in the first and last 200 frames (ignoring the first and last 300 frames). A large negative value indicates photobleaching or instability.Status is automatically assigned: PASS if |change| < 10%, PENDING if 10% <= |change| < 20%, FAIL if |change| >= 20%. If the status is not PASS, review the intensity progression plot for abrupt drops or trends.",
       "reference": "VISp_1/movie_qc/VISp_1_registered_physio_intensity_plot.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Intensity Drift",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Op. QC: Intensity Drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6034,11 +6093,9 @@
       ],
       "description": "This metric quantifies the percent change in mean pixel intensity from the start to the end of the movie. It is calculated as 100 * (end_mean - start_mean) / start_mean, where start_mean and end_mean are the average pixel values in the first and last 200 frames (ignoring the first and last 300 frames). A large negative value indicates photobleaching or instability.Status is automatically assigned: PASS if |change| < 10%, PENDING if 10% <= |change| < 20%, FAIL if |change| >= 20%. If the status is not PASS, review the intensity progression plot for abrupt drops or trends.",
       "reference": "VISp_2/movie_qc/VISp_2_registered_physio_intensity_plot.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Intensity Drift",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Op. QC: Intensity Drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6060,11 +6117,9 @@
       ],
       "description": "This metric quantifies the percent change in mean pixel intensity from the start to the end of the movie. It is calculated as 100 * (end_mean - start_mean) / start_mean, where start_mean and end_mean are the average pixel values in the first and last 200 frames (ignoring the first and last 300 frames). A large negative value indicates photobleaching or instability.Status is automatically assigned: PASS if |change| < 10%, PENDING if 10% <= |change| < 20%, FAIL if |change| >= 20%. If the status is not PASS, review the intensity progression plot for abrupt drops or trends.",
       "reference": "VISp_3/movie_qc/VISp_3_registered_physio_intensity_plot.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Intensity Drift",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Op. QC: Intensity Drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6086,11 +6141,9 @@
       ],
       "description": "This metric quantifies the percent change in mean pixel intensity from the start to the end of the movie. It is calculated as 100 * (end_mean - start_mean) / start_mean, where start_mean and end_mean are the average pixel values in the first and last 200 frames (ignoring the first and last 300 frames). A large negative value indicates photobleaching or instability.Status is automatically assigned: PASS if |change| < 10%, PENDING if 10% <= |change| < 20%, FAIL if |change| >= 20%. If the status is not PASS, review the intensity progression plot for abrupt drops or trends.",
       "reference": "VISp_4/movie_qc/VISp_4_registered_physio_intensity_plot.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Intensity Drift",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Op. QC: Intensity Drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6112,11 +6165,9 @@
       ],
       "description": "This metric quantifies the percent change in mean pixel intensity from the start to the end of the movie. It is calculated as 100 * (end_mean - start_mean) / start_mean, where start_mean and end_mean are the average pixel values in the first and last 200 frames (ignoring the first and last 300 frames). A large negative value indicates photobleaching or instability.Status is automatically assigned: PASS if |change| < 10%, PENDING if 10% <= |change| < 20%, FAIL if |change| >= 20%. If the status is not PASS, review the intensity progression plot for abrupt drops or trends.",
       "reference": "VISp_5/movie_qc/VISp_5_registered_physio_intensity_plot.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Intensity Drift",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Op. QC: Intensity Drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6138,11 +6189,9 @@
       ],
       "description": "This metric quantifies the percent change in mean pixel intensity from the start to the end of the movie. It is calculated as 100 * (end_mean - start_mean) / start_mean, where start_mean and end_mean are the average pixel values in the first and last 200 frames (ignoring the first and last 300 frames). A large negative value indicates photobleaching or instability.Status is automatically assigned: PASS if |change| < 10%, PENDING if 10% <= |change| < 20%, FAIL if |change| >= 20%. If the status is not PASS, review the intensity progression plot for abrupt drops or trends.",
       "reference": "VISp_6/movie_qc/VISp_6_registered_physio_intensity_plot.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Intensity Drift",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Op. QC: Intensity Drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6164,11 +6213,9 @@
       ],
       "description": "This metric quantifies the percent change in mean pixel intensity from the start to the end of the movie. It is calculated as 100 * (end_mean - start_mean) / start_mean, where start_mean and end_mean are the average pixel values in the first and last 200 frames (ignoring the first and last 300 frames). A large negative value indicates photobleaching or instability.Status is automatically assigned: PASS if |change| < 10%, PENDING if 10% <= |change| < 20%, FAIL if |change| >= 20%. If the status is not PASS, review the intensity progression plot for abrupt drops or trends.",
       "reference": "VISp_7/movie_qc/VISp_7_registered_physio_intensity_plot.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Intensity Drift",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Op. QC: Intensity Drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6201,11 +6248,9 @@
       ],
       "description": "This metric summarizes photon detection.ROI segmentation is performed using Otsu thresholding on a high-pass filtered median image from the start of the movie. Mean ROI intensity, segmentation threshold, and median neuropil sum are reported.Photon gain and offset are estimated by fitting the variance vs. mean relationship for non-saturated pixels. Photon flux and background noise are derived from these parameters. Photon statistics are reported as mean/median values per ROI and neuropil, per frame and per second.Status is always PASS (no automatic threshold). Review for outliers or unexpected values.",
       "reference": "/results/VISp_0/movie_qc/VISp_0_roi_and_photon_metrics.png",
-      "tags": {
-        "operational": "false",
-        "type": "Photon detection statistics",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Photon detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6238,11 +6283,9 @@
       ],
       "description": "This metric summarizes photon detection.ROI segmentation is performed using Otsu thresholding on a high-pass filtered median image from the start of the movie. Mean ROI intensity, segmentation threshold, and median neuropil sum are reported.Photon gain and offset are estimated by fitting the variance vs. mean relationship for non-saturated pixels. Photon flux and background noise are derived from these parameters. Photon statistics are reported as mean/median values per ROI and neuropil, per frame and per second.Status is always PASS (no automatic threshold). Review for outliers or unexpected values.",
       "reference": "/results/VISp_1/movie_qc/VISp_1_roi_and_photon_metrics.png",
-      "tags": {
-        "operational": "false",
-        "type": "Photon detection statistics",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Photon detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6275,11 +6318,9 @@
       ],
       "description": "This metric summarizes photon detection.ROI segmentation is performed using Otsu thresholding on a high-pass filtered median image from the start of the movie. Mean ROI intensity, segmentation threshold, and median neuropil sum are reported.Photon gain and offset are estimated by fitting the variance vs. mean relationship for non-saturated pixels. Photon flux and background noise are derived from these parameters. Photon statistics are reported as mean/median values per ROI and neuropil, per frame and per second.Status is always PASS (no automatic threshold). Review for outliers or unexpected values.",
       "reference": "/results/VISp_2/movie_qc/VISp_2_roi_and_photon_metrics.png",
-      "tags": {
-        "operational": "false",
-        "type": "Photon detection statistics",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Photon detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6312,11 +6353,9 @@
       ],
       "description": "This metric summarizes photon detection.ROI segmentation is performed using Otsu thresholding on a high-pass filtered median image from the start of the movie. Mean ROI intensity, segmentation threshold, and median neuropil sum are reported.Photon gain and offset are estimated by fitting the variance vs. mean relationship for non-saturated pixels. Photon flux and background noise are derived from these parameters. Photon statistics are reported as mean/median values per ROI and neuropil, per frame and per second.Status is always PASS (no automatic threshold). Review for outliers or unexpected values.",
       "reference": "/results/VISp_3/movie_qc/VISp_3_roi_and_photon_metrics.png",
-      "tags": {
-        "operational": "false",
-        "type": "Photon detection statistics",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Photon detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6349,11 +6388,9 @@
       ],
       "description": "This metric summarizes photon detection.ROI segmentation is performed using Otsu thresholding on a high-pass filtered median image from the start of the movie. Mean ROI intensity, segmentation threshold, and median neuropil sum are reported.Photon gain and offset are estimated by fitting the variance vs. mean relationship for non-saturated pixels. Photon flux and background noise are derived from these parameters. Photon statistics are reported as mean/median values per ROI and neuropil, per frame and per second.Status is always PASS (no automatic threshold). Review for outliers or unexpected values.",
       "reference": "/results/VISp_4/movie_qc/VISp_4_roi_and_photon_metrics.png",
-      "tags": {
-        "operational": "false",
-        "type": "Photon detection statistics",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Photon detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6386,11 +6423,9 @@
       ],
       "description": "This metric summarizes photon detection.ROI segmentation is performed using Otsu thresholding on a high-pass filtered median image from the start of the movie. Mean ROI intensity, segmentation threshold, and median neuropil sum are reported.Photon gain and offset are estimated by fitting the variance vs. mean relationship for non-saturated pixels. Photon flux and background noise are derived from these parameters. Photon statistics are reported as mean/median values per ROI and neuropil, per frame and per second.Status is always PASS (no automatic threshold). Review for outliers or unexpected values.",
       "reference": "/results/VISp_5/movie_qc/VISp_5_roi_and_photon_metrics.png",
-      "tags": {
-        "operational": "false",
-        "type": "Photon detection statistics",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Photon detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6423,11 +6458,9 @@
       ],
       "description": "This metric summarizes photon detection.ROI segmentation is performed using Otsu thresholding on a high-pass filtered median image from the start of the movie. Mean ROI intensity, segmentation threshold, and median neuropil sum are reported.Photon gain and offset are estimated by fitting the variance vs. mean relationship for non-saturated pixels. Photon flux and background noise are derived from these parameters. Photon statistics are reported as mean/median values per ROI and neuropil, per frame and per second.Status is always PASS (no automatic threshold). Review for outliers or unexpected values.",
       "reference": "/results/VISp_6/movie_qc/VISp_6_roi_and_photon_metrics.png",
-      "tags": {
-        "operational": "false",
-        "type": "Photon detection statistics",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Photon detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6460,11 +6493,9 @@
       ],
       "description": "This metric summarizes photon detection.ROI segmentation is performed using Otsu thresholding on a high-pass filtered median image from the start of the movie. Mean ROI intensity, segmentation threshold, and median neuropil sum are reported.Photon gain and offset are estimated by fitting the variance vs. mean relationship for non-saturated pixels. Photon flux and background noise are derived from these parameters. Photon statistics are reported as mean/median values per ROI and neuropil, per frame and per second.Status is always PASS (no automatic threshold). Review for outliers or unexpected values.",
       "reference": "/results/VISp_7/movie_qc/VISp_7_roi_and_photon_metrics.png",
-      "tags": {
-        "operational": "false",
-        "type": "Photon detection statistics",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Photon detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6492,11 +6523,9 @@
       ],
       "description": "This metric summarizes the distribution of pixel values in the movie, including the number of saturated pixels (at or above max range), low intensity pixels (at or below min range), and the 5th/95th percentiles. Saturated and low pixels are counted in the first 500 frames.Status is automatically assigned: PASS if saturated pixels < 800, PENDING if 800 <= saturated < 1000, FAIL if >= 1000. If not PASS, review the intensity histogram for evidence of clipping or poor dynamic range.",
       "reference": "VISp_0/movie_qc/VISp_0_registered_physio_intensity_hist.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Pixel Saturation",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Op. QC: Pixel Saturation"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6524,11 +6553,9 @@
       ],
       "description": "This metric summarizes the distribution of pixel values in the movie, including the number of saturated pixels (at or above max range), low intensity pixels (at or below min range), and the 5th/95th percentiles. Saturated and low pixels are counted in the first 500 frames.Status is automatically assigned: PASS if saturated pixels < 800, PENDING if 800 <= saturated < 1000, FAIL if >= 1000. If not PASS, review the intensity histogram for evidence of clipping or poor dynamic range.",
       "reference": "VISp_1/movie_qc/VISp_1_registered_physio_intensity_hist.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Pixel Saturation",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Op. QC: Pixel Saturation"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6556,11 +6583,9 @@
       ],
       "description": "This metric summarizes the distribution of pixel values in the movie, including the number of saturated pixels (at or above max range), low intensity pixels (at or below min range), and the 5th/95th percentiles. Saturated and low pixels are counted in the first 500 frames.Status is automatically assigned: PASS if saturated pixels < 800, PENDING if 800 <= saturated < 1000, FAIL if >= 1000. If not PASS, review the intensity histogram for evidence of clipping or poor dynamic range.",
       "reference": "VISp_2/movie_qc/VISp_2_registered_physio_intensity_hist.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Pixel Saturation",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Op. QC: Pixel Saturation"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6588,11 +6613,9 @@
       ],
       "description": "This metric summarizes the distribution of pixel values in the movie, including the number of saturated pixels (at or above max range), low intensity pixels (at or below min range), and the 5th/95th percentiles. Saturated and low pixels are counted in the first 500 frames.Status is automatically assigned: PASS if saturated pixels < 800, PENDING if 800 <= saturated < 1000, FAIL if >= 1000. If not PASS, review the intensity histogram for evidence of clipping or poor dynamic range.",
       "reference": "VISp_3/movie_qc/VISp_3_registered_physio_intensity_hist.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Pixel Saturation",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Op. QC: Pixel Saturation"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6620,11 +6643,9 @@
       ],
       "description": "This metric summarizes the distribution of pixel values in the movie, including the number of saturated pixels (at or above max range), low intensity pixels (at or below min range), and the 5th/95th percentiles. Saturated and low pixels are counted in the first 500 frames.Status is automatically assigned: PASS if saturated pixels < 800, PENDING if 800 <= saturated < 1000, FAIL if >= 1000. If not PASS, review the intensity histogram for evidence of clipping or poor dynamic range.",
       "reference": "VISp_4/movie_qc/VISp_4_registered_physio_intensity_hist.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Pixel Saturation",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Op. QC: Pixel Saturation"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6652,11 +6673,9 @@
       ],
       "description": "This metric summarizes the distribution of pixel values in the movie, including the number of saturated pixels (at or above max range), low intensity pixels (at or below min range), and the 5th/95th percentiles. Saturated and low pixels are counted in the first 500 frames.Status is automatically assigned: PASS if saturated pixels < 800, PENDING if 800 <= saturated < 1000, FAIL if >= 1000. If not PASS, review the intensity histogram for evidence of clipping or poor dynamic range.",
       "reference": "VISp_5/movie_qc/VISp_5_registered_physio_intensity_hist.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Pixel Saturation",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Op. QC: Pixel Saturation"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6684,11 +6703,9 @@
       ],
       "description": "This metric summarizes the distribution of pixel values in the movie, including the number of saturated pixels (at or above max range), low intensity pixels (at or below min range), and the 5th/95th percentiles. Saturated and low pixels are counted in the first 500 frames.Status is automatically assigned: PASS if saturated pixels < 800, PENDING if 800 <= saturated < 1000, FAIL if >= 1000. If not PASS, review the intensity histogram for evidence of clipping or poor dynamic range.",
       "reference": "VISp_6/movie_qc/VISp_6_registered_physio_intensity_hist.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Pixel Saturation",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Op. QC: Pixel Saturation"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6716,11 +6733,9 @@
       ],
       "description": "This metric summarizes the distribution of pixel values in the movie, including the number of saturated pixels (at or above max range), low intensity pixels (at or below min range), and the 5th/95th percentiles. Saturated and low pixels are counted in the first 500 frames.Status is automatically assigned: PASS if saturated pixels < 800, PENDING if 800 <= saturated < 1000, FAIL if >= 1000. If not PASS, review the intensity histogram for evidence of clipping or poor dynamic range.",
       "reference": "VISp_7/movie_qc/VISp_7_registered_physio_intensity_hist.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Pixel Saturation",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Op. QC: Pixel Saturation"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6748,11 +6763,9 @@
       ],
       "description": "This metric combines signal-to-noise ratio (SNR) and event detection (d-prime) statistics.SNR is calculated as the mean pixel value divided by the standard deviation for each frame, summarized as mean, median, and standard deviation across the movie. Higher SNR indicates better image quality.D-prime is calculated for each ROI using photon flux and neuropil estimates, following Wilt et al. (2013), and summarized as the median and standard deviation. Higher d-prime values indicate better event detectability.Status is always PASS (no automatic threshold). Review low SNR or d-prime values for possible issues with signal quality or event detection.",
       "reference": null,
-      "tags": {
-        "operational": "false",
-        "type": "Event detection statistics",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Event detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6780,11 +6793,9 @@
       ],
       "description": "This metric combines signal-to-noise ratio (SNR) and event detection (d-prime) statistics.SNR is calculated as the mean pixel value divided by the standard deviation for each frame, summarized as mean, median, and standard deviation across the movie. Higher SNR indicates better image quality.D-prime is calculated for each ROI using photon flux and neuropil estimates, following Wilt et al. (2013), and summarized as the median and standard deviation. Higher d-prime values indicate better event detectability.Status is always PASS (no automatic threshold). Review low SNR or d-prime values for possible issues with signal quality or event detection.",
       "reference": null,
-      "tags": {
-        "operational": "false",
-        "type": "Event detection statistics",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Event detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6812,11 +6823,9 @@
       ],
       "description": "This metric combines signal-to-noise ratio (SNR) and event detection (d-prime) statistics.SNR is calculated as the mean pixel value divided by the standard deviation for each frame, summarized as mean, median, and standard deviation across the movie. Higher SNR indicates better image quality.D-prime is calculated for each ROI using photon flux and neuropil estimates, following Wilt et al. (2013), and summarized as the median and standard deviation. Higher d-prime values indicate better event detectability.Status is always PASS (no automatic threshold). Review low SNR or d-prime values for possible issues with signal quality or event detection.",
       "reference": null,
-      "tags": {
-        "operational": "false",
-        "type": "Event detection statistics",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Event detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6844,11 +6853,9 @@
       ],
       "description": "This metric combines signal-to-noise ratio (SNR) and event detection (d-prime) statistics.SNR is calculated as the mean pixel value divided by the standard deviation for each frame, summarized as mean, median, and standard deviation across the movie. Higher SNR indicates better image quality.D-prime is calculated for each ROI using photon flux and neuropil estimates, following Wilt et al. (2013), and summarized as the median and standard deviation. Higher d-prime values indicate better event detectability.Status is always PASS (no automatic threshold). Review low SNR or d-prime values for possible issues with signal quality or event detection.",
       "reference": null,
-      "tags": {
-        "operational": "false",
-        "type": "Event detection statistics",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Event detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6876,11 +6883,9 @@
       ],
       "description": "This metric combines signal-to-noise ratio (SNR) and event detection (d-prime) statistics.SNR is calculated as the mean pixel value divided by the standard deviation for each frame, summarized as mean, median, and standard deviation across the movie. Higher SNR indicates better image quality.D-prime is calculated for each ROI using photon flux and neuropil estimates, following Wilt et al. (2013), and summarized as the median and standard deviation. Higher d-prime values indicate better event detectability.Status is always PASS (no automatic threshold). Review low SNR or d-prime values for possible issues with signal quality or event detection.",
       "reference": null,
-      "tags": {
-        "operational": "false",
-        "type": "Event detection statistics",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Event detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6908,11 +6913,9 @@
       ],
       "description": "This metric combines signal-to-noise ratio (SNR) and event detection (d-prime) statistics.SNR is calculated as the mean pixel value divided by the standard deviation for each frame, summarized as mean, median, and standard deviation across the movie. Higher SNR indicates better image quality.D-prime is calculated for each ROI using photon flux and neuropil estimates, following Wilt et al. (2013), and summarized as the median and standard deviation. Higher d-prime values indicate better event detectability.Status is always PASS (no automatic threshold). Review low SNR or d-prime values for possible issues with signal quality or event detection.",
       "reference": null,
-      "tags": {
-        "operational": "false",
-        "type": "Event detection statistics",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Event detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6940,11 +6943,9 @@
       ],
       "description": "This metric combines signal-to-noise ratio (SNR) and event detection (d-prime) statistics.SNR is calculated as the mean pixel value divided by the standard deviation for each frame, summarized as mean, median, and standard deviation across the movie. Higher SNR indicates better image quality.D-prime is calculated for each ROI using photon flux and neuropil estimates, following Wilt et al. (2013), and summarized as the median and standard deviation. Higher d-prime values indicate better event detectability.Status is always PASS (no automatic threshold). Review low SNR or d-prime values for possible issues with signal quality or event detection.",
       "reference": null,
-      "tags": {
-        "operational": "false",
-        "type": "Event detection statistics",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Event detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -6972,11 +6973,9 @@
       ],
       "description": "This metric combines signal-to-noise ratio (SNR) and event detection (d-prime) statistics.SNR is calculated as the mean pixel value divided by the standard deviation for each frame, summarized as mean, median, and standard deviation across the movie. Higher SNR indicates better image quality.D-prime is calculated for each ROI using photon flux and neuropil estimates, following Wilt et al. (2013), and summarized as the median and standard deviation. Higher d-prime values indicate better event detectability.Status is always PASS (no automatic threshold). Review low SNR or d-prime values for possible issues with signal quality or event detection.",
       "reference": null,
-      "tags": {
-        "operational": "false",
-        "type": "Event detection statistics",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Event detection statistics"
+      ],
       "evaluated_assets": null
     },
     {
@@ -7009,11 +7008,9 @@
       ],
       "description": "Z-drift analysis metrics",
       "reference": "VISp_0/movie_qc/VISp_0_registered_zdrift.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Z-drift",
-        "fov": "VISp_0"
-      },
+      "tags": [
+        "Op. QC: Z-drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -7046,11 +7043,9 @@
       ],
       "description": "Z-drift analysis metrics",
       "reference": "VISp_1/movie_qc/VISp_1_registered_zdrift.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Z-drift",
-        "fov": "VISp_1"
-      },
+      "tags": [
+        "Op. QC: Z-drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -7083,11 +7078,9 @@
       ],
       "description": "Z-drift analysis metrics",
       "reference": "VISp_2/movie_qc/VISp_2_registered_zdrift.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Z-drift",
-        "fov": "VISp_2"
-      },
+      "tags": [
+        "Op. QC: Z-drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -7120,11 +7113,9 @@
       ],
       "description": "Z-drift analysis metrics",
       "reference": "VISp_3/movie_qc/VISp_3_registered_zdrift.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Z-drift",
-        "fov": "VISp_3"
-      },
+      "tags": [
+        "Op. QC: Z-drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -7157,11 +7148,9 @@
       ],
       "description": "Z-drift analysis metrics",
       "reference": "VISp_4/movie_qc/VISp_4_registered_zdrift.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Z-drift",
-        "fov": "VISp_4"
-      },
+      "tags": [
+        "Op. QC: Z-drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -7194,11 +7183,9 @@
       ],
       "description": "Z-drift analysis metrics",
       "reference": "VISp_5/movie_qc/VISp_5_registered_zdrift.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Z-drift",
-        "fov": "VISp_5"
-      },
+      "tags": [
+        "Op. QC: Z-drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -7231,11 +7218,9 @@
       ],
       "description": "Z-drift analysis metrics",
       "reference": "VISp_6/movie_qc/VISp_6_registered_zdrift.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Z-drift",
-        "fov": "VISp_6"
-      },
+      "tags": [
+        "Op. QC: Z-drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -7268,11 +7253,9 @@
       ],
       "description": "Z-drift analysis metrics",
       "reference": "VISp_7/movie_qc/VISp_7_registered_zdrift.png",
-      "tags": {
-        "operational": "true",
-        "type": "QC: Z-drift",
-        "fov": "VISp_7"
-      },
+      "tags": [
+        "Op. QC: Z-drift"
+      ],
       "evaluated_assets": null
     },
     {
@@ -7295,19 +7278,17 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
-      "tags": {
-        "operational": "false",
-        "type": "Events",
-        "fov": "VISp_0"
-      },
+      "reference": "__empty__0",
+      "tags": [
+        "Events"
+      ],
       "evaluated_assets": null,
       "type": "(v1v2 upgrade) type did not exist in v1",
       "curation_history": [
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.475283+00:00"
+          "timestamp": "2025-12-17 09:17:55.263803+00:00"
         }
       ]
     },
@@ -7331,19 +7312,17 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
-      "tags": {
-        "operational": "false",
-        "type": "Events",
-        "fov": "VISp_1"
-      },
+      "reference": "__empty__1",
+      "tags": [
+        "Events"
+      ],
       "evaluated_assets": null,
       "type": "(v1v2 upgrade) type did not exist in v1",
       "curation_history": [
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.475989+00:00"
+          "timestamp": "2025-12-17 09:17:55.264645+00:00"
         }
       ]
     },
@@ -7367,19 +7346,17 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
-      "tags": {
-        "operational": "false",
-        "type": "Events",
-        "fov": "VISp_2"
-      },
+      "reference": "__empty__2",
+      "tags": [
+        "Events"
+      ],
       "evaluated_assets": null,
       "type": "(v1v2 upgrade) type did not exist in v1",
       "curation_history": [
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.476645+00:00"
+          "timestamp": "2025-12-17 09:17:55.265133+00:00"
         }
       ]
     },
@@ -7403,19 +7380,17 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
-      "tags": {
-        "operational": "false",
-        "type": "Events",
-        "fov": "VISp_3"
-      },
+      "reference": "__empty__3",
+      "tags": [
+        "Events"
+      ],
       "evaluated_assets": null,
       "type": "(v1v2 upgrade) type did not exist in v1",
       "curation_history": [
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.477100+00:00"
+          "timestamp": "2025-12-17 09:17:55.265562+00:00"
         }
       ]
     },
@@ -7439,19 +7414,17 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
-      "tags": {
-        "operational": "false",
-        "type": "Events",
-        "fov": "VISp_4"
-      },
+      "reference": "__empty__4",
+      "tags": [
+        "Events"
+      ],
       "evaluated_assets": null,
       "type": "(v1v2 upgrade) type did not exist in v1",
       "curation_history": [
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.477533+00:00"
+          "timestamp": "2025-12-17 09:17:55.265987+00:00"
         }
       ]
     },
@@ -7475,19 +7448,17 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
-      "tags": {
-        "operational": "false",
-        "type": "Events",
-        "fov": "VISp_5"
-      },
+      "reference": "__empty__5",
+      "tags": [
+        "Events"
+      ],
       "evaluated_assets": null,
       "type": "(v1v2 upgrade) type did not exist in v1",
       "curation_history": [
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.477965+00:00"
+          "timestamp": "2025-12-17 09:17:55.266411+00:00"
         }
       ]
     },
@@ -7511,19 +7482,17 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
-      "tags": {
-        "operational": "false",
-        "type": "Events",
-        "fov": "VISp_6"
-      },
+      "reference": "__empty__6",
+      "tags": [
+        "Events"
+      ],
       "evaluated_assets": null,
       "type": "(v1v2 upgrade) type did not exist in v1",
       "curation_history": [
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.478393+00:00"
+          "timestamp": "2025-12-17 09:17:55.266836+00:00"
         }
       ]
     },
@@ -7547,19 +7516,17 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
-      "tags": {
-        "operational": "false",
-        "type": "Events",
-        "fov": "VISp_7"
-      },
+      "reference": "__empty__7",
+      "tags": [
+        "Events"
+      ],
       "evaluated_assets": null,
       "type": "(v1v2 upgrade) type did not exist in v1",
       "curation_history": [
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.478818+00:00"
+          "timestamp": "2025-12-17 09:17:55.267258+00:00"
         }
       ]
     }
@@ -7567,27 +7534,37 @@
   "key_experimenters": null,
   "notes": null,
   "default_grouping": [
-    "operational",
-    "type",
-    "fov"
+    "Op. QC: Window Clarity",
+    "Op. QC: Field-of-view Matching",
+    "Op. QC: Motion Correction",
+    "Extracted ROIs",
+    "Op. QC: Crosstalk",
+    "Classification",
+    "Op. QC Epilepsy",
+    "Op. QC: Intensity Drift",
+    "Photon detection statistics",
+    "Op. QC: Pixel Saturation",
+    "Event detection statistics",
+    "Op. QC: Z-drift",
+    "Events"
   ],
   "allow_tag_failures": [],
   "status": {
-    "Events": "Pass",
-    "Op. QC: Motion Correction": "Pending",
-    "Op. QC: Z-drift": "Pass",
-    "Op. QC: Intensity Drift": "Pass",
-    "Photon detection statistics": "Pass",
-    "Op. QC: Crosstalk": "Pending",
-    "Op. QC: Pixel Saturation": "Pass",
-    "Op. QC: Field-of-view Matching": "Pending",
+    "Op. QC: Crosstalk": "Pass",
+    "Extracted ROIs": "Pass",
+    "Op. QC: Field-of-view Matching": "Pass",
+    "Op. QC: Motion Correction": "Pass",
     "Event detection statistics": "Pass",
+    "Photon detection statistics": "Pass",
     "Classification": "Pass",
     "Op. QC Epilepsy": "Pass",
-    "Op. QC: Window Clarity": "Pending",
-    "Extracted ROIs": "Pass",
-    "pophys": "Pending",
-    "Processing": "Pending",
-    "Raw data": "Pending"
+    "Op. QC: Pixel Saturation": "Pass",
+    "Op. QC: Window Clarity": "Pass",
+    "Op. QC: Z-drift": "Pass",
+    "Op. QC: Intensity Drift": "Pass",
+    "Events": "Pass",
+    "pophys": "Pass",
+    "Raw data": "Pass",
+    "Processing": "Pass"
   }
 }

@@ -1,6 +1,7 @@
 """Settings"""
 
 import panel as pn
+import panel_material_ui as pmui
 import param
 from panel.custom import PyComponent
 
@@ -8,6 +9,7 @@ from panel.custom import PyComponent
 class Settings(PyComponent):
     """Settings for the QC view application"""
 
+    allow_value_edits = param.Boolean(default=False)
     default_grouping = param.List(default=[])
 
     def __init__(self, default_grouping: list, grouping_options: list):
@@ -29,7 +31,14 @@ class Settings(PyComponent):
 
     def _init_modal(self):
         """Initialize the settings modal"""
+        switch_value_edits = pmui.Switch.from_param(
+            self.param.allow_value_edits,
+            name="Allow Editing Metric Values",
+        )
+
         modal_content = pn.Column(
+            pn.pane.Markdown("## Settings"),
+            switch_value_edits,
             pn.pane.Markdown("## Metric Grouping Levels"),
             pn.pane.Markdown("Configure the hierarchical levels for organizing metrics in the tree."),
             sizing_mode="stretch_width",
@@ -148,4 +157,5 @@ class Settings(PyComponent):
 
     def __panel__(self):
         """Create and return the settings panel"""
+
         return pn.Column(self.gear_button, self.modal)

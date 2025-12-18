@@ -12,7 +12,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Poor vasculature image quality",
@@ -41,6 +41,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.949998-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:32:55.851269+00:00"
         }
       ],
       "description": "Vasculature image to assess brain health and window clarity",
@@ -60,7 +66,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -77,6 +83,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:44.006333-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:08.058789+00:00"
         }
       ],
       "description": "VISp_0, with actual imaging-depth: 154 paired with averaged PNG at scanfield_z: 48.0",
@@ -97,7 +109,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -114,6 +126,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:44.270267-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:12.136729+00:00"
         }
       ],
       "description": "VISp_1, with actual imaging-depth: 205 paired with averaged PNG at scanfield_z: 89.0",
@@ -134,7 +152,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -151,6 +169,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:44.522587-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:22.689758+00:00"
         }
       ],
       "description": "VISp_2, with actual imaging-depth: 124 paired with averaged PNG at scanfield_z: 18.0",
@@ -171,7 +195,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -188,6 +212,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:44.775714-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:26.248702+00:00"
         }
       ],
       "description": "VISp_3, with actual imaging-depth: 241 paired with averaged PNG at scanfield_z: 125.0",
@@ -208,7 +238,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -225,6 +255,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.046092-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:30.249635+00:00"
         }
       ],
       "description": "VISp_4, with actual imaging-depth: 82 paired with averaged PNG at scanfield_z: 24.0",
@@ -245,7 +281,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -262,6 +298,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.314640-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:45.653114+00:00"
         }
       ],
       "description": "VISp_5, with actual imaging-depth: 280 paired with averaged PNG at scanfield_z: 164.0",
@@ -282,7 +324,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -299,6 +341,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.558538-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:33:51.159940+00:00"
         }
       ],
       "description": "VISp_6, with actual imaging-depth: 45 paired with averaged PNG at scanfield_z: 61.0",
@@ -319,7 +367,7 @@
       },
       "stage": "Raw data",
       "value": {
-        "value": null,
+        "value": "FOV Matches parent FOV",
         "options": [
           "FOV Matches parent FOV",
           "FOV does not match parent FOV."
@@ -336,6 +384,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 05:25:45.833571-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:00.256598+00:00"
         }
       ],
       "description": "VISp_7, with actual imaging-depth: 320 paired with averaged PNG at scanfield_z: 204.0",
@@ -379,6 +433,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:25:24.271813+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:54.241842+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
@@ -399,7 +459,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -420,6 +480,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:25:24.096975+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:54.276656+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
@@ -463,6 +529,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:23:23.485149+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:54.341973+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
@@ -483,7 +555,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -504,6 +576,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:23:23.313986+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:54.497644+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
@@ -547,6 +625,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:00.330309+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:58.348619+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
@@ -567,7 +651,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -588,6 +672,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:00.164416+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:34:59.898557+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
@@ -631,6 +721,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:29:22.456552+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:05.410996+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
@@ -651,7 +747,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -672,6 +768,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:29:22.286261+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:06.812173+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
@@ -715,6 +817,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:04.127765+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:20.161597+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
@@ -735,7 +843,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -756,6 +864,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:03.958170+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:22.082740+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
@@ -799,6 +913,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:43.122357+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:25.294374+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
@@ -819,7 +939,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -840,6 +960,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:39:42.947902+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:26.770610+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
@@ -883,6 +1009,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:28:02.121765+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:29.965837+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
@@ -903,7 +1035,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -924,6 +1056,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 14:28:01.949199+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:31.349756+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
@@ -967,6 +1105,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 15:08:11.123901+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:34.544292+00:00"
         }
       ],
       "description": "Review the avg. and max. projections to ensure that the FOV quality is sufficient.",
@@ -987,7 +1131,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Motion correction successful",
         "options": [
           "Motion correction successful",
           "No motion correction applied",
@@ -1008,6 +1152,12 @@
           "evaluator": "Pending review",
           "status": "Pending",
           "timestamp": "2025-12-13 15:08:10.892619+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:35.902125+00:00"
         }
       ],
       "description": "Review the registration summary plot to ensure that the motion correction is accurate and sufficient.",
@@ -5020,7 +5170,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Timeseries shuffled between planes",
@@ -5039,6 +5189,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 11:34:45.034421-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:42.644075+00:00"
         }
       ],
       "description": "Comparison of planes ['VISp_0', 'VISp_1'] to examine residual cross-talk.",
@@ -5058,7 +5214,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Timeseries shuffled between planes",
@@ -5077,6 +5233,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 11:34:45.494983-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:47.618050+00:00"
         }
       ],
       "description": "Comparison of planes ['VISp_2', 'VISp_3'] to examine residual cross-talk.",
@@ -5096,7 +5258,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Timeseries shuffled between planes",
@@ -5115,6 +5277,12 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 11:34:45.954566-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:35:52.650443+00:00"
         }
       ],
       "description": "Comparison of planes ['VISp_4', 'VISp_5'] to examine residual cross-talk.",
@@ -5134,7 +5302,7 @@
       },
       "stage": "Processing",
       "value": {
-        "value": null,
+        "value": "Quality is sufficient",
         "options": [
           "Quality is sufficient",
           "Timeseries shuffled between planes",
@@ -5153,6 +5321,18 @@
           "evaluator": "Automated",
           "status": "Pending",
           "timestamp": "2025-12-13 11:34:46.471819-08:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Fail",
+          "timestamp": "2025-12-15 20:35:56.799058+00:00"
+        },
+        {
+          "object_type": "QC status",
+          "evaluator": "Sam Seid",
+          "status": "Pass",
+          "timestamp": "2025-12-15 20:36:01.329452+00:00"
         }
       ],
       "description": "Comparison of planes ['VISp_6', 'VISp_7'] to examine residual cross-talk.",
@@ -7295,7 +7475,7 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
+      "reference": "__empty__0",
       "tags": {
         "operational": "false",
         "type": "Events",
@@ -7307,7 +7487,7 @@
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.475283+00:00"
+          "timestamp": "2025-12-17 09:17:55.263803+00:00"
         }
       ]
     },
@@ -7331,7 +7511,7 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
+      "reference": "__empty__1",
       "tags": {
         "operational": "false",
         "type": "Events",
@@ -7343,7 +7523,7 @@
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.475989+00:00"
+          "timestamp": "2025-12-17 09:17:55.264645+00:00"
         }
       ]
     },
@@ -7367,7 +7547,7 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
+      "reference": "__empty__2",
       "tags": {
         "operational": "false",
         "type": "Events",
@@ -7379,7 +7559,7 @@
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.476645+00:00"
+          "timestamp": "2025-12-17 09:17:55.265133+00:00"
         }
       ]
     },
@@ -7403,7 +7583,7 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
+      "reference": "__empty__3",
       "tags": {
         "operational": "false",
         "type": "Events",
@@ -7415,7 +7595,7 @@
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.477100+00:00"
+          "timestamp": "2025-12-17 09:17:55.265562+00:00"
         }
       ]
     },
@@ -7439,7 +7619,7 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
+      "reference": "__empty__4",
       "tags": {
         "operational": "false",
         "type": "Events",
@@ -7451,7 +7631,7 @@
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.477533+00:00"
+          "timestamp": "2025-12-17 09:17:55.265987+00:00"
         }
       ]
     },
@@ -7475,7 +7655,7 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
+      "reference": "__empty__5",
       "tags": {
         "operational": "false",
         "type": "Events",
@@ -7487,7 +7667,7 @@
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.477965+00:00"
+          "timestamp": "2025-12-17 09:17:55.266411+00:00"
         }
       ]
     },
@@ -7511,7 +7691,7 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
+      "reference": "__empty__6",
       "tags": {
         "operational": "false",
         "type": "Events",
@@ -7523,7 +7703,7 @@
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.478393+00:00"
+          "timestamp": "2025-12-17 09:17:55.266836+00:00"
         }
       ]
     },
@@ -7547,7 +7727,7 @@
         }
       ],
       "description": "dF / F and roi events detected by oasis",
-      "reference": "",
+      "reference": "__empty__7",
       "tags": {
         "operational": "false",
         "type": "Events",
@@ -7559,7 +7739,7 @@
         {
           "object_type": "Curation history",
           "curator": "unknown",
-          "timestamp": "2025-12-14 09:17:33.478818+00:00"
+          "timestamp": "2025-12-17 09:17:55.267258+00:00"
         }
       ]
     }
@@ -7579,21 +7759,21 @@
   ],
   "allow_tag_failures": [],
   "status": {
-    "Events": "Pass",
-    "Op. QC: Motion Correction": "Pending",
-    "Op. QC: Z-drift": "Pass",
-    "Op. QC: Intensity Drift": "Pass",
-    "Photon detection statistics": "Pass",
-    "Op. QC: Crosstalk": "Pending",
-    "Op. QC: Pixel Saturation": "Pass",
-    "Op. QC: Field-of-view Matching": "Pending",
+    "Op. QC: Crosstalk": "Pass",
+    "Extracted ROIs": "Pass",
+    "Op. QC: Field-of-view Matching": "Pass",
+    "Op. QC: Motion Correction": "Pass",
     "Event detection statistics": "Pass",
+    "Photon detection statistics": "Pass",
     "Classification": "Pass",
     "Op. QC Epilepsy": "Pass",
-    "Op. QC: Window Clarity": "Pending",
-    "Extracted ROIs": "Pass",
-    "pophys": "Pending",
-    "Processing": "Pending",
-    "Raw data": "Pending"
+    "Op. QC: Pixel Saturation": "Pass",
+    "Op. QC: Window Clarity": "Pass",
+    "Op. QC: Z-drift": "Pass",
+    "Op. QC: Intensity Drift": "Pass",
+    "Events": "Pass",
+    "pophys": "Pass",
+    "Raw data": "Pass",
+    "Processing": "Pass"
   }
 }

@@ -66,7 +66,7 @@ class AssetGroup(PyComponent):
             widths={
                 "Subject ID": 120,
                 "Acquisition Time (local)": 220,
-            }
+            },
         )
 
         self.main_col = pn.Column(
