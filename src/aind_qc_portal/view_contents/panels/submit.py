@@ -99,7 +99,8 @@ class SubmitPanel(PyComponent):
             preview_df,
             disabled=True,
             show_index=False,
-            height=400,
+            height=800,
+            min_width=1000,
             hidden_columns=["has_changes"],
             titles={
                 "metric_name": "Metric Name",
