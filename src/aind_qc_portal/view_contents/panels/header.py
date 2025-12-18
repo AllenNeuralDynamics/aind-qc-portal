@@ -7,6 +7,8 @@ from panel.custom import PyComponent
 from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.view_contents.panels.settings import Settings
 
+from aind_metadata_utils.data_assets import co_id_to_co_link, name_to_metadata_view_link
+
 
 class Header(PyComponent):
     """Header for the QC view application"""
@@ -34,13 +36,13 @@ class Header(PyComponent):
     @pn.depends("record")
     def _header_panel(self):
         """Create header panel with record information"""
+        # Get metadata link
+        metadata_link = name_to_metadata_view_link(self.record["name"])
+
         # Get CO link if available
         other_ids = self.record.get("other_identifiers", {})
         if other_ids and "Code Ocean" in other_ids:
-            co_link = (
-                '| <a href="https://codeocean.allenneuraldynamics.org/data-assets/'
-                f'{other_ids["Code Ocean"][0]}" target="_blank">CO Link</a>'
-            )
+            co_link = co_id_to_co_link(other_ids["Code Ocean"][0])
         else:
             co_link = ""
 
@@ -68,7 +70,7 @@ class Header(PyComponent):
         header_md = f"""
 ## {self.record["name"]}
 Modalities: **{', '.join(modalities)}** | Stages: **{', '.join(stages)}**  
-Return to <a href="{project_link}" target="_blank">{project_name}</a> {co_link}
+Return to <a href="{project_link}" target="_blank">{project_name}</a> | {metadata_link} | {co_link}
 """  # noqa: W291
         self.header_text.object = header_md
 
