@@ -158,7 +158,4 @@ class Settings(PyComponent):
     def __panel__(self):
         """Create and return the settings panel"""
 
-        return pn.Column(
-            self.gear_button,
-            self.modal
-        )
+        return pn.Column(self.gear_button, self.modal)

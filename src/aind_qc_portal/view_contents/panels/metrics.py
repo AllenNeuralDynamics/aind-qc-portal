@@ -49,7 +49,7 @@ class MetricValue(PyComponent):
         self.settings = settings
 
         self._init_panel_objects()
-        
+
         # Watch for changes in allow_value_edits
         self.settings.param.watch(self._on_allow_value_edits_change, "allow_value_edits")
 
@@ -203,19 +203,19 @@ class MetricTab(PyComponent):
 
 def aggregate_status(metrics, status_df):
     """Aggregate status from a list of metrics.
-    
+
     Rules:
     - If ANY metric has status "Fail", return "Fail"
     - Otherwise, if ANY metric has status "Pending", return "Pending"
     - Otherwise, return "Pass"
-    
+
     Args:
         metrics: List of metric row dictionaries
         status_df: DataFrame with columns ['name', 'evaluated_status']
     """
     metric_names = [m.get("name") for m in metrics]
     statuses = status_df[status_df["name"].isin(metric_names)]["evaluated_status"].tolist()
-    
+
     if "Fail" in statuses:
         return "Fail"
     elif "Pending" in statuses:
@@ -234,18 +234,23 @@ def get_status_color(status):
         return AIND_COLORS["green"]
 
 
+def get_tag_keys_from_level(level):
+    """Get the tag keys from a grouping level"""
+    if isinstance(level, str):
+        return [level]
+    elif isinstance(level, tuple):
+        return list(level)
+    else:
+        return level
+
+
 def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx, path_prefix="", status_df=None):
     if level_idx >= len(grouping_levels):
         return None
 
     # tag_keys can be a string ('operational') or tuple ('tag1', 'tag2')
     level_keys = grouping_levels[level_idx]
-    if isinstance(level_keys, str):
-        tag_keys = [level_keys]
-    elif isinstance(level_keys, tuple):
-        tag_keys = list(level_keys)
-    else:
-        tag_keys = level_keys
+    tag_keys = get_tag_keys_from_level(level_keys)
 
     level_data = {}
 
@@ -264,11 +269,13 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
     nodes = []
     for (tag_key, tag_value), tag_metrics in level_data.items():
         node_id = f"{path_prefix}{tag_key}:{tag_value}"
-        children = build_tree_level(grouping_levels, tag_metrics, metric_lookup_callback, level_idx + 1, f"{node_id}/", status_df)
+        children = build_tree_level(
+            grouping_levels, tag_metrics, metric_lookup_callback, level_idx + 1, f"{node_id}/", status_df
+        )
 
         # Aggregate status from tag_metrics and their children
         aggregated_status = aggregate_status(tag_metrics, status_df) if status_df is not None else "Pending"
-        
+
         # Add status indicator icon
         if aggregated_status == "Fail":
             icon = "cancel"
@@ -281,7 +288,7 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
             "label": f"{tag_key}: {tag_value} ({len(tag_metrics)})",
             "icon": icon,
             "metric_rows": tag_metrics,
-            "status": aggregated_status
+            "status": aggregated_status,
         }
 
         if children:
@@ -375,11 +382,7 @@ class Metrics(PyComponent):
 
         all_metrics = [row for _, row in self.data.dataframe.iterrows()]
         tree_nodes = build_tree_level(
-            grouping_levels,
-            all_metrics,
-            self.metric_lookup,
-            0,
-            status_df=self.data.metric_status
+            grouping_levels, all_metrics, self.metric_lookup, 0, status_df=self.data.metric_status
         )
 
         def print_tree(nodes, indent=0):

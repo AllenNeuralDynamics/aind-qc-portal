@@ -301,14 +301,11 @@ class ViewData(param.Parameterized):
                 current_status = status_history[-1].get("status", "Pending")
             else:
                 current_status = "Pending"
-            
-            status_data.append({
-                "name": row.get("name"),
-                "evaluated_status": current_status
-            })
+
+            status_data.append({"name": row.get("name"), "evaluated_status": current_status})
 
         self.metric_status = pd.DataFrame(status_data)
-    
+
     def _parse_record(self):
         """Parse the record and cache some data for faster access."""
         if self.record and "location" in self.record:
