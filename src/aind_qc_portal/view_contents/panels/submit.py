@@ -16,6 +16,132 @@ class SubmitPanel(PyComponent):
         super().__init__()
         self.data = data
         self._init_panel_objects()
+        self._init_modal()
+
+    def refresh_page(self):
+        """Refresh the page using hidden HTML"""
+        self.hidden_html.object = "<script>window.location.reload();</script>"
+
+    def _init_modal(self):
+        """Initialize the submission modal dialog"""
+        # Status pane for feedback
+        self.status_pane = pn.pane.Markdown("")
+        
+        # Submit button
+        self.upload_button = pn.widgets.Button(
+            name="Upload changes",
+            button_type="danger",
+            disabled=True,
+        )
+        
+        # Tabulator placeholder
+        self.modal_tabulator = pn.Column()
+        
+        # Header
+        self.modal_header = pn.pane.Markdown("")
+        
+        # Create modal with all content
+        self.modal = pn.layout.Modal(
+            self.modal_header,
+            self.modal_tabulator,
+            self.status_pane,
+            self.upload_button,
+            name="Review Changes",
+            show_close_button=True,
+            background_close=True,
+        )
+        
+        # Set up button callbacks
+        self.upload_button.on_click(self._on_upload)
+
+    def _on_upload(self, event):
+        """Handle submit button click in modal"""
+        self.upload_button.loading = True
+        success, message = self.data.submit_changes_to_docdb(self.final_record)
+        self.upload_button.loading = False
+        
+        if success:
+            self.status_pane.object = f"✅ **{message}**"
+            self.upload_button.disabled = True
+            self.refresh_page()
+        else:
+            self.status_pane.object = f"❌ **Error:** {message}"
+            self.upload_button.button_type = "danger"
+
+    def _update_modal_content(self):
+        # Reset status and buttons
+        self.status_pane.object = ""
+        self.upload_button.disabled = True
+        self.upload_button.button_type = "danger"
+
+        """Update the modal content with current preview data"""
+        preview_df, self.final_record = self.data.get_submission_data()
+        
+        if preview_df.empty:
+            self.modal_header.object = "## No changes to preview"
+            self.modal_tabulator.clear()
+            return
+        
+        change_count = len(preview_df[preview_df['has_changes']])
+
+        if change_count > 0:
+            self.upload_button.disabled = False
+            self.upload_button.button_type = "success"
+        
+        # Update header
+        self.modal_header.object = (
+            f"**{change_count} metrics** with pending changes. "
+            "Changed rows are highlighted in yellow."
+        )
+        
+        # Create Tabulator with styling
+        tabulator = pn.widgets.Tabulator(
+            preview_df,
+            disabled=True,
+            show_index=False,
+            height=400,
+            hidden_columns=["has_changes"],
+            titles={
+                "metric_name": "Metric Name",
+                "current_value": "Current Value",
+                "current_status": "Current Status",
+                "new_value": "New Value",
+                "new_status": "New Status",
+            },
+            widths={
+                "current_value": 150,
+                "current_status": 150,
+                "new_value": 150,
+                "new_status": 150,
+            },
+            stylesheets=[
+                """
+                .tabulator-row {
+                    font-size: 12px;
+                }
+                .tabulator-cell {
+                    padding: 4px 8px;
+                }
+                """
+            ],
+        )
+        
+        # Apply row styling based on has_changes
+        for idx, row in preview_df.iterrows():
+            if row["has_changes"]:
+                tabulator.style.apply(
+                    lambda x: ["background-color: #fff3cd; font-weight: normal;"] * len(x),
+                    subset=pd.IndexSlice[idx, :]
+                )
+            else:
+                tabulator.style.apply(
+                    lambda x: ["background-color: #f8f9fa; color: #6c757d;"] * len(x),
+                    subset=pd.IndexSlice[idx, :]
+                )
+        
+        # Update tabulator
+        self.modal_tabulator.clear()
+        self.modal_tabulator.append(tabulator)
 
     def _get_change_info(self, dirty: pd.DataFrame):
         """Wrap the change count in a static text widget"""
@@ -35,20 +161,9 @@ class SubmitPanel(PyComponent):
             self._redirect_to_login()
             return
 
-        # Push the changes to DocDB
-        raise NotImplementedError("Submitting changes is not yet implemented")
-        # response = qc_update_to_id(self.id, self.data)
-
-        # # Deal with errors, on success refresh page to pull new data
-        # if response.status_code != 200:
-        #     self.submit_error.value = f"Error ({response.status_code}) submitting changes: {response.text}"
-        #     self.submit_button.button_type = "danger"
-        #     return
-        # else:
-        #     self.submit_button.disabled = True
-        #     self.changes = 0
-        #     self.change_info.value = f"{self.changes} pending changes"
-        #     self._refresh()
+        # Update modal content and show it
+        self._update_modal_content()
+        self.modal.show()
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
@@ -68,10 +183,9 @@ class SubmitPanel(PyComponent):
         """Create and return the SubmitPanel layout"""
 
         return pn.Column(
+            self.modal,
             self.submit_button,
             self.change_info,
             self.hidden_html,
-            # self.submit_info,
-            # self.submit_error,
             styles=OUTER_STYLE,
         )

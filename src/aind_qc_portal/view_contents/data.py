@@ -1,11 +1,12 @@
 """Database for the QC view application."""
 
+from datetime import datetime
 import json
 import pandas as pd
 import panel as pn
 import param
 from aind_data_access_api.document_db import MetadataDbClient
-from aind_data_schema.core.quality_control import QualityControl, QCMetric, CurationMetric
+from aind_data_schema.core.quality_control import QualityControl, QCMetric, CurationMetric, Status
 
 TIMEOUT_1M = 60
 TIMEOUT_1H = 60 * 60
@@ -156,31 +157,6 @@ class ViewData(param.Parameterized):
         # Update metric_status to reflect pending change
         if column_name == "status":
             self.metric_status.loc[self.metric_status["name"] == metric_name, "evaluated_status"] = value
-
-    def upsert_quality_control(self):
-        """Upsert the quality control data to the database including all pending changes."""
-
-        # Write the pending changes
-        for _, change in self.changes.iterrows():
-            metric_name = change["metric_name"]
-            column_name = change["column_name"]
-            value = change["value"]
-
-            # Update the dataframe with the new value
-            self.dataframe.loc[self.dataframe["name"] == metric_name, column_name] = value
-
-        self.changes.clear()
-
-        # Unwrap the dataframe back into a QualityControl object
-        qc = self.get_quality_control()
-
-        # Upsert
-        client.upsert_one_docdb_record(
-            record={
-                "_id": self.record["_id"],
-                "quality_control": qc.model_dump(),
-            }
-        )
 
     def get_quality_control(self):
         """Get the quality control data from the database."""
@@ -352,3 +328,131 @@ class ViewData(param.Parameterized):
                 if raw_records:
                     raw_location = raw_records[0]["location"].replace("s3://", "")
                     self._raw_s3_bucket, self._raw_s3_prefix = raw_location.split("/", 1)
+
+    def get_fresh_record(self) -> dict:
+        """Re-pull the full record from DocDB as a dict."""
+        records = self._client.retrieve_docdb_records(
+            filter_query={"name": self.asset_name},
+            projection={},  # Get all fields
+        )
+
+        if not records:
+            if hasattr(pn.state, "metadata") and self.asset_name in pn.state.metadata:
+                return pn.state.metadata[self.asset_name]
+            raise ValueError(f"Record {self.asset_name} not found in DocDB or temporary storage")
+
+        return records[0]
+
+    def get_submission_data(self) -> tuple[pd.DataFrame, dict]:
+        """Build a dataframe for the submission preview table.
+
+        Uses a fresh copy of the record from DocDB
+
+        Returns a dataframe with columns:
+        - metric_name: name of the metric
+        - current_value: current value
+        - current_status: current status
+        - new_value: new value (if changed)
+        - new_status: new status (if changed)
+        - has_changes: whether this row has changes
+        """
+        if self.dataframe.empty:
+            return pd.DataFrame()
+        
+        record = self.get_fresh_record()
+        metrics = record["quality_control"]["metrics"]
+
+        preview_data = []
+        
+        for i, metric in enumerate(metrics):
+            name = metric["name"]
+            
+            # Get current values
+            current_value = metric["value"]
+            if isinstance(current_value, dict) and "value" in current_value:
+                current_value = current_value["value"]
+            status_history = metric.get("status_history", [])
+            current_status = status_history[-1].get("status", "Pending") if status_history else "Pending"
+
+            # Check for pending changes
+            value_change = None
+            status_change = None
+            has_changes = False
+            
+            if not self.changes.empty:
+                metric_changes = self.changes[self.changes["metric_name"] == name]
+                
+                for _, change_row in metric_changes.iterrows():
+                    column_name = change_row["column_name"]
+                    new_val = decode_dict_value(change_row["value"])
+                    
+                    if column_name == "value":
+                        value_change = new_val
+                        has_changes = True
+                    elif column_name == "status":
+                        status_change = new_val
+                        has_changes = True
+            
+            if value_change:
+                if isinstance(value_change, dict) and "value" in value_change:
+                    value_change_display = value_change["value"]
+                else:
+                    value_change_display = value_change
+
+            preview_data.append({
+                "metric_name": name,
+                "current_value": str(current_value),
+                "current_status": current_status,
+                "new_value": value_change_display if value_change is not None else "",
+                "new_status": status_change if status_change is not None else "",
+                "has_changes": has_changes,
+            })
+
+            # Also modify the record in-place to reflect pending changes
+            if has_changes:
+                if value_change is not None:
+                    record["quality_control"]["metrics"][i]["value"] = value_change
+                if status_change is not None:
+                    record["quality_control"]["metrics"][i]["status_history"].append({
+                        "status": status_change,
+                        "evaluator": pn.state.user if hasattr(pn.state, "user") and pn.state.user != "guest" else "unknown",
+                        "timestamp": datetime.now().isoformat(),
+                    })
+        
+        preview_df = pd.DataFrame(preview_data)
+        # Sort so changed rows appear first
+        preview_df = preview_df.sort_values(by="has_changes", ascending=False)
+        
+        return preview_df, record
+
+    def submit_changes_to_docdb(self, new_record) -> tuple[bool, str]:
+        """Apply pending changes to the record and submit to DocDB.
+        
+        Returns:
+            tuple of (success: bool, message: str)
+        """
+        try:          
+            # Step 1: Validate with QualityControl model
+            try:
+                QualityControl.model_validate(new_record["quality_control"])
+            except Exception as e:
+                return False, f"Validation failed: {str(e)}"
+            
+            # Step 2: Upsert to DocDB
+            try:
+                response = self._client.upsert_one_docdb_record(new_record)
+                
+                # Check response
+                if hasattr(response, "status_code") and response.status_code != 200:
+                    return False, f"DocDB upsert failed with status {response.status_code}: {response.text}"
+                
+                # Clear changes on success
+                self.changes = pd.DataFrame(columns=["metric_name", "column_name", "value"])
+                
+                return True, "Changes submitted successfully"
+                
+            except Exception as e:
+                return False, f"DocDB upsert error: {str(e)}"
+                
+        except Exception as e:
+            return False, f"Error during submission: {str(e)}"
