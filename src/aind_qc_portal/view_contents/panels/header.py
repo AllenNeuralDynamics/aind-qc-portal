@@ -47,11 +47,27 @@ class Header(PyComponent):
         project_name = self.record.get("data_description", {}).get("project_name")
         project_link = f"/portal?projects=['{project_name}']"
 
-        modalities = [modality["abbreviation"] for modality in self.record.get("data_description", {}).get("modalities", [])]
+        metrics = self.record.get("quality_control", {}).get("metrics", [])
+        modalities = []
+        stages = []
+
+        for metric in metrics:
+            if "modality" in metric:
+                modalities.append(metric["modality"]["abbreviation"])
+            if "stage" in metric:
+                stages.append(metric["stage"])
+
+        modalities = list(set(modalities))
+        stages = list(set(stages))
+
+        # Order stages so that "Raw data" comes first if present
+        if "Raw data" in stages:
+            stages.remove("Raw data")
+            stages = ["Raw data"] + stages
 
         header_md = f"""
 ## {self.record["name"]}
-Modalities: **{', '.join(modalities)}**  
+Modalities: **{', '.join(modalities)}** | Stages: **{', '.join(stages)}**  
 Return to <a href="{project_link}" target="_blank">{project_name}</a> {co_link}
 """  # noqa: W291
         self.header_text.object = header_md

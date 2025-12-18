@@ -158,43 +158,6 @@ class ViewData(param.Parameterized):
         if column_name == "status":
             self.metric_status.loc[self.metric_status["name"] == metric_name, "evaluated_status"] = value
 
-    def get_quality_control(self):
-        """Get the quality control data from the database."""
-        if self.dataframe.empty:
-            return None
-
-        # Each row in the dataframe should be rebuilt as either a QCMetric or CurationMetric
-        quality_control = self.record.get("quality_control", {})
-
-        metrics = []
-        for _, row in self.dataframe.iterrows():
-            metric_dict = row.to_dict()
-            
-            # Decode any JSON-encoded values back to dicts
-            for key, value in metric_dict.items():
-                metric_dict[key] = decode_dict_value(value)
-            
-            if "object_type" in metric_dict:
-                if metric_dict["object_type"] == "QC metric":
-                    # Remove dataframe columns that are not part of the QCMetric model
-                    if "evaluated_assets" in metric_dict:
-                        metric_dict.pop("evaluated_assets")
-                    if "curation_history" in metric_dict:
-                        metric_dict.pop("curation_history")
-                    if "type" in metric_dict:
-                        metric_dict.pop("type")
-                    metrics.append(QCMetric(**metric_dict))
-                elif metric_dict["object_type"] == "Curation metric":
-                    metrics.append(CurationMetric(**metric_dict))
-                else:
-                    raise ValueError(f"Unknown metric object_type: {metric_dict['object_type']}")
-            else:
-                raise ValueError("Metric dictionary missing 'object_type' field")
-
-        quality_control["metrics"] = metrics
-
-        return QualityControl(**quality_control)
-
     @property
     def default_grouping(self) -> list:
         """Get the default grouping for this record"""
@@ -202,10 +165,8 @@ class ViewData(param.Parameterized):
             print("[ViewData.default_grouping] Dataframe is empty, returning []")
             return []
 
-        qc = self.get_quality_control()
-        print(f"[ViewData.default_grouping] Retrieved from QC: {qc.default_grouping}")
         # Unwrap any tuples of length 1 into just string
-        default_grouping = qc.default_grouping
+        default_grouping = self.record["quality_control"].get("default_grouping", [])
         for i, level in enumerate(default_grouping):
             if isinstance(level, tuple) and len(level) == 1:
                 default_grouping[i] = level[0]
@@ -218,19 +179,20 @@ class ViewData(param.Parameterized):
         if self.dataframe.empty:
             return []
 
-        qc = self.get_quality_control()
+        modalities = self.dataframe["modality"]
+        modalities = [modality["abbreviation"] for modality in modalities if isinstance(modality, dict) and "abbreviation" in modality]
+        modalities = list(set(modalities))
 
-        # Get all the modalities and tags
-        modalities = [m.abbreviation for m in qc.modalities]
-        tags = []
-        for metric in qc.metrics:
-            metric_tags = metric.tags if metric.tags else {}
-            for tag_key in metric_tags.keys():
-                if tag_key not in tags:
-                    tags.append(tag_key)
-        tags = list(set(tags))  # Unique tags
+        stages = self.dataframe["stage"]
+        stages = [stage for stage in stages if isinstance(stage, str)]
+        stages = list(set(stages))
 
-        return modalities + tags
+        tags = self.dataframe["tags"]
+        tags = [list(decode_dict_value(tag_dict).keys()) for tag_dict in tags if isinstance(tag_dict, str)]
+        tags = [tag for sublist in tags for tag in sublist]  # Flatten list of lists
+        tags = list(set(tags))
+
+        return modalities + stages + tags
 
     # @pn.cache(max_items=1000, policy="LFU")
     def _load_record(self):
@@ -249,7 +211,6 @@ class ViewData(param.Parameterized):
                 "other_identifiers": 1,
                 "data_description.project_name": 1,
                 "data_description.source_data": 1,
-                "data_description.modalities": 1,
             },
         )
 
