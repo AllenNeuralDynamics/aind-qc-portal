@@ -49,8 +49,8 @@ def transform_tags(metric):
     return new_tags
 
 
-# for metric in qc.get("metrics", []):
-#     metric["tags"] = transform_tags(metric)
+for metric in qc.get("metrics", []):
+    metric["tags"] = transform_tags(metric)
 
 qc["default_grouping"] = [("operational", ), ("type", ), ("fov", )]
 
