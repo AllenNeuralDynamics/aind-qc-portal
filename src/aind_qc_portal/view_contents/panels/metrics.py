@@ -9,14 +9,11 @@ import panel_material_ui as pmui
 import param
 from panel.custom import PyComponent
 
-from aind_qc_portal.layout import MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE, AIND_COLORS
+from aind_qc_portal.layout import WIDGET_WIDTH, METRIC_VALUE_WIDTH, MARGIN, OUTER_STYLE, AIND_COLORS
 from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
 from aind_qc_portal.view_contents.data import ViewData, decode_dict_value
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.metric.metric import CustomMetricValue
-
-
-WIDGET_WIDTH = METRIC_VALUE_WIDTH - MARGIN * 4
 
 
 class MetricValue(PyComponent):

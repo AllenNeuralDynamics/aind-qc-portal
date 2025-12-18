@@ -6,6 +6,7 @@ import panel as pn
 from aind_data_schema.core.quality_control import Status
 
 from aind_qcportal_schema.metric_value import CheckboxMetric, DropdownMetric
+from aind_qc_portal.layout import WIDGET_WIDTH
 
 
 class CustomMetricValue:
@@ -134,6 +135,7 @@ class CustomMetricValue:
         self._panel = pn.widgets.Select(
             name="Value",
             options=[""] + data["options"],
+            width=WIDGET_WIDTH,
         )
         if data["value"]:
             self._panel.value = data["value"]
@@ -148,6 +150,7 @@ class CustomMetricValue:
         self._panel = pn.widgets.MultiChoice(
             name="Value",
             options=data["options"],
+            width=WIDGET_WIDTH,
         )
         if (
             data["value"]
