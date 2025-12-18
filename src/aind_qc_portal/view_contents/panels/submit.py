@@ -172,7 +172,7 @@ class SubmitPanel(PyComponent):
         self.hidden_html.visible = False
 
         self.submit_button = pn.widgets.Button(
-            name="Submit changes" if pn.state.user != "guest" else "Log in",
+            name="Review changes" if pn.state.user != "guest" else "Log in",
             button_type="success",
             on_click=self._submit_changes,
         )
@@ -188,4 +188,5 @@ class SubmitPanel(PyComponent):
             self.change_info,
             self.hidden_html,
             styles=OUTER_STYLE,
+            sizing_mode="stretch_height",
         )

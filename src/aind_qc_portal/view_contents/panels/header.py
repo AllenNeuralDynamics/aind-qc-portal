@@ -92,4 +92,4 @@ Return to <a href="{project_link}" target="_blank">{project_name}</a> {co_link}
             height=40,
         )
 
-        return pn.Column(content, gear_button_wrapper, styles={"position": "relative"}, sizing_mode="stretch_width")
+        return pn.Column(content, gear_button_wrapper, styles={"position": "relative"}, sizing_mode="stretch_both")
