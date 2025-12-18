@@ -1,5 +1,6 @@
 """Metrics"""
 
+import copy
 import json
 from typing import Any, Callable
 
@@ -50,7 +51,7 @@ class MetricValue(PyComponent):
 
         # Watch for changes in allow_value_edits
         self.settings.param.watch(self._on_allow_value_edits_change, "allow_value_edits")
-        
+
         # Watch for changes to value and status to trigger callbacks
         self.param.watch(self._on_value_change, "value")
         self.param.watch(self._on_status_change, "status")
@@ -62,7 +63,7 @@ class MetricValue(PyComponent):
     def set_status(self, new_status):
         """Set the status of the metric and trigger the callback"""
         # Convert Status enum to string if needed
-        if hasattr(new_status, 'value'):
+        if hasattr(new_status, "value"):
             new_status = new_status.value
         # Ensure it's a valid status value
         if new_status and new_status not in ["Pass", "Fail", "Pending"]:
@@ -84,7 +85,7 @@ class MetricValue(PyComponent):
         else:
             # For other types, use default comparison
             should_process = event.new != event.old
-            
+
         if should_process:
             self.callback(metric_name=self.metric_name, column_name="value", value=event.new)
 
@@ -127,7 +128,7 @@ class MetricValue(PyComponent):
 
         self.auto_value = False
         self.auto_state = False
-        
+
         # Decode JSON string if present
         decoded_value = self.value
         if isinstance(self.value, str) and self.value.startswith("json:"):
@@ -274,12 +275,35 @@ def get_tag_keys_from_level(level):
         return level
 
 
-def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx, path_prefix="", status_df=None):
+def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status_df=None):
     """Recursively build tree levels based on grouping levels and metrics"""
-    if level_idx >= len(grouping_levels):
+    if level_idx > len(grouping_levels):
         return None
+    
+    print(len(metrics))
+    
+    if level_idx == len(grouping_levels):
+        nodes = []
+        for row in metrics:
+            metric_name = row.get("name", "Unknown")
+            metric_status = row.get("status_history", [{}])[-1].get("status", "Pending")
+            
+            if metric_status == "Fail":
+                icon = "cancel"
+            elif metric_status == "Pending":
+                icon = "help"
+            else:
+                icon = "check_circle"
+            
+            node = {
+                "label": metric_name,
+                "icon": icon,
+                "metric_rows": [row],
+                "status": metric_status,
+            }
+            nodes.append(node)
+        return nodes if nodes else None
 
-    # tag_keys can be a string ('operational') or tuple ('tag1', 'tag2')
     level_keys = grouping_levels[level_idx]
     tag_keys = get_tag_keys_from_level(level_keys)
 
@@ -295,38 +319,43 @@ def build_tree_level(grouping_levels, metrics, metric_lookup_callback, level_idx
                 if key not in level_data:
                     level_data[key] = []
                 level_data[key].append(row)
+                break
 
     nodes = []
     for (tag_key, tag_value), tag_metrics in level_data.items():
         node_id = f"{path_prefix}{tag_key}:{tag_value}"
-        # Create a copy of tag_metrics to avoid sharing references
-        tag_metrics_copy = list(tag_metrics)
-        children = build_tree_level(
-            grouping_levels, tag_metrics_copy, metric_lookup_callback, level_idx + 1, f"{node_id}/", status_df
-        )
+        filtered_metrics = [
+            row for row in tag_metrics
+            if decode_dict_value(row.get("tags", {})).get(tag_key) == tag_value
+        ]
+        
+        children = build_tree_level(grouping_levels, filtered_metrics, level_idx + 1, f"{node_id}/", status_df)
 
-        # Aggregate status from tag_metrics and their children
-        aggregated_status = aggregate_status(tag_metrics_copy, status_df) if status_df is not None else "Pending"
+        if children:
+            node_metrics = []
+            for child in children:
+                node_metrics.extend(child.get("metric_rows", []))
+        else:
+            node_metrics = filtered_metrics
 
-        # Add status indicator icon
+        aggregated_status = aggregate_status(node_metrics, status_df) if status_df is not None else "Pending"
+
         if aggregated_status == "Fail":
             icon = "cancel"
         elif aggregated_status == "Pending":
             icon = "help"
-        else:  # Pass
+        else:
             icon = "check_circle"
 
         node = {
-            "label": f"{tag_key}: {tag_value} ({len(tag_metrics_copy)})",
+            "label": f"{tag_key}: {tag_value} ({len(node_metrics)})",
             "icon": icon,
-            "metric_rows": tag_metrics_copy,
+            "metric_rows": node_metrics,
             "status": aggregated_status,
         }
 
         if children:
             node["items"] = children
-        else:
-            metric_lookup_callback[node_id] = tag_metrics_copy
 
         nodes.append(node)
 
@@ -345,7 +374,6 @@ class Metrics(PyComponent):
         self.callback = self._handle_change  # Use wrapper for all metric callbacks
         self.data = data
         self.settings = settings
-        self.metric_lookup = {}
         self.media_cache = {}
         self._syncing = False
 
@@ -360,7 +388,7 @@ class Metrics(PyComponent):
         """Wrapper for change callback that updates tree icons after submitting changes"""
         # Submit the change to the database
         self._submit_change_callback(metric_name, column_name, value)
-        
+
         # Update tree icons if this was a status change
         if column_name == "status":
             self._update_tree_icons()
@@ -420,12 +448,8 @@ class Metrics(PyComponent):
         """Build tree structure based on default_grouping tags"""
         grouping_levels = self.settings.default_grouping
 
-        self.metric_lookup.clear()
-
         all_metrics = [row for _, row in self.data.dataframe.iterrows()]
-        tree_nodes = build_tree_level(
-            grouping_levels, all_metrics, self.metric_lookup, 0, status_df=self.data.metric_status
-        )
+        tree_nodes = build_tree_level(grouping_levels, all_metrics, 0, status_df=self.data.metric_status)
 
         def print_tree(nodes, indent=0):
             """Helper function to print tree structure for debugging"""
@@ -433,6 +457,13 @@ class Metrics(PyComponent):
                 return
             for node in nodes:
                 print("  " * indent + node.get("label", ""))
+                # Print metric tags for this node
+                metric_rows = node.get("metric_rows", [])
+                for metric in metric_rows:
+                    metric_name = metric.get("name", "unknown")
+                    metric_tags = decode_dict_value(metric.get("tags", {}))
+                    tags_str = " | ".join([f"{k}: {v}" for k, v in metric_tags.items()])
+                    print("  " * (indent + 1) + f"→ {metric_name}: {tags_str}")
                 if "items" in node:
                     print_tree(node["items"], indent + 1)
 
@@ -456,19 +487,20 @@ class Metrics(PyComponent):
 
     def _update_tree_icons(self):
         """Update tree icons based on current metric_status without rebuilding the entire tree"""
+
         def update_node_recursive(nodes):
             """Recursively update node icons and statuses"""
             if not nodes:
                 return
-            
+
             for node in nodes:
                 # Get metrics for this node
                 metric_rows = node.get("metric_rows", [])
-                
+
                 if metric_rows:
                     # Recalculate aggregated status
                     aggregated_status = aggregate_status(metric_rows, self.data.metric_status)
-                    
+
                     # Update icon based on status
                     if aggregated_status == "Fail":
                         icon = "cancel"
@@ -476,27 +508,27 @@ class Metrics(PyComponent):
                         icon = "help"
                     else:  # Pass
                         icon = "check_circle"
-                    
+
                     # Update node
                     node["status"] = aggregated_status
                     node["icon"] = icon
-                
+
                 # Recurse into children
                 if "items" in node:
                     update_node_recursive(node["items"])
-        
+
         # Update all nodes in the tree
         if self.tree.items:
             # Save current state
             current_expanded = self.tree.expanded
             current_active = self.tree.active
-            
+
             current_items = self.tree.items
             update_node_recursive(current_items)
             # Force refresh by reassigning
             self.tree.items = []
             self.tree.items = current_items
-            
+
             # Restore state
             self.tree.expanded = current_expanded
             self.tree.active = current_active

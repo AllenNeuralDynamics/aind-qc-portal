@@ -121,7 +121,7 @@ class ViewData(param.Parameterized):
             original_value = self.dataframe.loc[self.dataframe["name"] == metric_name, column_name].values[0]
 
         # Convert Status enum to string if needed
-        if hasattr(value, 'value'):
+        if hasattr(value, "value"):
             value = value.value
 
         # Encode the value for comparison (to match how it's stored in dataframe)
@@ -136,7 +136,7 @@ class ViewData(param.Parameterized):
                 ]
                 if not existing_change.empty:
                     self._remove_change(metric_name, column_name)
-                    
+
             # Update metric_status to reflect reversion to original
             if column_name == "status":
                 self.metric_status.loc[self.metric_status["name"] == metric_name, "evaluated_status"] = original_value
@@ -153,7 +153,7 @@ class ViewData(param.Parameterized):
                 self._add_change(metric_name, column_name, encoded_value)
         else:
             self._add_change(metric_name, column_name, encoded_value)
-        
+
         # Update metric_status to reflect pending change
         if column_name == "status":
             self.metric_status.loc[self.metric_status["name"] == metric_name, "evaluated_status"] = value
@@ -180,7 +180,11 @@ class ViewData(param.Parameterized):
             return []
 
         modalities = self.dataframe["modality"]
-        modalities = [modality["abbreviation"] for modality in modalities if isinstance(modality, dict) and "abbreviation" in modality]
+        modalities = [
+            modality["abbreviation"]
+            for modality in modalities
+            if isinstance(modality, dict) and "abbreviation" in modality
+        ]
         modalities = list(set(modalities))
 
         stages = self.dataframe["stage"]
@@ -194,7 +198,6 @@ class ViewData(param.Parameterized):
 
         return modalities + stages + tags
 
-    # @pn.cache(max_items=1000, policy="LFU")
     def _load_record(self):
         """Get a QualityControl object from the database by its name."""
 
@@ -233,11 +236,11 @@ class ViewData(param.Parameterized):
         metrics_copy = []
         for metric in quality_control["metrics"]:
             metric_copy = metric.copy()
-            
+
             # Encode any dict values (including nested dicts in 'value' field)
-            metric_copy['value'] = encode_dict_value(metric_copy['value'])
-            metric_copy['tags'] = encode_dict_value(metric_copy['tags'])
-            
+            metric_copy["value"] = encode_dict_value(metric_copy["value"])
+            metric_copy["tags"] = encode_dict_value(metric_copy["tags"])
+
             metrics_copy.append(metric_copy)
 
         # Create dataframe from records - dicts are now stored as JSON strings
@@ -319,15 +322,15 @@ class ViewData(param.Parameterized):
         """
         if self.dataframe.empty:
             return pd.DataFrame()
-        
+
         record = self.get_fresh_record()
         metrics = record["quality_control"]["metrics"]
 
         preview_data = []
-        
+
         for i, metric in enumerate(metrics):
             name = metric["name"]
-            
+
             # Get current values
             current_value = metric["value"]
             if isinstance(current_value, dict) and "value" in current_value:
@@ -339,81 +342,87 @@ class ViewData(param.Parameterized):
             value_change = None
             status_change = None
             has_changes = False
-            
+
             if not self.changes.empty:
                 metric_changes = self.changes[self.changes["metric_name"] == name]
-                
+
                 for _, change_row in metric_changes.iterrows():
                     column_name = change_row["column_name"]
                     new_val = decode_dict_value(change_row["value"])
-                    
+
                     if column_name == "value":
                         value_change = new_val
                         has_changes = True
                     elif column_name == "status":
                         status_change = new_val
                         has_changes = True
-            
+
             if value_change:
                 if isinstance(value_change, dict) and "value" in value_change:
                     value_change_display = value_change["value"]
                 else:
                     value_change_display = value_change
 
-            preview_data.append({
-                "metric_name": name,
-                "current_value": str(current_value),
-                "current_status": current_status,
-                "new_value": value_change_display if value_change is not None else "",
-                "new_status": status_change if status_change is not None else "",
-                "has_changes": has_changes,
-            })
+            preview_data.append(
+                {
+                    "metric_name": name,
+                    "current_value": str(current_value),
+                    "current_status": current_status,
+                    "new_value": value_change_display if value_change is not None else "",
+                    "new_status": status_change if status_change is not None else "",
+                    "has_changes": has_changes,
+                }
+            )
 
             # Also modify the record in-place to reflect pending changes
             if has_changes:
                 if value_change is not None:
                     record["quality_control"]["metrics"][i]["value"] = value_change
                 if status_change is not None:
-                    record["quality_control"]["metrics"][i]["status_history"].append({
-                        "status": status_change,
-                        "evaluator": pn.state.user if hasattr(pn.state, "user") and pn.state.user != "guest" else "unknown",
-                        "timestamp": datetime.now().isoformat(),
-                    })
-        
+                    record["quality_control"]["metrics"][i]["status_history"].append(
+                        {
+                            "status": status_change,
+                            "evaluator": (
+                                pn.state.user if hasattr(pn.state, "user") and pn.state.user != "guest" else "unknown"
+                            ),
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    )
+
         preview_df = pd.DataFrame(preview_data)
         # Sort so changed rows appear first
         preview_df = preview_df.sort_values(by="has_changes", ascending=False)
-        
+
         return preview_df, record
 
     def submit_changes_to_docdb(self, new_record) -> tuple[bool, str]:
         """Apply pending changes to the record and submit to DocDB.
-        
+
         Returns:
             tuple of (success: bool, message: str)
         """
-        try:          
+        try:
             # Step 1: Validate with QualityControl model
             try:
                 QualityControl.model_validate(new_record["quality_control"])
             except Exception as e:
                 return False, f"Validation failed: {str(e)}"
-            
+
             # Step 2: Upsert to DocDB
             try:
                 response = self._client.upsert_one_docdb_record(new_record)
-                
+
                 # Check response
                 if hasattr(response, "status_code") and response.status_code != 200:
                     return False, f"DocDB upsert failed with status {response.status_code}: {response.text}"
-                
+
                 # Clear changes on success
                 self.changes = pd.DataFrame(columns=["metric_name", "column_name", "value"])
-                
+
                 return True, "Changes submitted successfully"
-                
+
             except Exception as e:
                 return False, f"DocDB upsert error: {str(e)}"
-                
+
         except Exception as e:
             return False, f"Error during submission: {str(e)}"
