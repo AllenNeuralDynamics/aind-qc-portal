@@ -26,11 +26,15 @@ class GenericCuration(PyComponent):
         self.prefix = prefix
         self.raw_s3_loc = raw_s3_loc
 
-        keys = list(data.keys())
-        self.has_references = "reference" in data[keys[0]] if keys and isinstance(data[keys[0]], dict) else False
-
         self._init_panel_objects()
-        self._populate_data(data)
+
+        try:
+            keys = list(data.keys())
+            self.has_references = "reference" in data[keys[0]] if keys and isinstance(data[keys[0]], dict) else False
+
+            self._populate_data(data)
+        except Exception as e:
+            print(f"Error initializing GenericCuration panel: {e}")
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
