@@ -101,7 +101,7 @@ class CustomMetricValue:
         new_value = self.update_value(event.new)
 
         # Convert to dict for storage
-        new_value_dict = new_value.model_dump() if hasattr(new_value, 'model_dump') else new_value
+        new_value_dict = new_value.model_dump() if hasattr(new_value, "model_dump") else new_value
 
         # Update the metric value stored in the metric object
         self._value_callback(new_value_dict)
