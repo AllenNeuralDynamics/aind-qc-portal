@@ -277,32 +277,8 @@ def get_tag_keys_from_level(level):
 
 def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status_df=None):
     """Recursively build tree levels based on grouping levels and metrics"""
-    if level_idx > len(grouping_levels):
+    if level_idx >= len(grouping_levels):
         return None
-    
-    print(len(metrics))
-    
-    if level_idx == len(grouping_levels):
-        nodes = []
-        for row in metrics:
-            metric_name = row.get("name", "Unknown")
-            metric_status = row.get("status_history", [{}])[-1].get("status", "Pending")
-            
-            if metric_status == "Fail":
-                icon = "cancel"
-            elif metric_status == "Pending":
-                icon = "help"
-            else:
-                icon = "check_circle"
-            
-            node = {
-                "label": metric_name,
-                "icon": icon,
-                "metric_rows": [row],
-                "status": metric_status,
-            }
-            nodes.append(node)
-        return nodes if nodes else None
 
     level_keys = grouping_levels[level_idx]
     tag_keys = get_tag_keys_from_level(level_keys)
@@ -348,6 +324,7 @@ def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status
             icon = "check_circle"
 
         node = {
+            "id": node_id,
             "label": f"{tag_key}: {tag_value} ({len(node_metrics)})",
             "icon": icon,
             "metric_rows": node_metrics,
