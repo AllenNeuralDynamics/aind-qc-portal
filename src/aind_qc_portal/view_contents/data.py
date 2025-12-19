@@ -174,6 +174,7 @@ class ViewData(param.Parameterized):
         return default_grouping
 
     @property
+    @pn.cache()
     def grouping_options(self) -> list:
         """Get the grouping options for this record: all modalities and tags"""
         if self.dataframe.empty:
