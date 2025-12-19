@@ -613,7 +613,7 @@ class Metrics(PyComponent):
                 raw_s3_loc=self.data.raw_s3_location,
             )
 
-            tab_name = f"Curation: {row['name']}"
+            tab_name = row['name']
             tab = CurationTab(name=tab_name, curation_panel=curation_panel)
             tabs.append((tab.tab_name, tab))
 
@@ -648,8 +648,15 @@ class Metrics(PyComponent):
             tabs.extend(self._build_curation_metric_tabs(curation_metrics))
 
         if tabs:
-            accordion = pn.Accordion(*tabs, sizing_mode="stretch_both", active=[0])
-            self.content_panel.objects = [accordion]
+            if len(tabs) == 1:
+                header = pn.pane.Markdown(f"## {tabs[0][0]}")
+                self.content_panel.objects = [
+                    header,
+                    tabs[0][1]
+                ]
+            else:
+                accordion = pn.Accordion(*tabs, sizing_mode="stretch_both", active=[0])
+                self.content_panel.objects = [accordion]
         else:
             self.content_panel.objects = [pn.pane.Markdown("*No metrics found*")]
 
