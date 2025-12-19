@@ -1,6 +1,5 @@
 """Metrics"""
 
-import copy
 import json
 from typing import Any, Callable
 
@@ -275,6 +274,16 @@ def get_tag_keys_from_level(level):
         return level
 
 
+def get_status_icon(status: str):
+    """Get the icon name for a given status"""
+    if status == "Fail":
+        return "cancel"
+    elif status == "Pending":
+        return "help"
+    else:  # Pass
+        return "check_circle"
+
+
 def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status_df=None):
     """Recursively build tree levels based on grouping levels and metrics"""
     if level_idx >= len(grouping_levels):
@@ -301,10 +310,9 @@ def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status
     for (tag_key, tag_value), tag_metrics in level_data.items():
         node_id = f"{path_prefix}{tag_key}:{tag_value}"
         filtered_metrics = [
-            row for row in tag_metrics
-            if decode_dict_value(row.get("tags", {})).get(tag_key) == tag_value
+            row for row in tag_metrics if decode_dict_value(row.get("tags", {})).get(tag_key) == tag_value
         ]
-        
+
         children = build_tree_level(grouping_levels, filtered_metrics, level_idx + 1, f"{node_id}/", status_df)
 
         if children:
@@ -316,17 +324,10 @@ def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status
 
         aggregated_status = aggregate_status(node_metrics, status_df) if status_df is not None else "Pending"
 
-        if aggregated_status == "Fail":
-            icon = "cancel"
-        elif aggregated_status == "Pending":
-            icon = "help"
-        else:
-            icon = "check_circle"
-
         node = {
             "id": node_id,
             "label": f"{tag_key}: {tag_value} ({len(node_metrics)})",
-            "icon": icon,
+            "icon": get_status_icon(aggregated_status),
             "metric_rows": node_metrics,
             "status": aggregated_status,
         }

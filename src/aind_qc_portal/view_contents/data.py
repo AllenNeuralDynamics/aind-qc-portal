@@ -6,7 +6,7 @@ import pandas as pd
 import panel as pn
 import param
 from aind_data_access_api.document_db import MetadataDbClient
-from aind_data_schema.core.quality_control import QualityControl, QCMetric, CurationMetric, Status
+from aind_data_schema.core.quality_control import QualityControl
 
 TIMEOUT_1M = 60
 TIMEOUT_1H = 60 * 60
@@ -102,16 +102,14 @@ class ViewData(param.Parameterized):
                 ~((self.changes["metric_name"] == metric_name) & (self.changes["column_name"] == column_name))
             ]
 
-    def submit_change(self, metric_name: str, column_name: str, value: str):
-        """Submit a change to the database (stores in pending changes, does not modify original data)"""
-
+    def _get_original_value(self, metric_name: str, column_name: str):
+        """Get the original value from the dataframe for a given metric and column"""
         if self.dataframe.empty:
             raise ValueError("Dataframe is not loaded")
 
         if metric_name not in self.dataframe["name"].values:
             raise ValueError(f"Metric {metric_name} not found in dataframe")
 
-        # Get the original value from the dataframe
         if column_name == "status":
             status_history = self.dataframe.loc[self.dataframe["name"] == metric_name, "status_history"].values[0]
             original_value = status_history[-1].get("status", "Pending") if status_history else "Pending"
@@ -119,6 +117,13 @@ class ViewData(param.Parameterized):
             if column_name not in self.dataframe.columns:
                 raise ValueError(f"Column {column_name} not found in dataframe")
             original_value = self.dataframe.loc[self.dataframe["name"] == metric_name, column_name].values[0]
+
+        return original_value
+
+    def submit_change(self, metric_name: str, column_name: str, value: str):
+        """Submit a change to the database (stores in pending changes, does not modify original data)"""
+
+        original_value = self._get_original_value(metric_name, column_name)
 
         # Convert Status enum to string if needed
         if hasattr(value, "value"):
@@ -308,7 +313,7 @@ class ViewData(param.Parameterized):
 
         return records[0]
 
-    def get_submission_data(self) -> tuple[pd.DataFrame, dict]:
+    def get_submission_data(self) -> tuple[pd.DataFrame, dict]:  # noqa: C901
         """Build a dataframe for the submission preview table.
 
         Uses a fresh copy of the record from DocDB
