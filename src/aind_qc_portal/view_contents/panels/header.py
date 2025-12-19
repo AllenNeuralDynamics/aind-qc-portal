@@ -1,105 +1,97 @@
-import pandas as pd
+"""Header"""
+
 import panel as pn
 import param
 from panel.custom import PyComponent
 
 from aind_qc_portal.layout import OUTER_STYLE
-from aind_qc_portal.utils import qc_status_color_css
 from aind_qc_portal.view_contents.panels.settings import Settings
+
+from aind_metadata_utils.data_assets import co_id_to_co_link, name_to_metadata_view_link
 
 
 class Header(PyComponent):
     """Header for the QC view application"""
 
     record: param.Dict = param.Dict(default={})
-    status: param.DataFrame = param.DataFrame(default=pd.DataFrame())
 
-    def __init__(self, record: dict, status: dict, settings: Settings):
+    def __init__(self, record: dict, settings: Settings):
+        """Initialize Header with record, status, and settings"""
         super().__init__()
         self._init_panel_objects()
 
         self.record = record
-        self.status = status
         self.settings = settings
 
-        # Watch for changes in settings.group_by
-        self.settings.param.watch(self._update_status_panel, "group_by")
+        self.settings.param.watch(self._update_status_panel, "default_grouping")
 
     def _update_status_panel(self, event):
-        """Trigger update when group_by changes"""
+        """Trigger update when default_grouping changes"""
         self.param.trigger("status")
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
-
         self.header_text = pn.pane.Markdown()
-        self.status_table = pn.pane.DataFrame(
-            index=False,
-            escape=False,
-        )
 
     @pn.depends("record")
     def _header_panel(self):
+        """Create header panel with record information"""
+        # Get metadata link
+        metadata_link = name_to_metadata_view_link(self.record["name"])
+
+        # Get CO link if available
+        other_ids = self.record.get("other_identifiers", {})
+        if other_ids and "Code Ocean" in other_ids:
+            co_link = co_id_to_co_link(other_ids["Code Ocean"][0])
+        else:
+            co_link = ""
+
+        project_name = self.record.get("data_description", {}).get("project_name")
+        project_link = f"/portal?projects=['{project_name}']"
+
+        metrics = self.record.get("quality_control", {}).get("metrics", [])
+        modalities = []
+        stages = []
+
+        for metric in metrics:
+            if "modality" in metric:
+                modalities.append(metric["modality"]["abbreviation"])
+            if "stage" in metric:
+                stages.append(metric["stage"])
+
+        modalities = list(set(modalities))
+        stages = list(set(stages))
+
+        # Order stages so that "Raw data" comes first if present
+        if "Raw data" in stages:
+            stages.remove("Raw data")
+            stages = ["Raw data"] + stages
+
         header_md = f"""
 ## {self.record["name"]}
-Return to [{self.record.get("data_description", {}).get("project_name")}](todo) | [S3 Link]({self.record.get("location")})
-"""
+Modalities: **{', '.join(modalities)}** | Stages: **{', '.join(stages)}**  
+Return to <a href="{project_link}" target="_blank">{project_name}</a> | {metadata_link} | {co_link}
+"""  # noqa: W291
         self.header_text.object = header_md
 
         return self.header_text
 
-    @pn.depends("status", watch=True)
-    def _status_panel(self):
-        """Create a table to display the status of the QC metrics"""
-        if not self.status.empty:
-            status_copy = self.status.copy()
-
-            # Get column names excluding the first column
-            # Re-order self.status columns so that the group_by columns are first
-            # Make sure the first column stays in place
-            if hasattr(self, "settings"):
-                new_columns = [self.status.columns[0]]
-                new_columns += [col for col in self.status.columns if col in self.settings.group_by]
-                new_columns += [
-                    col
-                    for col in self.status.columns
-                    if col not in self.settings.group_by and col != self.status.columns[0]
-                ]
-                status_copy = status_copy[new_columns]
-
-            def apply_styling(x):
-                styles = []
-                for i, val in enumerate(x):
-                    col_name = status_copy.columns[i]
-                    if i == 0:
-                        styles.append("")
-                    elif col_name in self.settings.group_by:
-                        styles.append(qc_status_color_css(val))
-                    elif col_name not in self.settings.group_by:
-                        styles.append("color: #999; background-color: #f5f5f5")
-                return styles
-
-            styled_df = (
-                status_copy.style.apply(apply_styling, axis=1)
-                .hide(axis="index")
-                .set_table_styles(
-                    [
-                        {"selector": "table", "props": [("border-collapse", "collapse")]},
-                        {"selector": "th, td", "props": [("border", "1px solid #ddd"), ("padding", "8px")]},
-                    ]
-                )
-            )
-
-            self.status_table.object = styled_df
-        else:
-            self.status_table.object = status_copy
-
-        return self.status_table
-
     def __panel__(self):
         """Create and return the header layout"""
 
-        full_column = pn.Column(
-            self._header_panel(), self._status_panel(), self.settings, styles=OUTER_STYLE, sizing_mode="stretch_width"
+        content = pn.Column(self._header_panel(), styles=OUTER_STYLE, sizing_mode="stretch_width")
+
+        gear_button_wrapper = pn.Row(
+            self.settings,
+            styles={
+                "position": "absolute",
+                "top": "10px",
+                "right": "40px",
+                "z-index": "1000",
+            },
+            sizing_mode="fixed",
+            width=40,
+            height=40,
         )
-        return full_column
+
+        return pn.Column(content, gear_button_wrapper, styles={"position": "relative"}, sizing_mode="stretch_both")

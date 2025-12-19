@@ -25,6 +25,23 @@ Metrics should have actionable `value` fields. Either the value should be a numb
 
 Almost all metrics should have a `reference` image, figure, or video attached. Often the `reference` should be shared across multiple metrics. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers, keep in mind that the portal is a public-facing resource! References can also embed linked pages in an iframe. Embedded links can point to Neuroglancer, FigURL, Rerun, and SortingView.
 
+**Q: How should I organize my hierarchy of metrics?**
+
+To create the hierarchy visible in the QC portal you control the `QualityControl.default_grouping` which sets how tags are split in the tree and the `QCMetric.tags` dictionaries. Note that for multi-modal QC the portal automatically splits by modality at the first level.
+
+A typical metric should have a tag that looks like:
+
+```
+tags={
+   "probe": "probeA",
+   "type": "motion correction"
+}
+```
+
+And then the `default_grouping = ["probe", "type"]. Note that `"stage"` is always available as a tag for all metrics.
+
+There is no point to using a tag if it isn't shared across more than one metric. The example above will create a hierarchy that is split first into different probes and then the groups of metrics according to their type. If a second data asset is merged with this one that uses a different modality then the portal will split the entire hierarchy by modality at the top level. 
+
 **Q: `QCMetric.value` has type `Any`, what types are acceptable?**
 
 We expect the value to refer to a quantitative or qualitative assessment of some property of the data. When compared to a rule or threshold, the value establishes where that metric passes or fails quality control. So in general, the `value` field should be a number, string, or list of numbers/strings. Below is a table describing how different types are displayed in the portal:
@@ -69,9 +86,9 @@ You have a few options for where to store files. In general we *prefer* that you
 
 Neuroglancer, Figurl, and SortingView links should point to the exact URL that opens the view you want.
 
-**Q: Can I put links into the `description` field to other resources?**
+**Q: How does the `description` field get parsed?**
 
-The description field gets parsed as markdown, use the format `[text](url)`.
+The description field gets parsed as markdown. For links use the format `[text](url)`. For mathematical typesetting use [mathjax](https://docs.mathjax.org/en/latest/) styling.
 
 **Q: I saw fancy things like dropdowns in the QC Portal, how do I do that?**
 
@@ -266,23 +283,133 @@ Panel launches two apps `view` and `portal`. The entrypoints for each app `view.
 
 All classes used in the UI inherit from `panel.custom.PyComponent` which makes them `Parameterized`, i.e. they can define parameter variables and these can be watched using `object.param.watch(callback, [<param_name>])`. This is what makes the user interface update when data changes in the background.
 
-### Launch
+### Environment Variables
 
-```sh
-anel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py --dev --show --port 5007 --plugins aind_qc_portal.plugin --static-dirs images=./src/aind_qc_portal/images --oauth-redirect-uri=\"http://localhost:5007/qc_app\" --oauth-optional --index portal.py --num-threads 0
+The following environment variables are used by the QC Portal:
+
+#### Required for Local Development
+
+| Variable | Description | Example Value | Notes |
+|----------|-------------|---------------|-------|
+| `BYPASS_CODEOCEAN_S3` | Bypasses Code Ocean cross-account S3 access | `1` | **Required for local dev** unless you have the `AindCodeOceanBucketCrossAccountAccess` IAM role. Set to `1` to skip role assumption. |
+| `AWS_PROFILE` | AWS credentials profile to use | `dev` or `prod` | Required for accessing S3 media files in aind-open-data and the private codeocean buckets. AIND dev credentials will not work on the development branch for testing assets that have media in private buckets. |
+
+#### Required for Panel Server (Docker & Production)
+
+| Variable | Description | Example Value | Notes |
+|----------|-------------|---------------|-------|
+| `ALLOW_WEBSOCKET_ORIGIN` | WebSocket origins allowed to connect | `localhost:5007` (local)<br>`qc.allenneuraldynamics.org` (prod) | Prevents WebSocket connection errors. For local dev use `localhost:<port>`. |
+| `OAUTH_REDIRECT` | OAuth callback URL | `http://localhost:5007` (local)<br>`https://qc.allenneuraldynamics.org` (prod) | Where OAuth provider redirects after authentication. Must match your OAuth app configuration. |
+
+#### Optional - OAuth Authentication
+
+Leave these unset to run in "guest" mode (read-only access):
+
+| Variable | Description | Example Value |
+|----------|-------------|---------------|
+| `PANEL_OAUTH_PROVIDER` | OAuth provider name | `azure` |
+| `PANEL_OAUTH_KEY` | OAuth application client ID | `<your-client-id>` |
+| `PANEL_OAUTH_SECRET` | OAuth application client secret | `<your-client-secret>` |
+| `PANEL_OAUTH_EXTRA_PARAMS[tenant_id]` | Azure AD tenant ID (Azure only) | `<your-tenant-id>` |
+| `PANEL_COOKIE_SECRET` | Secret for cookie encryption | `<your-cookie-secret>` |
+| `PANEL_OAUTH_ENCRYPTION` | OAuth token encryption key | `<your-encryption-key>` |
+
+**Setting OAuth variables (bash/zsh):**
+```bash
+export PANEL_OAUTH_PROVIDER="azure" 
+export PANEL_OAUTH_KEY="<your-client-id>"
+export PANEL_OAUTH_SECRET="<your-client-secret>"
+typeset -A PANEL_OAUTH_EXTRA_PARAMS
+PANEL_OAUTH_EXTRA_PARAMS[tenant_id]="<your-tenant-id>"
+export PANEL_OAUTH_EXTRA_PARAMS
+export PANEL_COOKIE_SECRET="<your-cookie-secret>"
+export PANEL_OAUTH_ENCRYPTION="<your-encryption-key>"
 ```
 
-### CI/CD
-There is a `Dockerfile` which includes the entrypoint to launch the app.
+### Launch (Local Development)
 
-#### Local dev
-1. Build the Docker image locally and run a Docker container:
-```sh
+#### Option 1: Using uv (Recommended for quick iterative testing)
+
+**Setup:**
+```bash
+uv venv --python 3.12
+uv sync
+```
+
+**Set required environment variables:**
+```bash
+export BYPASS_CODEOCEAN_S3=1
+export AWS_PROFILE="<your-profile>"
+```
+
+**Launch:**
+```bash
+panel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py \
+  --dev \
+  --show \
+  --port 5007 \
+  --plugins aind_qc_portal.plugin \
+  --static-dirs images=./src/aind_qc_portal/images \
+  --oauth-redirect-uri="http://localhost:5007" \
+  --oauth-optional \
+  --index=portal \
+  --num-threads 0
+```
+
+**Access the application:**
+- Portal: http://localhost:5007/portal
+- View: http://localhost:5007/view?name=<asset-name>
+
+#### Option 2: Using Docker (Recommended for deployment testing)
+
+Docker provides a closer match to the production deployment environment. Use this to test changes before they go live. 
+
+**Prerequisites:**
+- Docker installed and running
+- AWS credentials configured in `~/.aws` (Windows: `%USERPROFILE%\.aws`)
+
+**Build the Docker image:**
+```bash
 docker build -t aind-qc-portal .
-docker run -e ALLOW_WEBSOCKET_ORIGIN=localhost:8000 -p 8000:8000 aind-qc-portal
 ```
-2. Navigate to 'localhost:8000` to view the app.
 
-#### AWS
+**Run the container:**
+
+For **Windows (Git Bash/MSYS2)**:
+```bash
+MSYS_NO_PATHCONV=1 docker run \
+  -v $USERPROFILE/.aws:/root/.aws:ro \
+  -e ALLOW_WEBSOCKET_ORIGIN=localhost:5007 \
+  -e OAUTH_REDIRECT=http://localhost:5007 \
+  -e AWS_PROFILE=<your-profile> \
+  -e BYPASS_CODEOCEAN_S3=1 \
+  -p 5007:5007 \
+  aind-qc-portal
+```
+
+For **Linux/macOS**:
+```bash
+docker run \
+  -v ~/.aws:/root/.aws:ro \
+  -e ALLOW_WEBSOCKET_ORIGIN=localhost:5007 \
+  -e OAUTH_REDIRECT=http://localhost:5007 \
+  -e AWS_PROFILE=<your-profile> \
+  -e BYPASS_CODEOCEAN_S3=1 \
+  -p 5007:5007 \
+  aind-qc-portal
+```
+
+**Access the application:**
+- Portal: http://localhost:5007/portal
+- View: http://localhost:5007/view?name=<asset-name>
+
+**Note**: Unlike `panel serve --dev` with auto-reload, Docker requires rebuilding the image after each code change. For rapid iteration, use the `uv` method above. Use Docker primarily for final testing before deployment.
+
+
+### Deployment in AWS
+
 1. On pushes to the `dev` or `main` branch, a GitHub Action will run to publish a Docker image to `ghcr.io/allenneuraldynamics/aind-qc-portal:dev` or `ghcr.io/allenneuraldynamics/aind-qc-portal:latest`.
-2. The image can be used by a ECS Service in AWS to run a task container. Application Load Balancer can be used to serve the container from ECS. Please note that the task must be configured with the correct env variables (e.g. `API_GATEWAY_HOST`, `ALLOW_WEBSOCKET_ORIGIN`).
+2. The image can be used by a ECS Service in AWS to run a task container. Application Load Balancer can be used to serve the container from ECS. Please note that the task must be configured with the correct env variables.
+   - `ALLOW_WEBSOCKET_ORIGIN=qc.allenneuraldynamics.org`
+   - `OAUTH_REDIRECT=https://qc.allenneuraldynamics.org`
+   - `BYPASS_CODEOCEAN_S3` should **NOT** be set in production (AWS task role provides proper permissions)

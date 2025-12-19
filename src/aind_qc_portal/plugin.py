@@ -6,8 +6,10 @@ from aind_qc_portal.view_contents.data import upload_temporary_metadata
 
 
 class UploadMetadataHandler(RequestHandler):
+    """Request handler for uploading metadata"""
 
     def post(self):
+        """Handle POST requests to upload metadata"""
         try:
             # Parse JSON from request body
             if self.request.body:
@@ -16,19 +18,19 @@ class UploadMetadataHandler(RequestHandler):
                 metadata = None
 
             if not metadata:
-                raise HTTPError(400, 'No metadata provided.')
+                raise HTTPError(400, "No metadata provided.")
 
             upload_temporary_metadata(metadata)
             status_code = 200  # Temporary success status
-            self.set_header('Content-Type', 'application/json')
-            self.write({'status': status_code})
+            self.set_header("Content-Type", "application/json")
+            self.write({"status": status_code})
         except json.JSONDecodeError:
-            raise HTTPError(400, 'Invalid JSON in request body.')
+            raise HTTPError(400, "Invalid JSON in request body.")
         except Exception as e:
-            raise HTTPError(500, f'Failed to upload metadata: {str(e)}')
+            raise HTTPError(500, f"Failed to upload metadata: {str(e)}")
 
 
-ROUTES = [('/upload_metadata', UploadMetadataHandler, {})]
+ROUTES = [("/upload_metadata", UploadMetadataHandler, {})]
 
 # Export ROUTES for Panel server to discover
-__all__ = ['ROUTES']
+__all__ = ["ROUTES"]

@@ -2,6 +2,7 @@
 
 MARGIN = 10
 METRIC_VALUE_WIDTH = 300
+WIDGET_WIDTH = METRIC_VALUE_WIDTH - MARGIN * 4
 
 AIND_COLORS = colors = {
     "dark_blue": "#003057",

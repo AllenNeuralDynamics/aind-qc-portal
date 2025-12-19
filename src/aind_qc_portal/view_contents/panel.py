@@ -1,4 +1,4 @@
-""" Main Panel object for the view app
+"""Main Panel object for the view app
 
 This only builds the columns/rows of the main layout. It shouldn't use the OUTER_STYLE styling in the layout
 (except for handling errors).
@@ -22,6 +22,7 @@ class QCPanel(PyComponent):
     record_name: param.String
 
     def __init__(self, record_name, data: ViewData):
+        """Initialize QCPanel with record name and data"""
         super().__init__()
         self.record_name = record_name
         self._data = data
@@ -33,18 +34,22 @@ class QCPanel(PyComponent):
 
         if self._data.dataframe.empty:
             self.no_content = pn.widgets.StaticText(
-                value=f"No data available for record: {self.record_name}", styles=OUTER_STYLE
+                value=f"No QC data available for record: {self.record_name}", styles=OUTER_STYLE
             )
             return
 
+        default_grouping = self._data.default_grouping
+        modalities, grouping_options = self._data.grouping_options
+
         self.settings = Settings(
-            default_grouping=self._data.default_grouping, grouping_options=self._data.grouping_options
-        )
+            modalities=modalities,
+            default_grouping=default_grouping,
+            grouping_options=grouping_options)
         self.submit_panel = SubmitPanel(data=self._data)
 
         # Other panels have a dependency on settings
-        self.header = Header(record=self._data.record, status=self._data.status, settings=self.settings)
-        self.metrics = Metrics(data=self._data, settings=self.settings, callback=self._data.submit_change)
+        self.header = Header(record=self._data.record, settings=self.settings)
+        self.metrics = Metrics(data=self._data, callback=self._data.submit_change, settings=self.settings)
 
     def __panel__(self):
         """Create and return the Panel layout"""
@@ -53,10 +58,10 @@ class QCPanel(PyComponent):
         if self._data.dataframe.empty:
             return pn.Row(pn.HSpacer(), self.no_content, pn.HSpacer(), sizing_mode="stretch_width")
 
-        header_submit_row = pn.Row(self.header, self.submit_panel, sizing_mode="stretch_width")
+        header_submit_row = pn.Row(self.header, self.submit_panel, sizing_mode="stretch_width", height=135)
         content_row = pn.Row(
             self.metrics,
-            sizing_mode="stretch_width",
+            # sizing_mode="stretch_width",
         )
 
         return pn.Column(

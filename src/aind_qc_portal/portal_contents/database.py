@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional
 from aind_data_access_api.document_db import MetadataDbClient
 import panel as pn
+from zombie_squirrel import unique_project_names, asset_basics
 
 client = MetadataDbClient(
     host="api.allenneuraldynamics.org",
@@ -20,6 +21,7 @@ FIELDS = [
     "name",
     "data_description.data_level",
     "data_description.source_data",
+    "data_description.modalities",
     "acquisition.acquisition_start_time",
     "subject.subject_id",
     "data_description.project_name",
@@ -27,6 +29,7 @@ FIELDS = [
     "processing.data_processes.start_date_time",
     "subject.subject_details.genotype",
     "location",
+    "other_identifiers",
 ]
 
 TTL_DAY = 24 * 60 * 60
@@ -38,8 +41,8 @@ class Database:
 
     def build_query(
         self,
-        project_name: Optional[str] = None,
-        subject_id: Optional[str] = None,
+        project_name: Optional[list[str]] = None,
+        subject_id: Optional[list[str]] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
     ):
@@ -59,6 +62,29 @@ class Database:
             query["acquisition.acquisition_start_time"] = time_query
 
         return query
+
+    def get_query_count(
+        self,
+        project_name: Optional[list[str]] = None,
+        subject_id: Optional[list[str]] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> int:
+        """Get the count of records matching the query using the zombie-squirrel asset basics df"""
+
+        df = asset_basics()
+
+        # Apply filters
+        if project_name:
+            df = df[df["project_name"].isin(project_name)]
+        if subject_id:
+            df = df[df["subject_id"].isin(subject_id)]
+        if start_date:
+            df = df[df["acquisition_start_time"] >= start_date.isoformat()]
+        if end_date:
+            df = df[df["acquisition_start_time"] <= end_date.isoformat()]
+
+        return len(df)
 
     def get_ids(self, query: dict):
         """Get a list of record IDs matching the query"""
@@ -86,65 +112,38 @@ class Database:
             print(f"Error fetching records: {e}")
             return []
 
-    @pn.cache(ttl=TTL_DAY)
     def get_unique_project_names(self):
         """Get unique project names from the database"""
 
-        try:
-            unique_projects = client.aggregate_docdb_records(
-                pipeline=[
-                    {"$group": {"_id": "$data_description.project_name"}},
-                    {"$project": {"project_name": "$_id", "_id": 0}},
-                ],
-            )
-            return [project["project_name"] for project in unique_projects]
-        except Exception as e:
-            print(f"Error fetching unique project names: {e}")
-            return []
+        return unique_project_names()
 
     @pn.cache(ttl=TTL_DAY)
     def get_subject_ids(self, project_names: Optional[list[str]] = None):
         """Get unique subject IDs for the given project names"""
 
-        try:
-            subject_ids = client.aggregate_docdb_records(
-                pipeline=(
-                    [
-                        {"$match": {"data_description.project_name": {"$in": project_names}}},
-                        {"$group": {"_id": "$subject.subject_id"}},
-                        {"$project": {"subject_id": "$_id", "_id": 0}},
-                    ]
-                    if project_names
-                    else [{"$group": {"_id": "$subject.subject_id"}}, {"$project": {"subject_id": "$_id", "_id": 0}}]
-                ),
-            )
-            return [subject["subject_id"] for subject in subject_ids]
-        except Exception as e:
-            print(f"Error fetching subject IDs: {e}")
-            return []
+        df = asset_basics()
+
+        # Filter by project_names if provided
+        if project_names:
+            df = df[df["project_name"].isin(project_names)]
+
+        return df["subject_id"].unique().tolist()
 
     @pn.cache(ttl=TTL_HOUR)
     def get_acquisition_time_range(self, project_names: list[str]):
         """Get the earliest start time for the given project names"""
 
-        try:
-            time_range = client.aggregate_docdb_records(
-                pipeline=[
-                    {"$match": {"data_description.project_name": {"$in": project_names}}},
-                    {
-                        "$group": {
-                            "_id": None,
-                            "min_start_time": {"$min": "$acquisition.acquisition_start_time"},
-                            "max_start_time": {"$max": "$acquisition.acquisition_start_time"},
-                        }
-                    },
-                    {"$project": {"min_start_time": "$min_start_time", "max_start_time": "$max_start_time", "_id": 0}},
-                ],
-            )
-            return (
-                time_range[0]["min_start_time"] if time_range else None,
-                time_range[0]["max_start_time"] if time_range else None,
-            )
-        except Exception as e:
-            print(f"Error fetching start time: {e}")
+        df = asset_basics()
+
+        # Filter by project_names if provided
+        if project_names:
+            df = df[df["project_name"].isin(project_names)]
+
+        # Get all acquisition_start_time and end_time values, compute min start and max end
+        if df.empty:
             return None
+
+        min_start_time = df["acquisition_start_time"].dropna().min()
+        max_start_time = df["acquisition_start_time"].dropna().max()
+
+        return (min_start_time, max_start_time)

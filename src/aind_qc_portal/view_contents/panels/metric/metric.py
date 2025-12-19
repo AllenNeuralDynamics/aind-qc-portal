@@ -1,8 +1,12 @@
+"""Custom metrics"""
+
 from typing import Any, Callable
 
 import panel as pn
 from aind_data_schema.core.quality_control import Status
+
 from aind_qcportal_schema.metric_value import CheckboxMetric, DropdownMetric
+from aind_qc_portal.layout import WIDGET_WIDTH
 
 
 class CustomMetricValue:
@@ -30,7 +34,7 @@ class CustomMetricValue:
                     self._auto_state = self._data.status is not None
                     self._dropdown_helper(data)
                 except Exception as e:
-                    print(f"Failed to validate dropdown metric: {data}")
+                    print(f"Failed to validate dropdown metric: {data} with error: {e}")
                     raise
             elif data["type"] == "checkbox":
                 self._data = CheckboxMetric.model_validate(data)
@@ -65,17 +69,12 @@ class CustomMetricValue:
             )
 
     def update_value(self, value):
-        """
-        Update to a new value and return what should be stored in the QCMetric.value field
-        """
+        """Update to a new value and return what should be stored in the QCMetric.value field"""
         if isinstance(self._data, DropdownMetric):
-            print(f"Updating dropdown value to {value}")
             self._data.value = value
         elif isinstance(self._data, CheckboxMetric):
-            print(f"Updating checkbox value to {value}")
             self._data.value = value
         else:
-            print(f"Updating dictionary value to {value}")
             self._data.value = value
 
         return self._data
@@ -101,10 +100,13 @@ class CustomMetricValue:
         # Update the metric's value
         new_value = self.update_value(event.new)
 
-        # Update the metric value stored in the metric object
-        self._value_callback(new_value)
+        # Convert to dict for storage
+        new_value_dict = new_value.model_dump() if hasattr(new_value, "model_dump") else new_value
 
-        # Update the status if it is supposed to be updated automatically
+        # Update the metric value stored in the metric object
+        self._value_callback(new_value_dict)
+
+        # # Update the status if it is supposed to be updated automatically
         if self._auto_state:
             try:
                 if isinstance(self._data, CheckboxMetric):
@@ -117,13 +119,13 @@ class CustomMetricValue:
                             self._status_callback(Status.PENDING)
                         else:
                             self._status_callback(Status.PASS)
-                    elif isinstance(self._data, DropdownMetric):
-                        if self._data.status:
-                            idx = self._data.options.index(self._data.value)
-                            self._status_callback(self._data.status[idx])
-                        else:
-                            print(f"Unsupported metric type for auto state update: {self._data}")
-                            self._status_callback(Status.PENDING)
+                elif isinstance(self._data, DropdownMetric):
+                    if self._data.status:
+                        idx = self._data.options.index(self._data.value)
+                        self._status_callback(self._data.status[idx])
+                    else:
+                        print(f"Unsupported metric type for auto state update: {self._data}")
+                        self._status_callback(Status.PENDING)
             except Exception as e:
                 print(e)
                 self._status_callback(Status.PENDING)
@@ -133,6 +135,7 @@ class CustomMetricValue:
         self._panel = pn.widgets.Select(
             name="Value",
             options=[""] + data["options"],
+            width=WIDGET_WIDTH,
         )
         if data["value"]:
             self._panel.value = data["value"]
@@ -147,6 +150,7 @@ class CustomMetricValue:
         self._panel = pn.widgets.MultiChoice(
             name="Value",
             options=data["options"],
+            width=WIDGET_WIDTH,
         )
         if (
             data["value"]

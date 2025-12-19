@@ -1,5 +1,8 @@
+"""Util functions"""
+
 import os
 import tempfile
+from urllib.parse import unquote, quote
 
 import boto3
 import httpx
@@ -7,6 +10,8 @@ import panel as pn
 import param
 from panel.custom import JSComponent
 from panel.reactive import ReactiveHTML
+import requests
+import urllib
 
 s3_client = boto3.client(
     "s3",
@@ -15,22 +20,18 @@ s3_client = boto3.client(
 )
 
 
-### TEMP CODE TO HANDLE AUTH ISSUES
+# TEMP CODE TO HANDLE AUTH ISSUES
 if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
     codeocean_s3_client = s3_client
 else:
+
     def get_role_session(role_arn, session_name="assumed-session"):
-        """
-        Assume a role and return a boto3 Session for it.
-        """
+        """Assume a role and return a boto3 Session for it"""
         # Use your default credentials (from ~/.aws/credentials or env vars)
         sts_client = boto3.client("sts")
 
         # Assume the role
-        response = sts_client.assume_role(
-            RoleArn=role_arn,
-            RoleSessionName=session_name
-        )
+        response = sts_client.assume_role(RoleArn=role_arn, RoleSessionName=session_name)
 
         creds = response["Credentials"]
 
@@ -38,9 +39,8 @@ else:
         return boto3.Session(
             aws_access_key_id=creds["AccessKeyId"],
             aws_secret_access_key=creds["SecretAccessKey"],
-            aws_session_token=creds["SessionToken"]
+            aws_session_token=creds["SessionToken"],
         )
-
 
     role_session = get_role_session("arn:aws:iam::467914378000:role/AindCodeOceanBucketCrossAccountAccess")
     codeocean_s3_client = role_session.client(
@@ -48,7 +48,7 @@ else:
         region_name="us-west-2",
         config=boto3.session.Config(signature_version="s3v4"),
     )
-### END TEMP CODE TO HANDLE AUTH ISSUES
+# END TEMP CODE TO HANDLE AUTH ISSUES
 
 
 MEDIA_TTL = 3600  # 1 hour
@@ -180,8 +180,46 @@ def reference_is_pdf(reference):
     return reference.endswith(".pdf")
 
 
-@pn.cache(max_items=10000, policy="LFU", ttl=MEDIA_TTL)
-def _get_s3_url(bucket, key):
+def clean_reference_prefix(reference: str):
+    """Remove results/ prefix from reference"""
+    if "results/" in reference:
+        reference = reference.split("results/")[1]
+
+    return reference
+
+
+def clean_reference_url(reference: str):
+    """Make sure a URL isn't encoded"""
+    if "http" in reference:
+        reference = unquote(reference)
+    return reference
+
+
+def is_presigned_url_valid(url: str) -> bool:
+    """Check if a presigned S3 URL is valid"""
+    try:
+        # Use GET with Range header to fetch only 1 byte instead of HEAD
+        # S3 presigned URLs with SignedHeaders=host fail with HEAD due to extra headers
+        headers = {"Range": "bytes=0-0"}
+        response = requests.get(url, headers=headers, allow_redirects=True, timeout=5)
+
+        # Valid URLs return 200 OK, 206 Partial Content, or 416 Range Not Satisfiable
+        if response.status_code in (200, 206, 416):
+            return True
+
+        # Expired or invalid URLs from S3 return 403 Forbidden
+        # with specific S3 error codes in headers or body
+        if response.status_code == 403:
+            return False
+
+        # Other codes may indicate permissions or other problems
+        return False
+
+    except requests.RequestException:
+        return False
+
+
+def get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
 
     Parameters
@@ -191,6 +229,9 @@ def _get_s3_url(bucket, key):
     key : str
         S3 key name
     """
+    if not bucket or not key:
+        return None
+
     if "codeocean" in bucket:
         return codeocean_s3_client.generate_presigned_url(
             "get_object",
@@ -221,6 +262,14 @@ def _get_s3_file(url, ext):
     except Exception as e:
         print(f"[ERROR] Failed to fetch asset {url}, error: {e}")
         return None
+
+
+def encode_url(url):
+    """Encode a URL"""
+    base_url, query_string = url.split("?")
+    encoded_query_string = urllib.parse.quote(query_string, safe="")
+
+    return f"{base_url}?{encoded_query_string}"
 
 
 def _parse_rrd(reference, data):
@@ -263,12 +312,27 @@ def _parse_sortingview(reference, data, media_obj):
     )
 
 
+def parse_ephys_gui_app(reference, data, raw_asset_s3, derived_asset_s3):
+    """Parse a sortingview URL and return the appropriate object"""
+    data = data.replace("{derived_asset_location}", f"s3://{derived_asset_s3.lstrip('s3://')}")
+    data = data.replace("{raw_asset_location}", f"s3://{raw_asset_s3.lstrip('s3://')}")
+    data = quote(data, safe=":/?&=")
+    iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
+    return pn.Column(
+        pn.pane.HTML(
+            iframe_html,
+            sizing_mode="stretch_width",
+            height=1000,
+        ),
+    )
+
+
 class CurationData(JSComponent):
     """A CurationData component that allows the user to toggle curation data."""
 
     curation_json = param.Dict()
 
-    _esm = """
+    _esm = r"""
     export function render({ model }) {
         window.addEventListener('message', (event) => {
             // Check if the message is from the expected origin
