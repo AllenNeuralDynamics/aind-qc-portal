@@ -30,8 +30,8 @@ class Settings(PyComponent):
 
         # Force modality as first level if multiple modalities
         if len(self.modalities) > 1:
-            if not self.default_grouping or self.default_grouping[0] != 'modality':
-                self.default_grouping = ['modality'] + (self.default_grouping if self.default_grouping else [])
+            if not self.default_grouping or self.default_grouping[0] != "modality":
+                self.default_grouping = ["modality"] + (self.default_grouping if self.default_grouping else [])
 
         self._init_modal()
 
@@ -84,7 +84,7 @@ class Settings(PyComponent):
             print(f"[Settings._init_modal] default_grouping is truthy, creating {len(self.default_grouping)} levels")
             for i, level_keys in enumerate(self.default_grouping):
                 print(f"[Settings._init_modal] Creating level {i} with keys: {level_keys}")
-                is_first = (i == 0)
+                is_first = i == 0
                 self._create_level_widget(level_keys, is_first_level=is_first)
         else:
             is_first = True
@@ -106,7 +106,7 @@ class Settings(PyComponent):
         # For first level with multiple modalities, force 'modality' and disable
         force_modality = is_first_level and len(self.modalities) > 1
         if force_modality:
-            value_list = ['modality']
+            value_list = ["modality"]
 
         multichoice = pn.widgets.MultiChoice(
             name=f"Level {level_idx}",
@@ -174,8 +174,8 @@ class Settings(PyComponent):
 
         # Ensure first level is modality if multiple modalities
         if len(self.modalities) > 1:
-            if not new_grouping or new_grouping[0] != 'modality':
-                new_grouping = ['modality'] + new_grouping
+            if not new_grouping or new_grouping[0] != "modality":
+                new_grouping = ["modality"] + new_grouping
 
         self.default_grouping = new_grouping
 

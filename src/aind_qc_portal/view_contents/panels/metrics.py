@@ -530,6 +530,95 @@ class Metrics(PyComponent):
             self.tree.expanded = current_expanded
             self.tree.active = current_active
 
+    def _build_qc_metric_tabs(self, qc_metrics):
+        """Build tabs for QC metrics
+        
+        Args:
+            qc_metrics: List of QC metric row dictionaries
+            
+        Returns:
+            List of (tab_name, tab) tuples
+        """
+        tabs = []
+        reference_to_values = {}
+        
+        for row in qc_metrics:
+            reference = row.get("reference")
+
+            value_panel = MetricValue(
+                name=row["name"],
+                description=row["description"],
+                value=decode_dict_value(row["value"]),
+                tags=decode_dict_value(row["tags"]),
+                stage=row["stage"],
+                modality=row["modality"]["abbreviation"],
+                status=row["status_history"][-1]["status"],
+                callback=self.callback,
+                settings=self.settings,
+            )
+
+            if reference not in reference_to_values:
+                reference_to_values[reference] = []
+            reference_to_values[reference].append(value_panel)
+
+        for reference, value_panels in reference_to_values.items():
+            if reference not in self.media_cache:
+                media_panel = Media(
+                    reference,
+                    s3_bucket=self.data.s3_bucket,
+                    s3_prefix=self.data.s3_prefix,
+                    raw_s3_loc=self.data.raw_s3_location,
+                    lazy_load=True,
+                )
+                self.media_cache[reference] = media_panel
+            else:
+                media_panel = self.media_cache[reference]
+
+            if not media_panel.loaded:
+                media_panel.load()
+
+            tab_name = f"({media_panel.media_type}: {reference})" if reference else "Metrics"
+            tab = MetricTab(name=tab_name, metric_media=media_panel, metric_values=value_panels)
+            tabs.append((tab.tab_name, tab))
+            
+        return tabs
+
+    def _build_curation_metric_tabs(self, curation_metrics):
+        """Build tabs for curation metrics
+        
+        Args:
+            curation_metrics: List of curation metric row dictionaries
+            
+        Returns:
+            List of (tab_name, tab) tuples
+        """
+        tabs = []
+        
+        for row in curation_metrics:
+            # Parse the value - it's a JSON string containing the curation data
+            curation_value = decode_dict_value(row["value"])
+
+            # The value is a list with a single JSON string element
+            if isinstance(curation_value, list) and len(curation_value) > 0:
+                curation_data = json.loads(curation_value[0])
+            elif isinstance(curation_value, str):
+                curation_data = json.loads(curation_value)
+            else:
+                curation_data = curation_value
+
+            curation_panel = GenericCuration(
+                data=curation_data,
+                bucket=self.data.s3_bucket,
+                prefix=self.data.s3_prefix,
+                raw_s3_loc=self.data.raw_s3_location,
+            )
+
+            tab_name = f"Curation: {row['name']}"
+            tab = CurationTab(name=tab_name, curation_panel=curation_panel)
+            tabs.append((tab.tab_name, tab))
+            
+        return tabs
+
     def _on_tree_selection(self, event):
         """Handle tree selection changes"""
         self._update_active_path_from_tree()
@@ -551,73 +640,12 @@ class Metrics(PyComponent):
         curation_metrics = [row for row in metric_rows if row.get("object_type") == "Curation metric"]
         qc_metrics = [row for row in metric_rows if row.get("object_type") != "Curation metric"]
 
+        # Build tabs for each metric type
         tabs = []
-
-        # Build tabs for QC metrics
         if qc_metrics:
-            reference_to_values = {}
-            for row in qc_metrics:
-                reference = row.get("reference")
-
-                value_panel = MetricValue(
-                    name=row["name"],
-                    description=row["description"],
-                    value=decode_dict_value(row["value"]),
-                    tags=decode_dict_value(row["tags"]),
-                    stage=row["stage"],
-                    modality=row["modality"]["abbreviation"],
-                    status=row["status_history"][-1]["status"],
-                    callback=self.callback,
-                    settings=self.settings,
-                )
-
-                if reference not in reference_to_values:
-                    reference_to_values[reference] = []
-                reference_to_values[reference].append(value_panel)
-
-            for reference, value_panels in reference_to_values.items():
-                if reference not in self.media_cache:
-                    media_panel = Media(
-                        reference,
-                        s3_bucket=self.data.s3_bucket,
-                        s3_prefix=self.data.s3_prefix,
-                        raw_s3_loc=self.data.raw_s3_location,
-                        lazy_load=True,
-                    )
-                    self.media_cache[reference] = media_panel
-                else:
-                    media_panel = self.media_cache[reference]
-
-                if not media_panel.loaded:
-                    media_panel.load()
-
-                tab_name = f"({media_panel.media_type}: {reference})" if reference else "Metrics"
-                tab = MetricTab(name=tab_name, metric_media=media_panel, metric_values=value_panels)
-                tabs.append((tab.tab_name, tab))
-
-        # Build tabs for curation metrics
-        for row in curation_metrics:
-            # Parse the value - it's a JSON string containing the curation data
-            curation_value = decode_dict_value(row["value"])
-            
-            # The value is a list with a single JSON string element
-            if isinstance(curation_value, list) and len(curation_value) > 0:
-                curation_data = json.loads(curation_value[0])
-            elif isinstance(curation_value, str):
-                curation_data = json.loads(curation_value)
-            else:
-                curation_data = curation_value
-
-            curation_panel = GenericCuration(
-                data=curation_data,
-                bucket=self.data.s3_bucket,
-                prefix=self.data.s3_prefix,
-                raw_s3_loc=self.data.raw_s3_location,
-            )
-
-            tab_name = f"Curation: {row['name']}"
-            tab = CurationTab(name=tab_name, curation_panel=curation_panel)
-            tabs.append((tab.tab_name, tab))
+            tabs.extend(self._build_qc_metric_tabs(qc_metrics))
+        if curation_metrics:
+            tabs.extend(self._build_curation_metric_tabs(curation_metrics))
 
         if tabs:
             accordion = pn.Accordion(*tabs, sizing_mode="stretch_both", active=[0])

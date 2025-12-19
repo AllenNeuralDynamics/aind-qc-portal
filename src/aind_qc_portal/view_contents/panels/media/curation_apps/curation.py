@@ -13,16 +13,17 @@ class GenericCuration(PyComponent):
     "reference" keys appear as Media objects in a media pane (if present)
     Other keys appear in a table
     """
+
     selected_key = param.String(default="")
 
     def __init__(self, data: dict, bucket, prefix, raw_s3_loc=None):
         super().__init__()
-        
+
         self.data = data
         self.bucket = bucket
         self.prefix = prefix
         self.raw_s3_loc = raw_s3_loc
-        
+
         keys = list(data.keys())
         self.has_references = "reference" in data[keys[0]] if keys and isinstance(data[keys[0]], dict) else False
 
@@ -32,11 +33,7 @@ class GenericCuration(PyComponent):
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
 
-        self.dropdown = pn.widgets.Select.from_param(
-            self.param.selected_key,
-            name="Curation Key",
-            options=[]
-        )
+        self.dropdown = pn.widgets.Select.from_param(self.param.selected_key, name="Curation Key", options=[])
         self.table = pn.pane.DataFrame()
 
         if self.has_references:
@@ -61,9 +58,9 @@ class GenericCuration(PyComponent):
         self.dropdown.options = list(data.keys())
         if self.dropdown.options:
             self.dropdown.value = self.dropdown.options[0]
-        
+
         self.param.watch(self._populate_table, "selected_key")
-        
+
         # Trigger initial population
         if self.dropdown.options:
             self._populate_table()
@@ -76,7 +73,7 @@ class GenericCuration(PyComponent):
             return
 
         record = self.data[key]
-        
+
         # Build DataFrame excluding 'reference' key for cleaner display
         table_data = {k: v for k, v in record.items() if k != "reference"}
         if table_data:
@@ -89,7 +86,13 @@ class GenericCuration(PyComponent):
         if self.has_references and "reference" in record:
             reference = record["reference"]
             self.media.clear()
-            media_panel = Media(reference=reference, s3_bucket=self.bucket, s3_prefix=self.prefix, raw_s3_loc=self.raw_s3_loc, lazy_load=False)
+            media_panel = Media(
+                reference=reference,
+                s3_bucket=self.bucket,
+                s3_prefix=self.prefix,
+                raw_s3_loc=self.raw_s3_loc,
+                lazy_load=False,
+            )
             self.media.append(media_panel)
 
     def __panel__(self):
