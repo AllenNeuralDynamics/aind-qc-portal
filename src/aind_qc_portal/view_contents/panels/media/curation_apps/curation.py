@@ -1,3 +1,4 @@
+"""Generic curation panel for displaying curation data with media references"""
 import pandas as pd
 from panel.custom import PyComponent
 import panel as pn
@@ -17,6 +18,7 @@ class GenericCuration(PyComponent):
     selected_key = param.String(default="")
 
     def __init__(self, data: dict, bucket, prefix, raw_s3_loc=None):
+        """Initialize GenericCuration panel"""
         super().__init__()
 
         self.data = data
@@ -96,4 +98,5 @@ class GenericCuration(PyComponent):
             self.media.append(media_panel)
 
     def __panel__(self):
+        """Return the panel representation of this component"""
         return self.content
