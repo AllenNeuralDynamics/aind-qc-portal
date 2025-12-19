@@ -477,8 +477,24 @@ class Metrics(PyComponent):
             return paths
 
         if tree_nodes:
-            all_paths = collect_all_paths(tree_nodes)
-            self.tree.expanded = all_paths
+            if "active_path" in pn.state.location.query_params:
+                try:
+                    active_tuple = eval(pn.state.location.query_params["active_path"])
+                    
+                    def get_parent_paths(target_tuple):
+                        """Get paths to expand (all parents of target, but not target itself)"""
+                        paths = []
+                        for i in range(1, len(target_tuple)):
+                            paths.append(target_tuple[:i])
+                        return paths
+                    
+                    self.tree.expanded = get_parent_paths(active_tuple)
+                except (SyntaxError, ValueError, TypeError, KeyError):
+                    all_paths = collect_all_paths(tree_nodes)
+                    self.tree.expanded = all_paths
+            else:
+                all_paths = collect_all_paths(tree_nodes)
+                self.tree.expanded = all_paths
 
         self._restore_active_from_url()
 
