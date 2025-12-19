@@ -1,4 +1,5 @@
 """Generic curation panel for displaying curation data with media references"""
+
 import pandas as pd
 from panel.custom import PyComponent
 import panel as pn

@@ -612,7 +612,7 @@ class Metrics(PyComponent):
                 raw_s3_loc=self.data.raw_s3_location,
             )
 
-            tab_name = row['name']
+            tab_name = row["name"]
             tab = CurationTab(name=tab_name, curation_panel=curation_panel)
             tabs.append((tab.tab_name, tab))
 
@@ -649,10 +649,7 @@ class Metrics(PyComponent):
         if tabs:
             if len(tabs) == 1:
                 header = pn.pane.Markdown(f"## {tabs[0][0]}")
-                self.content_panel.objects = [
-                    header,
-                    tabs[0][1]
-                ]
+                self.content_panel.objects = [header, tabs[0][1]]
             else:
                 accordion = pn.Accordion(*tabs, sizing_mode="stretch_both", active=[0])
                 self.content_panel.objects = [accordion]
@@ -663,7 +660,7 @@ class Metrics(PyComponent):
 
     def __panel__(self):
         """Create and return the metrics panel"""
-        
+
         custom_js = f"""
         <script>
         console.log('[TreeColors] Script loaded');
@@ -801,9 +798,9 @@ class Metrics(PyComponent):
         console.log('[TreeColors] Observers set up');
         </script>
         """
-        
+
         script_pane = pn.pane.HTML(custom_js, width=0, height=0, sizing_mode="fixed")
-        
+
         return pn.Column(
             pn.Row(
                 self.tree,
