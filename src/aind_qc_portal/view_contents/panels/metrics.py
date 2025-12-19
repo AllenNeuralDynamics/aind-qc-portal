@@ -663,8 +663,153 @@ class Metrics(PyComponent):
 
     def __panel__(self):
         """Create and return the metrics panel"""
-        return pn.Row(
-            self.tree,
-            self.content_panel,
+        
+        custom_js = f"""
+        <script>
+        console.log('[TreeColors] Script loaded');
+        
+        function getAllElementsIncludingShadow(root = document.body) {{
+            const elements = [];
+            
+            function traverse(node) {{
+                elements.push(node);
+                
+                if (node.shadowRoot) {{
+                    traverse(node.shadowRoot);
+                }}
+                
+                for (const child of node.children || []) {{
+                    traverse(child);
+                }}
+            }}
+            
+            traverse(root);
+            return elements;
+        }}
+        
+        function applyTreeColors(source) {{
+            console.log('[TreeColors] Applying icon colors, triggered by:', source);
+            
+            const allElements = getAllElementsIncludingShadow();
+            
+            const icons = allElements.filter(el => 
+                el.tagName === 'SPAN' && 
+                el.classList && 
+                el.classList.contains('material-icons')
+            );
+            console.log('[TreeColors] Found icons:', icons.length);
+            
+            let coloredCount = 0;
+            
+            icons.forEach((icon) => {{
+                const iconText = icon.textContent.trim();
+                
+                let iconColor;
+                
+                if (iconText === 'check_circle') {{
+                    iconColor = '{AIND_COLORS["green"]}';
+                }} else if (iconText === 'cancel') {{
+                    iconColor = '{AIND_COLORS["red"]}';
+                }} else if (iconText === 'help') {{
+                    iconColor = '{AIND_COLORS["light_blue"]}';
+                }}
+                
+                if (iconColor) {{
+                    icon.style.setProperty('color', iconColor, 'important');
+                    coloredCount++;
+                }}
+            }});
+            
+            console.log('[TreeColors] Colored', coloredCount, 'icons');
+        }}
+        
+        // Initial application
+        applyTreeColors('initial-load');
+        
+        // Set up debounced reapplication
+        let reapplyTimeout;
+        function scheduleReapply(reason) {{
+            console.log('[TreeColors] scheduleReapply called, reason:', reason);
+            clearTimeout(reapplyTimeout);
+            reapplyTimeout = setTimeout(() => applyTreeColors('debounced-' + reason), 20);
+        }}
+        
+        // Set up observer with debouncing
+        const observer = new MutationObserver(function(mutations) {{
+            // Only reapply on meaningful changes
+            let shouldReapply = false;
+            let reasons = new Set();
+            
+            mutations.forEach(m => {{
+                if (m.type === 'childList') {{
+                    shouldReapply = true;
+                    reasons.add('childList:' + (m.addedNodes.length > 0 ? 'added' : 'removed'));
+                }} else if (m.type === 'characterData') {{
+                    shouldReapply = true;
+                    reasons.add('characterData');
+                }} else if (m.type === 'attributes' && m.attributeName === 'data-expanded') {{
+                    shouldReapply = true;
+                    reasons.add('attr:data-expanded');
+                }}
+            }});
+            
+            if (shouldReapply) {{
+                console.log('[TreeColors] MutationObserver triggered:', Array.from(reasons).join(', '));
+                scheduleReapply('mutation:' + Array.from(reasons).join(','));
+            }}
+        }});
+        
+        // Observe body and all shadow roots
+        function setupObservers() {{
+            console.log('[TreeColors] setupObservers called');
+            observer.observe(document.body, {{
+                childList: true,
+                subtree: true,
+                characterData: true,
+                attributes: true,
+                attributeFilter: ['data-selected', 'data-expanded']
+            }});
+            
+            // Find and observe all shadow roots
+            const allElements = getAllElementsIncludingShadow();
+            let newShadowRoots = 0;
+            allElements.forEach(el => {{
+                if (el.shadowRoot && !el.hasAttribute('data-shadow-observed')) {{
+                    el.setAttribute('data-shadow-observed', 'true');
+                    observer.observe(el.shadowRoot, {{
+                        childList: true,
+                        subtree: true,
+                        characterData: true,
+                        attributes: true
+                    }});
+                    newShadowRoots++;
+                }}
+            }});
+            if (newShadowRoots > 0) {{
+                console.log('[TreeColors] Found and observing', newShadowRoots, 'new shadow roots');
+            }}
+        }}
+        
+        setupObservers();
+        
+        // Re-setup observers periodically to catch new shadow roots
+        // setInterval(() => {{
+        //     console.log('[TreeColors] Periodic setupObservers check');
+        //     setupObservers();
+        // }}, 500);
+        
+        console.log('[TreeColors] Observers set up');
+        </script>
+        """
+        
+        script_pane = pn.pane.HTML(custom_js, width=0, height=0, sizing_mode="fixed")
+        
+        return pn.Column(
+            script_pane,
+            pn.Row(
+                self.tree,
+                self.content_panel,
+                sizing_mode="stretch_both",
+            ),
             sizing_mode="stretch_both",
         )
