@@ -359,6 +359,25 @@ def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status
     return nodes if nodes else None
 
 
+def collect_all_paths(nodes, current_path=()):
+    """Helper function to collect all expandable paths"""
+    paths = []
+    for idx, node in enumerate(nodes):
+        node_path = current_path + (idx,)
+        if "items" in node and node["items"]:
+            paths.append(node_path)
+            paths.extend(collect_all_paths(node["items"], node_path))
+    return paths
+
+
+def get_parent_paths(target_tuple):
+    """Get paths to expand (all parents of target, but not target itself)"""
+    paths = []
+    for i in range(1, len(target_tuple)):
+        paths.append(target_tuple[:i])
+    return paths
+
+
 class Metrics(PyComponent):
     """Panel for displaying the metrics"""
 
@@ -448,53 +467,17 @@ class Metrics(PyComponent):
         all_metrics = [row for _, row in self.data.dataframe.iterrows()]
         tree_nodes = build_tree_level(grouping_levels, all_metrics, 0, status_df=self.data.metric_status)
 
-        def print_tree(nodes, indent=0):
-            """Helper function to print tree structure for debugging"""
-            if not nodes:
-                return
-            for node in nodes:
-                print("  " * indent + node.get("label", ""))
-                # Print metric tags for this node
-                metric_rows = node.get("metric_rows", [])
-                for metric in metric_rows:
-                    metric_name = metric.get("name", "unknown")
-                    metric_tags = decode_dict_value(metric.get("tags", {}))
-                    tags_str = " | ".join([f"{k}: {v}" for k, v in metric_tags.items()])
-                    print("  " * (indent + 1) + f"→ {metric_name}: {tags_str}")
-                if "items" in node:
-                    print_tree(node["items"], indent + 1)
-
         self.tree.items = tree_nodes if tree_nodes else []
-
-        def collect_all_paths(nodes, current_path=()):
-            """Helper function to collect all expandable paths"""
-            paths = []
-            for idx, node in enumerate(nodes):
-                node_path = current_path + (idx,)
-                if "items" in node and node["items"]:
-                    paths.append(node_path)
-                    paths.extend(collect_all_paths(node["items"], node_path))
-            return paths
 
         if tree_nodes:
             if "active_path" in pn.state.location.query_params:
                 try:
                     active_tuple = eval(pn.state.location.query_params["active_path"])
-                    
-                    def get_parent_paths(target_tuple):
-                        """Get paths to expand (all parents of target, but not target itself)"""
-                        paths = []
-                        for i in range(1, len(target_tuple)):
-                            paths.append(target_tuple[:i])
-                        return paths
-                    
                     self.tree.expanded = get_parent_paths(active_tuple)
                 except (SyntaxError, ValueError, TypeError, KeyError):
-                    all_paths = collect_all_paths(tree_nodes)
-                    self.tree.expanded = all_paths
+                    self.tree.expanded = []
             else:
-                all_paths = collect_all_paths(tree_nodes)
-                self.tree.expanded = all_paths
+                self.tree.expanded = []
 
         self._restore_active_from_url()
 
