@@ -532,16 +532,16 @@ class Metrics(PyComponent):
 
     def _build_qc_metric_tabs(self, qc_metrics):
         """Build tabs for QC metrics
-        
+
         Args:
             qc_metrics: List of QC metric row dictionaries
-            
+
         Returns:
             List of (tab_name, tab) tuples
         """
         tabs = []
         reference_to_values = {}
-        
+
         for row in qc_metrics:
             reference = row.get("reference")
 
@@ -580,20 +580,20 @@ class Metrics(PyComponent):
             tab_name = f"({media_panel.media_type}: {reference})" if reference else "Metrics"
             tab = MetricTab(name=tab_name, metric_media=media_panel, metric_values=value_panels)
             tabs.append((tab.tab_name, tab))
-            
+
         return tabs
 
     def _build_curation_metric_tabs(self, curation_metrics):
         """Build tabs for curation metrics
-        
+
         Args:
             curation_metrics: List of curation metric row dictionaries
-            
+
         Returns:
             List of (tab_name, tab) tuples
         """
         tabs = []
-        
+
         for row in curation_metrics:
             # Parse the value - it's a JSON string containing the curation data
             curation_value = decode_dict_value(row["value"])
@@ -616,7 +616,7 @@ class Metrics(PyComponent):
             tab_name = f"Curation: {row['name']}"
             tab = CurationTab(name=tab_name, curation_panel=curation_panel)
             tabs.append((tab.tab_name, tab))
-            
+
         return tabs
 
     def _on_tree_selection(self, event):
