@@ -805,11 +805,11 @@ class Metrics(PyComponent):
         script_pane = pn.pane.HTML(custom_js, width=0, height=0, sizing_mode="fixed")
         
         return pn.Column(
-            script_pane,
             pn.Row(
                 self.tree,
                 self.content_panel,
                 sizing_mode="stretch_both",
             ),
+            script_pane,
             sizing_mode="stretch_both",
         )
