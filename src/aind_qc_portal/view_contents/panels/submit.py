@@ -69,12 +69,12 @@ class SubmitPanel(PyComponent):
             self.upload_button.button_type = "danger"
 
     def _update_modal_content(self):
+        """Update the modal content with current preview data"""
         # Reset status and buttons
         self.status_pane.object = ""
         self.upload_button.disabled = True
         self.upload_button.button_type = "danger"
 
-        """Update the modal content with current preview data"""
         preview_df, self.final_record = self.data.get_submission_data()
 
         if preview_df.empty:
