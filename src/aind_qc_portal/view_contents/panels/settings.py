@@ -12,10 +12,11 @@ class Settings(PyComponent):
     allow_value_edits = param.Boolean(default=False)
     default_grouping = param.List(default=[])
 
-    def __init__(self, default_grouping: list, grouping_options: list):
+    def __init__(self, modalities: list, default_grouping: list, grouping_options: list):
         """Initialize Settings with grouping options"""
         super().__init__()
 
+        self.modalities = modalities
         self.grouping_options = grouping_options
         self.level_widgets = []
 
@@ -26,6 +27,11 @@ class Settings(PyComponent):
         if not self.default_grouping:
             print(f"[Settings.__init__] default_grouping empty after sync, using provided default: {default_grouping}")
             self.default_grouping = default_grouping
+
+        # Force modality as first level if multiple modalities
+        if len(self.modalities) > 1:
+            if not self.default_grouping or self.default_grouping[0] != 'modality':
+                self.default_grouping = ['modality'] + (self.default_grouping if self.default_grouping else [])
 
         self._init_modal()
 
@@ -78,11 +84,13 @@ class Settings(PyComponent):
             print(f"[Settings._init_modal] default_grouping is truthy, creating {len(self.default_grouping)} levels")
             for i, level_keys in enumerate(self.default_grouping):
                 print(f"[Settings._init_modal] Creating level {i} with keys: {level_keys}")
-                self._create_level_widget(level_keys)
+                is_first = (i == 0)
+                self._create_level_widget(level_keys, is_first_level=is_first)
         else:
-            self._create_level_widget([])
+            is_first = True
+            self._create_level_widget([], is_first_level=is_first)
 
-    def _create_level_widget(self, selected_keys):
+    def _create_level_widget(self, selected_keys, is_first_level=False):
         """Create a widget for a single level"""
         level_idx = len(self.level_widgets)
 
@@ -95,17 +103,24 @@ class Settings(PyComponent):
         else:
             value_list = list(selected_keys) if selected_keys else []
 
+        # For first level with multiple modalities, force 'modality' and disable
+        force_modality = is_first_level and len(self.modalities) > 1
+        if force_modality:
+            value_list = ['modality']
+
         multichoice = pn.widgets.MultiChoice(
             name=f"Level {level_idx}",
             options=self.grouping_options,
             value=value_list,
             sizing_mode="stretch_width",
+            disabled=force_modality,
         )
 
         remove_btn = pn.widgets.Button(
             name="×",
             button_type="danger",
             width=40,
+            disabled=force_modality,
         )
         remove_btn.on_click(lambda event: self._remove_level(level_idx))
 
@@ -126,10 +141,14 @@ class Settings(PyComponent):
 
     def _add_level(self, event):
         """Add a new level"""
-        self._create_level_widget([])
+        self._create_level_widget([], is_first_level=False)
 
     def _remove_level(self, level_idx):
         """Remove a level"""
+        # Prevent removing first level if multiple modalities
+        if level_idx == 0 and len(self.modalities) > 1:
+            return
+
         if level_idx < len(self.level_widgets):
             level_info = self.level_widgets[level_idx]
             self.levels_container.remove(level_info["row"])
@@ -152,6 +171,11 @@ class Settings(PyComponent):
                     new_grouping.append(level_keys[0])
                 else:
                     new_grouping.append(tuple(level_keys))
+
+        # Ensure first level is modality if multiple modalities
+        if len(self.modalities) > 1:
+            if not new_grouping or new_grouping[0] != 'modality':
+                new_grouping = ['modality'] + new_grouping
 
         self.default_grouping = new_grouping
 

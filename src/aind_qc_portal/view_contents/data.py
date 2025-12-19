@@ -174,7 +174,8 @@ class ViewData(param.Parameterized):
         return default_grouping
 
     @property
-    def grouping_options(self) -> list:
+    @pn.cache()
+    def grouping_options(self) -> tuple[list, list]:
         """Get the grouping options for this record: all modalities and tags"""
         if self.dataframe.empty:
             return []
@@ -192,7 +193,7 @@ class ViewData(param.Parameterized):
         tags = [tag for sublist in tags for tag in sublist]  # Flatten list of lists
         tags = list(set(tags))
 
-        return modalities + stages + tags
+        return (modalities, stages + tags)
 
     # @pn.cache(max_items=1000, policy="LFU")
     def _load_record(self):

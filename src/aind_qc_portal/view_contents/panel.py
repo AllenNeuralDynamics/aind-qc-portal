@@ -39,9 +39,12 @@ class QCPanel(PyComponent):
             return
 
         default_grouping = self._data.default_grouping
-        grouping_options = self._data.grouping_options
+        modalities, grouping_options = self._data.grouping_options
 
-        self.settings = Settings(default_grouping=default_grouping, grouping_options=grouping_options)
+        self.settings = Settings(
+            modalities=modalities,
+            default_grouping=default_grouping,
+            grouping_options=grouping_options)
         self.submit_panel = SubmitPanel(data=self._data)
 
         # Other panels have a dependency on settings
