@@ -25,6 +25,23 @@ Metrics should have actionable `value` fields. Either the value should be a numb
 
 Almost all metrics should have a `reference` image, figure, or video attached. Often the `reference` should be shared across multiple metrics. Even if you are just calculating numbers, your reference figures can put those numbers in context for viewers, keep in mind that the portal is a public-facing resource! References can also embed linked pages in an iframe. Embedded links can point to Neuroglancer, FigURL, Rerun, and SortingView.
 
+**Q: How should I organize my hierarchy of metrics?**
+
+To create the hierarchy visible in the QC portal you control the `QualityControl.default_grouping` which sets how tags are split in the tree and the `QCMetric.tags` dictionaries. Note that for multi-modal QC the portal automatically splits by modality at the first level.
+
+A typical metric should have a tag that looks like:
+
+```
+tags={
+   "probe": "probeA",
+   "type": "motion correction"
+}
+```
+
+And then the `default_grouping = ["probe", "type"]. Note that `"stage"` is always available as a tag for all metrics.
+
+There is no point to using a tag if it isn't shared across more than one metric. The example above will create a hierarchy that is split first into different probes and then the groups of metrics according to their type. If a second data asset is merged with this one that uses a different modality then the portal will split the entire hierarchy by modality at the top level. 
+
 **Q: `QCMetric.value` has type `Any`, what types are acceptable?**
 
 We expect the value to refer to a quantitative or qualitative assessment of some property of the data. When compared to a rule or threshold, the value establishes where that metric passes or fails quality control. So in general, the `value` field should be a number, string, or list of numbers/strings. Below is a table describing how different types are displayed in the portal:
