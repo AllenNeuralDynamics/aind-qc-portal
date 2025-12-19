@@ -22,7 +22,7 @@ from aind_qc_portal.view_contents.panels.media.utils import (
     clean_reference_url,
     is_presigned_url_valid,
 )
-from aind_qc_portal.view_contents.panels.media.z_slice_h5_viewer import ZSliceH5Viewer
+from aind_qc_portal.view_contents.panels.media.curation_apps.z_slice_h5_viewer import ZSliceH5Viewer
 
 
 class Media(PyComponent):
