@@ -15,14 +15,16 @@ class GenericCuration(PyComponent):
     """
     selected_key = param.String(default="")
 
-    def __init__(self, data: dict, bucket, prefix):
+    def __init__(self, data: dict, bucket, prefix, raw_s3_loc=None):
         super().__init__()
         
         self.data = data
         self.bucket = bucket
+        self.prefix = prefix
+        self.raw_s3_loc = raw_s3_loc
         
         keys = list(data.keys())
-        self.has_references = "reference" in data[keys[0]]
+        self.has_references = "reference" in data[keys[0]] if keys and isinstance(data[keys[0]], dict) else False
 
         self._init_panel_objects()
         self._populate_data(data)
@@ -57,26 +59,38 @@ class GenericCuration(PyComponent):
     def _populate_data(self, data: dict):
         """Populate the dropdown and data table"""
         self.dropdown.options = list(data.keys())
-        self.dropdown.value = self.dropdown.options[0]
+        if self.dropdown.options:
+            self.dropdown.value = self.dropdown.options[0]
         
-        self.param.selected_key.watch(self._populate_table, "value")
+        self.param.watch(self._populate_table, "selected_key")
+        
+        # Trigger initial population
+        if self.dropdown.options:
+            self._populate_table()
 
-    def _populate_table(self):
+    def _populate_table(self, event=None):
         """Populate the data table and media pane based on the selected key"""
         key = self.selected_key
         if not key:
             self.table.object = None
+            return
 
         record = self.data[key]
-        df = pd.DataFrame(record).T
-        self.table.object = df
+        
+        # Build DataFrame excluding 'reference' key for cleaner display
+        table_data = {k: v for k, v in record.items() if k != "reference"}
+        if table_data:
+            df = pd.DataFrame(table_data, index=[0]).T
+            df.columns = ["Value"]
+            self.table.object = df
+        else:
+            self.table.object = None
 
         if self.has_references and "reference" in record:
-            references = record["reference"]
+            reference = record["reference"]
             self.media.clear()
-            for ref in references:
-                media_panel = Media(reference=ref, s3_bucket=self.bucket, s3_prefix=self.prefix)
-                self.media.append(media_panel)
+            media_panel = Media(reference=reference, s3_bucket=self.bucket, s3_prefix=self.prefix, raw_s3_loc=self.raw_s3_loc, lazy_load=False)
+            self.media.append(media_panel)
 
     def __panel__(self):
         return self.content
