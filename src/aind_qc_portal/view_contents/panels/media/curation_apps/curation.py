@@ -27,15 +27,12 @@ class GenericCuration(PyComponent):
         self.prefix = prefix
         self.raw_s3_loc = raw_s3_loc
 
-        try:
-            keys = list(data.keys())
-            self.has_references = "reference" in data[keys[0]] if keys and isinstance(data[keys[0]], dict) else False
+        keys = list(data.keys())
+        self.has_references = "reference" in data[keys[0]] if keys and isinstance(data[keys[0]], dict) else False
 
-            self._init_panel_objects()
+        self._init_panel_objects()
 
-            self._populate_data(data)
-        except Exception as e:
-            print(f"Error initializing GenericCuration panel: {e}")
+        self._populate_data(data)
 
 
     def _init_panel_objects(self):
@@ -102,6 +99,50 @@ class GenericCuration(PyComponent):
                 lazy_load=False,
             )
             self.media.append(media_panel)
+
+    def __panel__(self):
+        """Return the panel representation of this component"""
+        return self.content
+
+
+class EphysCuration(PyComponent):
+    """Ephys/Spike sorting curation panel"""
+
+    def __init__(self, data: dict, bucket, prefix, raw_s3_loc=None, reference=None):
+        """Initialize EphysCuration panel"""
+        super().__init__()
+
+        self.data = data
+        self.bucket = bucket
+        self.prefix = prefix
+        self.raw_s3_loc = raw_s3_loc
+        self.reference = reference
+
+        self._init_panel_objects()
+
+    def _init_panel_objects(self):
+        """Initialize empty panel objects"""
+        self.json_editor = pn.widgets.JSONEditor(
+            value=self.data,
+            mode="view",
+            disabled=True,
+            sizing_mode="stretch_width",
+        )
+
+        if self.reference:
+            media_panel = Media(
+                reference=self.reference,
+                s3_bucket=self.bucket,
+                s3_prefix=self.prefix,
+                raw_s3_loc=self.raw_s3_loc,
+                lazy_load=False,
+            )
+            self.content = pn.Row(
+                self.json_editor,
+                media_panel,
+            )
+        else:
+            self.content = self.json_editor
 
     def __panel__(self):
         """Return the panel representation of this component"""

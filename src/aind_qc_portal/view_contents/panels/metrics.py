@@ -14,7 +14,7 @@ from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
 from aind_qc_portal.view_contents.data import ViewData, decode_dict_value
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.metric.metric import CustomMetricValue
-from aind_qc_portal.view_contents.panels.media.curation_apps.curation import GenericCuration
+from aind_qc_portal.view_contents.panels.media.curation_apps.curation import GenericCuration, EphysCuration
 
 
 class MetricValue(PyComponent):
@@ -598,19 +598,33 @@ class Metrics(PyComponent):
             curation_value = decode_dict_value(row["value"])
 
             # The value is a list with a single JSON string element
-            if isinstance(curation_value, list) and len(curation_value) > 0:
-                curation_data = json.loads(curation_value[0])
+            if not curation_value:
+                curation_data = {}
+            elif isinstance(curation_value, list) and len(curation_value) > 0:
+                curation_data = json.loads(curation_value[-1])
             elif isinstance(curation_value, str):
                 curation_data = json.loads(curation_value)
             else:
                 curation_data = curation_value
 
-            curation_panel = GenericCuration(
-                data=curation_data,
-                bucket=self.data.s3_bucket,
-                prefix=self.data.s3_prefix,
-                raw_s3_loc=self.data.raw_s3_location,
-            )
+            curation_type = row.get("type", "")
+            reference = row.get("reference")
+            
+            if curation_type == "Spike sorting curation":
+                curation_panel = EphysCuration(
+                    data=curation_data,
+                    bucket=self.data.s3_bucket,
+                    prefix=self.data.s3_prefix,
+                    raw_s3_loc=self.data.raw_s3_location,
+                    reference=reference,
+                )
+            else:
+                curation_panel = GenericCuration(
+                    data=curation_data,
+                    bucket=self.data.s3_bucket,
+                    prefix=self.data.s3_prefix,
+                    raw_s3_loc=self.data.raw_s3_location,
+                )
 
             tab_name = row["name"]
             tab = CurationTab(name=tab_name, curation_panel=curation_panel)
@@ -637,7 +651,7 @@ class Metrics(PyComponent):
 
         # Separate curation metrics from QC metrics
         curation_metrics = [row for row in metric_rows if row.get("object_type") == "Curation metric"]
-        qc_metrics = [row for row in metric_rows if row.get("object_type") != "Curation metric"]
+        qc_metrics = [row for row in metric_rows if row.get("object_type") == "QC metric"]
 
         # Build tabs for each metric type
         tabs = []
