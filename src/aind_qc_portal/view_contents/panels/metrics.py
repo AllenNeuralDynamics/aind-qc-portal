@@ -171,7 +171,7 @@ class MetricValue(PyComponent):
         else:
             value = self.value
 
-        should_disable = pn.state.user == "guest" or not self.settings.allow_value_edits or not value
+        should_disable = pn.state.user == "guest" or not self.settings.allow_value_edits or value
         self.value_widget.disabled = should_disable
 
     def __panel__(self):
