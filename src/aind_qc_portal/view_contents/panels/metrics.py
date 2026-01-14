@@ -317,8 +317,13 @@ def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status
         metric_tags = decode_dict_value(row.get("tags", {}))
 
         for tag_key in tag_keys:
-            tag_value = metric_tags.get(tag_key)
-            if tag_value:
+            if tag_key == "stage":
+                tag_value = row.get("stage")
+            elif tag_key == "modality":
+                tag_value = row.get("modality", {}).get("abbreviation")
+            else:
+                tag_value = metric_tags.get(tag_key)
+            if tag_value is not None:
                 key = (tag_key, tag_value)
                 if key not in level_data:
                     level_data[key] = []
@@ -328,9 +333,10 @@ def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status
     nodes = []
     for (tag_key, tag_value), tag_metrics in level_data.items():
         node_id = f"{path_prefix}{tag_key}:{tag_value}"
-        filtered_metrics = [
-            row for row in tag_metrics if decode_dict_value(row.get("tags", {})).get(tag_key) == tag_value
-        ]
+        
+        # No need to filter - tag_metrics already contains only rows matching this tag_key:tag_value
+        # The grouping logic above already did this filtering
+        filtered_metrics = tag_metrics
 
         children = build_tree_level(grouping_levels, filtered_metrics, level_idx + 1, f"{node_id}/", status_df)
 
