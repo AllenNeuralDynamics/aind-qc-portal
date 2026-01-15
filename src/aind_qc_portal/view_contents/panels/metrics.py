@@ -828,5 +828,4 @@ class Metrics(PyComponent):
                 sizing_mode="stretch_both",
             ),
             script_pane,
-            sizing_mode="stretch_both",
         )
