@@ -122,10 +122,8 @@ class EphysCuration(PyComponent):
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
-        self.json_editor = pn.widgets.JSONEditor(
-            value=self.data,
-            mode="view",
-            disabled=True,
+        self.json_editor = pn.pane.JSON(
+            object=self.data,
             sizing_mode="stretch_width",
         )
 

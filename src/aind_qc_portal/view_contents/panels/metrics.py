@@ -235,7 +235,7 @@ class MetricTab(PyComponent):
 class CurationTab(PyComponent):
     """Panel for displaying a curation metric with GenericCuration interface"""
 
-    def __init__(self, name: str, curation_panel: GenericCuration):
+    def __init__(self, name: str, curation_panel: GenericCuration | EphysCuration):
         """Initialize CurationTab with name and curation panel"""
         super().__init__()
         self.tab_name = name
