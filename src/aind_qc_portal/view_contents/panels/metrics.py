@@ -164,14 +164,19 @@ class MetricValue(PyComponent):
         self._update_value_widget_state()
 
     def _update_value_widget_state(self):
-        """Update the disabled state of the value widget based on user and settings"""
-        # Disable if user is guest OR if allow_value_edits is False OR if metric has a value
+        """Update the disabled state of the value widget based on user and settings
+        
+        Disable if user is guest
+        OR
+        If value is set AND allow_value_edits is False
+        """
+        # Disable if user is guest OR 
         if isinstance(self.value, CustomMetricValue):
             value = self.value.data.value
         else:
             value = self.value
 
-        should_disable = pn.state.user == "guest" or not self.settings.allow_value_edits or value
+        should_disable = pn.state.user == "guest" or (bool(value) and not self.settings.allow_value_edits)
         self.value_widget.disabled = should_disable
 
     def __panel__(self):
