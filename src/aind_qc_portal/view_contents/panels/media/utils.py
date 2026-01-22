@@ -51,7 +51,7 @@ else:
 # END TEMP CODE TO HANDLE AUTH ISSUES
 
 
-MEDIA_TTL = 3600  # 1 hour
+MEDIA_TTL = 3600 * 24 * 7  # 7 days
 KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 FULLSCREEN_CSS = """
 :not(:root):fullscreen::backdrop {
