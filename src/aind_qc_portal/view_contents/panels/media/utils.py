@@ -51,7 +51,7 @@ else:
 # END TEMP CODE TO HANDLE AUTH ISSUES
 
 
-MEDIA_TTL = 3600 * 24 * 7  # 7 days
+MEDIA_TTL = 60 * 60  # 1 hour
 KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 FULLSCREEN_CSS = """
 :not(:root):fullscreen::backdrop {
@@ -219,6 +219,7 @@ def is_presigned_url_valid(url: str) -> bool:
         return False
 
 
+@pn.cache(ttl=MEDIA_TTL - 1)
 def get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
 
