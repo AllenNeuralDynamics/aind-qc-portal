@@ -52,7 +52,6 @@ else:
 
 
 MEDIA_TTL = 60 * 60  # 1 hour
-CACHE_TTL = 60 * 5  # 5 minutes - much shorter than URL expiration to ensure fresh URLs
 KACHERY_ZONE = os.getenv("KACHERY_ZONE", "aind")
 FULLSCREEN_CSS = """
 :not(:root):fullscreen::backdrop {
@@ -220,7 +219,6 @@ def is_presigned_url_valid(url: str) -> bool:
         return False
 
 
-@pn.cache(ttl=CACHE_TTL)
 def get_s3_url(bucket, key):
     """Get a presigned URL to an S3 asset
 
@@ -247,7 +245,7 @@ def get_s3_url(bucket, key):
             Params={"Bucket": bucket, "Key": key},
             ExpiresIn=MEDIA_TTL,
         )
-    return url + "&_cachebuster=" + str(os.urandom(8).hex())
+    return url
 
 
 def _get_s3_file(url, ext):
