@@ -30,6 +30,7 @@ class Media(PyComponent):
 
     media_type = param.String(default="", doc="Type of object being displayed")
     loaded = param.Boolean(default=False, doc="Whether the media has been loaded")
+    refresh_trigger = param.Integer(default=0, doc="Counter to trigger URL refresh")
 
     def __init__(self, reference: str, s3_bucket: str, s3_prefix: str, raw_s3_loc: str, lazy_load: bool = True):
         """Build a media object
@@ -50,6 +51,8 @@ class Media(PyComponent):
         self.raw_s3_loc = raw_s3_loc
         self.reference = reference
         self.lazy_load = lazy_load
+        self._refresh_callback = None
+        self._current_reference_data = None
 
         self._init_panel_objects()
 
@@ -103,8 +106,9 @@ class Media(PyComponent):
         self.content.loading = True
         self.parse_reference(self.reference)
         self.content.loading = False
+        self._start_refresh_callback()
 
-    def _get_media_data(self, reference: str):
+    def _get_media_data(self, reference: str, force_refresh: bool = False):
         """Parse a reference string and convert to a data object"""
         if "http" in reference:
             # Any HTTP URL
@@ -165,6 +169,7 @@ class Media(PyComponent):
         self.media_type = "Image"
         if not is_presigned_url_valid(reference_data):
             reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
+        self._current_reference_data = reference_data
         self.image_pane.object = reference_data
         return self.image_pane
 
@@ -173,6 +178,7 @@ class Media(PyComponent):
         self.media_type = "PDF"
         if not is_presigned_url_valid(reference_data):
             reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
+        self._current_reference_data = reference_data
         self.pdf_pane.object = reference_data
         return self.pdf_pane
 
@@ -181,6 +187,7 @@ class Media(PyComponent):
         self.media_type = "Video"
         if not is_presigned_url_valid(reference_data):
             reference_data = get_s3_url(self.s3_bucket, str(Path(self.s3_prefix) / clean_reference_prefix(reference)))
+        self._current_reference_data = reference_data
         self.video_pane.object = reference_data
         return self.video_pane
 
@@ -260,6 +267,38 @@ class Media(PyComponent):
             obj = pn.pane.Alert(f"Failed to load asset: {reference}", alert_type="danger")
 
         self.content.append(obj)
+
+    def _start_refresh_callback(self):
+        """Start periodic callback to refresh URLs before they expire"""
+        if self.media_type not in ["Image", "PDF", "Video"]:
+            return
+        
+        if self._refresh_callback:
+            self._refresh_callback.stop()
+        
+        refresh_interval = 50 * 60 * 1000
+        self._refresh_callback = pn.state.add_periodic_callback(
+            self._refresh_url, period=refresh_interval
+        )
+
+    def _refresh_url(self):
+        """Refresh the presigned URL for the current media"""
+        if not self.reference or not self._current_reference_data:
+            return
+        
+        print(f"Refreshing URL for {self.reference}")
+        
+        reference_data = self._get_media_data(self.reference, force_refresh=True)
+        self._current_reference_data = reference_data
+        
+        if self.media_type == "Image":
+            self.image_pane.object = reference_data
+        elif self.media_type == "PDF":
+            self.pdf_pane.object = reference_data
+        elif self.media_type == "Video":
+            self.video_pane.object = reference_data
+        
+        self.refresh_trigger += 1
 
     @param.depends("loaded", watch=False)
     def __panel__(self):  # pragma: no cover
