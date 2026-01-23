@@ -32,7 +32,16 @@ class Media(PyComponent):
     loaded = param.Boolean(default=False, doc="Whether the media has been loaded")
     refresh_trigger = param.Integer(default=0, doc="Counter to trigger URL refresh")
 
-    def __init__(self, reference: str, s3_bucket: str, s3_prefix: str, raw_s3_loc: str, lazy_load: bool = True):
+    def __init__(
+        self,
+        reference: str,
+        s3_bucket: str,
+        s3_prefix: str,
+        raw_s3_loc: str,
+        lazy_load: bool = True,
+        value_callback=None,
+        parent=None,
+    ):
         """Build a media object
 
         Parameters
@@ -43,6 +52,10 @@ class Media(PyComponent):
         raw_s3_loc : str
         lazy_load : bool
             If True, display a button that loads media when clicked. If False, load immediately.
+        value_callback : callable, optional
+            Callback function to handle value updates from interactive media (e.g., sortingview, ephys GUI)
+        parent : object, optional
+            Parent object that has a set_submit_dirty method for marking changes
         """
         super().__init__()
 
@@ -51,6 +64,8 @@ class Media(PyComponent):
         self.raw_s3_loc = raw_s3_loc
         self.reference = reference
         self.lazy_load = lazy_load
+        self.value_callback = value_callback
+        self.parent = parent
         self._refresh_callback = None
         self._current_reference_data = None
 
@@ -220,7 +235,9 @@ class Media(PyComponent):
     def _handle_ephys_gui(self, reference: str, reference_data: Any):
         """Handle Ephys GUI media type"""
         self.media_type = "Ephys GUI"
-        return parse_ephys_gui_app(reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}")
+        return parse_ephys_gui_app(
+            reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}", self
+        )
 
     def _handle_link(self, reference: str, reference_data: Any):
         """Handle HTTP link media type"""

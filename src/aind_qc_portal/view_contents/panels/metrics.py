@@ -225,6 +225,12 @@ class MetricTab(PyComponent):
         self.tab_media = metric_media
         self.tab_values = metric_values
 
+    def set_submit_dirty(self):
+        """Mark that there are pending changes to submit"""
+        # This gets called when interactive media (sortingview, ephys GUI) updates values
+        # The actual submission is handled by the MetricValue's callback mechanism
+        print("MetricTab: Changes detected from interactive media")
+
     def __panel__(self):
         """Create and return the MetricTab panel"""
         value_col = pn.Column(*self.tab_values, width=METRIC_VALUE_WIDTH + MARGIN)
@@ -589,6 +595,15 @@ class Metrics(PyComponent):
 
             tab_name = f"({media_panel.media_type}: {reference})" if reference else "Metrics"
             tab = MetricTab(name=tab_name, metric_media=media_panel, metric_values=value_panels)
+            
+            # Set up callbacks for interactive media types (sortingview, ephys GUI)
+            if media_panel.media_type in ["Sortingview", "Ephys GUI"]:
+                # Assuming the first metric value is the one to update (or we could update all)
+                if value_panels:
+                    primary_metric = value_panels[0]
+                    media_panel.value_callback = primary_metric.set_value
+                    media_panel.parent = tab
+            
             tabs.append((tab.tab_name, tab))
 
         return tabs
@@ -621,6 +636,14 @@ class Metrics(PyComponent):
             curation_type = row.get("type", "")
             reference = row.get("reference")
             
+            # Create a callback that updates this curation metric's value
+            metric_name = row["name"]
+            def make_value_callback(name):
+                def update_curation_value(new_data):
+                    print(f"Updating curation metric '{name}' with new data: {new_data}")
+                    self.callback(metric_name=name, column_name="value", value=new_data)
+                return update_curation_value
+            
             if curation_type == "Spike sorting curation":
                 curation_panel = EphysCuration(
                     data=curation_data,
@@ -628,6 +651,7 @@ class Metrics(PyComponent):
                     prefix=self.data.s3_prefix,
                     raw_s3_loc=self.data.raw_s3_location,
                     reference=reference,
+                    value_callback=make_value_callback(metric_name),
                 )
             else:
                 curation_panel = GenericCuration(
