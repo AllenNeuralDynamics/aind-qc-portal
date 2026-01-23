@@ -236,17 +236,18 @@ def get_s3_url(bucket, key):
         return None
 
     if "codeocean" in bucket:
-        return codeocean_s3_client.generate_presigned_url(
+        url = codeocean_s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket, "Key": key},
             ExpiresIn=MEDIA_TTL,
         )
     else:
-        return s3_client.generate_presigned_url(
+        url = s3_client.generate_presigned_url(
             "get_object",
             Params={"Bucket": bucket, "Key": key},
             ExpiresIn=MEDIA_TTL,
         )
+    return url + "&_cachebuster=" + str(os.urandom(8).hex())
 
 
 def _get_s3_file(url, ext):
