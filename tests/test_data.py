@@ -563,13 +563,13 @@ class TestSubmitFunctionality(unittest.TestCase):
         qc_dict = validated_qc.model_dump()
 
         # Check that tags are still dicts, not lists
-        self.assertIsInstance(qc_dict["metrics"][0]["tags"], dict, 
-                            f"Tags became {type(qc_dict['metrics'][0]['tags'])} instead of dict")
+        self.assertIsInstance(
+            qc_dict["metrics"][0]["tags"], dict, f"Tags became {type(qc_dict['metrics'][0]['tags'])} instead of dict"
+        )
         self.assertEqual(qc_dict["metrics"][0]["tags"], original_tags)
-        
+
         # Check that default_grouping didn't trigger the validator
-        self.assertEqual(qc_dict["default_grouping"], original_grouping,
-                        "default_grouping was modified by validator")
+        self.assertEqual(qc_dict["default_grouping"], original_grouping, "default_grouping was modified by validator")
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_exact_production_structure_preserved(self, mock_datetime):
@@ -582,7 +582,9 @@ class TestSubmitFunctionality(unittest.TestCase):
             modality=Modality.ECEPHYS,
             stage=Stage.RAW,
             value=0.5,
-            status_history=[QCStatus(status=Status.PENDING, evaluator="system", timestamp=datetime(2026, 1, 26, 10, 0, 0))],
+            status_history=[
+                QCStatus(status=Status.PENDING, evaluator="system", timestamp=datetime(2026, 1, 26, 10, 0, 0))
+            ],
             tags={"probe": "experiment1_ProbeA_group0"},  # Dict with string key-value
             description="Drift measurement",
         )
@@ -613,18 +615,17 @@ class TestSubmitFunctionality(unittest.TestCase):
         qc_dict = validated_qc.model_dump()
 
         # Verify tags remained as dict
-        self.assertIsInstance(qc_dict["metrics"][0]["tags"], dict,
-                            "Tags should remain as dict")
-        self.assertEqual(qc_dict["metrics"][0]["tags"], original_tags,
-                        "Tags content should be unchanged")
+        self.assertIsInstance(qc_dict["metrics"][0]["tags"], dict, "Tags should remain as dict")
+        self.assertEqual(qc_dict["metrics"][0]["tags"], original_tags, "Tags content should be unchanged")
 
         # Verify default_grouping is unchanged (should stay as strings)
-        self.assertEqual(qc_dict["default_grouping"], original_grouping,
-                        "default_grouping should not be modified")
-        self.assertEqual(qc_dict["default_grouping"], ["probe", "stage"],
-                        "default_grouping should remain as list of strings")
-        self.assertNotEqual(qc_dict["default_grouping"], [["modality"], ["tag_1"]],
-                          "default_grouping should NOT trigger validator fix")
+        self.assertEqual(qc_dict["default_grouping"], original_grouping, "default_grouping should not be modified")
+        self.assertEqual(
+            qc_dict["default_grouping"], ["probe", "stage"], "default_grouping should remain as list of strings"
+        )
+        self.assertNotEqual(
+            qc_dict["default_grouping"], [["modality"], ["tag_1"]], "default_grouping should NOT trigger validator fix"
+        )
 
 
 if __name__ == "__main__":
