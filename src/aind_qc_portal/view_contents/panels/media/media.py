@@ -289,32 +289,30 @@ class Media(PyComponent):
         """Start periodic callback to refresh URLs before they expire"""
         if self.media_type not in ["Image", "PDF", "Video"]:
             return
-        
+
         if self._refresh_callback:
             self._refresh_callback.stop()
-        
+
         refresh_interval = 50 * 60 * 1000
-        self._refresh_callback = pn.state.add_periodic_callback(
-            self._refresh_url, period=refresh_interval
-        )
+        self._refresh_callback = pn.state.add_periodic_callback(self._refresh_url, period=refresh_interval)
 
     def _refresh_url(self):
         """Refresh the presigned URL for the current media"""
         if not self.reference or not self._current_reference_data:
             return
-        
+
         print(f"Refreshing URL for {self.reference}")
-        
+
         reference_data = self._get_media_data(self.reference, force_refresh=True)
         self._current_reference_data = reference_data
-        
+
         if self.media_type == "Image":
             self.image_pane.object = reference_data
         elif self.media_type == "PDF":
             self.pdf_pane.object = reference_data
         elif self.media_type == "Video":
             self.video_pane.object = reference_data
-        
+
         self.refresh_trigger += 1
 
     @param.depends("loaded", watch=False)

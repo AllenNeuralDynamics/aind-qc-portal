@@ -17,36 +17,36 @@ import urllib
 
 def get_s3_client(reference=None):
     """Get a fresh boto3 S3 client with current credentials
-    
+
     Parameters
     ----------
     reference : str, optional
         Reference string (bucket name or URL) to determine which client to use.
         If contains 'codeocean', returns a client with assumed role credentials.
         Otherwise returns a standard S3 client.
-    
+
     Returns
     -------
     boto3.client
         Fresh S3 client with current credentials
     """
     use_codeocean = reference and "codeocean" in reference
-    
+
     if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
         return boto3.client(
             "s3",
             region_name="us-west-2",
             config=boto3.session.Config(signature_version="s3v4"),
         )
-    
+
     if use_codeocean:
         sts_client = boto3.client("sts")
         response = sts_client.assume_role(
             RoleArn="arn:aws:iam::467914378000:role/AindCodeOceanBucketCrossAccountAccess",
-            RoleSessionName="qc-portal-session"
+            RoleSessionName="qc-portal-session",
         )
         creds = response["Credentials"]
-        
+
         role_session = boto3.Session(
             aws_access_key_id=creds["AccessKeyId"],
             aws_secret_access_key=creds["SecretAccessKey"],
@@ -327,7 +327,7 @@ def parse_ephys_gui_app(reference, data, raw_asset_s3, derived_asset_s3, media_o
     data = data.replace("{raw_asset_location}", f"s3://{raw_asset_s3.lstrip('s3://')}")
     data = quote(data, safe=":/?&=")
     iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
-    
+
     if media_obj.value_callback and media_obj.parent:
         curation_data = EphysGUICurationData()
 

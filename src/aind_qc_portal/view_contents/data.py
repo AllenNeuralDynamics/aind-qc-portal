@@ -42,6 +42,85 @@ def upload_temporary_metadata(metadata: dict):
     print(f"Full data: {metadata}")
 
 
+def create_curation_history_entry(curator: str) -> dict:
+    """Create a curation history entry.
+
+    Args:
+        curator: Name of the curator
+
+    Returns:
+        Dict with object_type, curator, and timestamp
+    """
+    return {
+        "object_type": "Curation history",
+        "curator": curator,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+def create_status_history_entry(status: str, evaluator: str) -> dict:
+    """Create a status history entry.
+
+    Args:
+        status: Status value (Pass, Fail, Pending)
+        evaluator: Name of the evaluator
+
+    Returns:
+        Dict with status, evaluator, and timestamp
+    """
+    return {
+        "status": status,
+        "evaluator": evaluator,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+def apply_curation_metric_change(metric_obj: dict, value_change: any, curator: str) -> None:
+    """Apply a value change to a curation metric in-place.
+
+    Args:
+        metric_obj: The metric dictionary to modify
+        value_change: The new value to append
+        curator: Name of the curator
+    """
+    # Ensure value exists and is a list
+    if "value" not in metric_obj or not isinstance(metric_obj["value"], list):
+        metric_obj["value"] = []
+
+    # Append new value as JSON string
+    metric_obj["value"].append(json.dumps(value_change))
+
+    # Add curation history entry
+    if "curation_history" not in metric_obj:
+        metric_obj["curation_history"] = []
+    metric_obj["curation_history"].append(create_curation_history_entry(curator))
+
+
+def apply_qc_metric_change(metric_obj: dict, value_change: any) -> None:
+    """Apply a value change to a regular QC metric in-place.
+
+    Args:
+        metric_obj: The metric dictionary to modify
+        value_change: The new value to set
+    """
+    metric_obj["value"] = value_change
+
+
+def apply_status_change(metric_obj: dict, status_change: str, evaluator: str) -> None:
+    """Apply a status change to a metric in-place.
+
+    Args:
+        metric_obj: The metric dictionary to modify
+        status_change: The new status value
+        evaluator: Name of the evaluator
+    """
+    # Ensure status_history exists
+    if "status_history" not in metric_obj:
+        metric_obj["status_history"] = []
+
+    metric_obj["status_history"].append(create_status_history_entry(status_change, evaluator))
+
+
 class ViewData(param.Parameterized):
     """Database for the QC view application."""
 
@@ -382,18 +461,20 @@ class ViewData(param.Parameterized):
 
             # Also modify the record in-place to reflect pending changes
             if has_changes:
+                metric_obj = record["quality_control"]["metrics"][i]
+                is_curation_metric = metric_obj.get("object_type") == "Curation metric"
+
+                # Get current user/curator
+                current_user = pn.state.user if hasattr(pn.state, "user") and pn.state.user != "guest" else "unknown"
+
                 if value_change is not None:
-                    record["quality_control"]["metrics"][i]["value"] = value_change
+                    if is_curation_metric:
+                        apply_curation_metric_change(metric_obj, value_change, current_user)
+                    else:
+                        apply_qc_metric_change(metric_obj, value_change)
+
                 if status_change is not None:
-                    record["quality_control"]["metrics"][i]["status_history"].append(
-                        {
-                            "status": status_change,
-                            "evaluator": (
-                                pn.state.user if hasattr(pn.state, "user") and pn.state.user != "guest" else "unknown"
-                            ),
-                            "timestamp": datetime.now().isoformat(),
-                        }
-                    )
+                    apply_status_change(metric_obj, status_change, current_user)
 
         preview_df = pd.DataFrame(preview_data)
         # Sort so changed rows appear first

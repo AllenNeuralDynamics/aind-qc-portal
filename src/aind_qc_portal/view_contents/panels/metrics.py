@@ -165,12 +165,12 @@ class MetricValue(PyComponent):
 
     def _update_value_widget_state(self):
         """Update the disabled state of the value widget based on user and settings
-        
+
         Disable if user is guest
         OR
         If value is set AND allow_value_edits is False
         """
-        # Disable if user is guest OR 
+        # Disable if user is guest OR
         if isinstance(self.value, CustomMetricValue):
             value = self.value.data.value
         else:
@@ -344,7 +344,7 @@ def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status
     nodes = []
     for (tag_key, tag_value), tag_metrics in level_data.items():
         node_id = f"{path_prefix}{tag_key}:{tag_value}"
-        
+
         # No need to filter - tag_metrics already contains only rows matching this tag_key:tag_value
         # The grouping logic above already did this filtering
         filtered_metrics = tag_metrics
@@ -595,7 +595,7 @@ class Metrics(PyComponent):
 
             tab_name = f"({media_panel.media_type}: {reference})" if reference else "Metrics"
             tab = MetricTab(name=tab_name, metric_media=media_panel, metric_values=value_panels)
-            
+
             # Set up callbacks for interactive media types (sortingview, ephys GUI)
             if media_panel.media_type in ["Sortingview", "Ephys GUI"]:
                 # Assuming the first metric value is the one to update (or we could update all)
@@ -603,7 +603,7 @@ class Metrics(PyComponent):
                     primary_metric = value_panels[0]
                     media_panel.value_callback = primary_metric.set_value
                     media_panel.parent = tab
-            
+
             tabs.append((tab.tab_name, tab))
 
         return tabs
@@ -635,15 +635,18 @@ class Metrics(PyComponent):
 
             curation_type = row.get("type", "")
             reference = row.get("reference")
-            
+
             # Create a callback that updates this curation metric's value
             metric_name = row["name"]
+
             def make_value_callback(name):
                 def update_curation_value(new_data):
                     print(f"Updating curation metric '{name}' with new data: {new_data}")
+                    # Just pass the new data - get_submission_data will handle list appending and curation_history
                     self.callback(metric_name=name, column_name="value", value=new_data)
+
                 return update_curation_value
-            
+
             if curation_type == "Spike sorting curation":
                 curation_panel = EphysCuration(
                     data=curation_data,

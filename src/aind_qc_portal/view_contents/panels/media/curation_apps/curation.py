@@ -34,7 +34,6 @@ class GenericCuration(PyComponent):
 
         self._populate_data(data)
 
-
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
 
@@ -146,10 +145,21 @@ class EphysCuration(PyComponent):
 
     def _value_callback_wrapper(self, new_value):
         """Wrapper to handle value callback from media panel"""
+
+        if isinstance(new_value, dict) and new_value.get("command") == "calculateSubFramePositioning":
+            # Ignore positioning commands
+            return
+
         self.data = new_value
         self.json_editor.object = self.data
         if self.value_callback:
             self.value_callback(new_value)
+
+    def set_submit_dirty(self):
+        """Mark that there are pending changes to submit"""
+        # This gets called when interactive media (ephys GUI) updates values
+        # The actual submission is handled by the value_callback mechanism
+        print("EphysCuration: Changes detected from interactive media")
 
     def __panel__(self):
         """Return the panel representation of this component"""
