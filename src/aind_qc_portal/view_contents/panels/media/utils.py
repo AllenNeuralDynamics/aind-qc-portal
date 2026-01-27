@@ -121,9 +121,7 @@ class Fullscreen(ReactiveHTML):
         </span>
         <div id="object_el" class="object-container">${object}</div>
 </div>
-""".replace(
-        "{path_str}", _path_str
-    )
+""".replace("{path_str}", _path_str)
     _stylesheets = [FULLSCREEN_CSS]
     _scripts = {
         "maximize": """

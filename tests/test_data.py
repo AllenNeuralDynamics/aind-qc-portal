@@ -28,7 +28,6 @@ from aind_qc_portal.view_contents.data import (
 
 
 class TestEncodeDecodeHelpers(unittest.TestCase):
-
     def test_encode_dict_value(self):
         test_dict = {"key": "value", "nested": {"inner": 123}}
         encoded = encode_dict_value(test_dict)
@@ -59,7 +58,6 @@ class TestEncodeDecodeHelpers(unittest.TestCase):
 
 
 class TestHistoryEntryCreation(unittest.TestCase):
-
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_create_curation_history_entry(self, mock_datetime):
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -82,7 +80,6 @@ class TestHistoryEntryCreation(unittest.TestCase):
 
 
 class TestApplyCurationMetricChange(unittest.TestCase):
-
     def setUp(self):
         self.metric = {"name": "test_curation", "object_type": "Curation metric", "value": [], "curation_history": []}
 
@@ -149,7 +146,6 @@ class TestApplyCurationMetricChange(unittest.TestCase):
 
 
 class TestApplyQCMetricChange(unittest.TestCase):
-
     def test_apply_qc_metric_change_replaces_value(self):
         metric = {"name": "test_qc", "object_type": "QC metric", "value": "old_value"}
 
@@ -174,7 +170,6 @@ class TestApplyQCMetricChange(unittest.TestCase):
 
 
 class TestApplyStatusChange(unittest.TestCase):
-
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_apply_status_change_to_existing_history(self, mock_datetime):
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"

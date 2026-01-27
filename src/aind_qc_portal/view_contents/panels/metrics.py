@@ -316,16 +316,16 @@ def get_status_icon(status: str):
 
 def group_metrics_by_tags(metrics, tag_keys):
     """Group metrics by tag keys, returning a dict mapping (tag_key, tag_value) to metric rows
-    
+
     Args:
         metrics: List of metric row dictionaries
         tag_keys: List of tag keys to group by
-        
+
     Returns:
         Dictionary mapping (tag_key, tag_value) tuples to lists of metric rows
     """
     level_data = {}
-    
+
     for row in metrics:
         metric_tags = decode_dict_value(row.get("tags", {}))
 
@@ -342,7 +342,7 @@ def group_metrics_by_tags(metrics, tag_keys):
                     level_data[key] = []
                 level_data[key].append(row)
                 break
-    
+
     return level_data
 
 

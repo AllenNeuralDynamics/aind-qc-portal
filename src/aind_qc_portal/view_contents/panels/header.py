@@ -68,7 +68,7 @@ class Header(PyComponent):
 
         header_md = f"""
 ## {self.record["name"]}
-Modalities: **{', '.join(modalities)}** | Stages: **{', '.join(stages)}**  
+Modalities: **{", ".join(modalities)}** | Stages: **{", ".join(stages)}**  
 Return to <a href="{project_link}" target="_blank">{project_name}</a> | {metadata_link} | {co_link}
 """  # noqa: W291
         self.header_text.object = header_md

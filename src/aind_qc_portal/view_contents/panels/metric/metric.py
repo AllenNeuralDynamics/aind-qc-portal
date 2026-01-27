@@ -41,7 +41,7 @@ class CustomMetricValue:
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
             else:
-                raise ValueError(f"Unknown type '{data["type"]}' for custom metric value")
+                raise ValueError(f"Unknown type '{data['type']}' for custom metric value")
         else:
             raise ValueError("Unknown custom metric value")
 
