@@ -1,8 +1,8 @@
 """Settings"""
 
 import panel as pn
-from panel.custom import PyComponent
 import param
+from panel.custom import PyComponent
 
 
 class Settings(PyComponent):

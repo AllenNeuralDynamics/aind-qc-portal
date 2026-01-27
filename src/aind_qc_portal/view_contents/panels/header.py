@@ -2,12 +2,11 @@
 
 import panel as pn
 import param
+from aind_metadata_utils.data_assets import co_id_to_co_link, name_to_metadata_view_link
 from panel.custom import PyComponent
 
 from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.view_contents.panels.settings import Settings
-
-from aind_metadata_utils.data_assets import co_id_to_co_link, name_to_metadata_view_link
 
 
 class Header(PyComponent):

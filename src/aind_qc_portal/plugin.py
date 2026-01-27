@@ -1,7 +1,9 @@
 """Plugin file for custom Panel server endpoints"""
 
 import json
-from tornado.web import RequestHandler, HTTPError
+
+from tornado.web import HTTPError, RequestHandler
+
 from aind_qc_portal.view_contents.data import upload_temporary_metadata
 
 

@@ -4,16 +4,16 @@ import copy
 import json
 import unittest
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from aind_data_schema.core.quality_control import (
-    QualityControl,
-    QCMetric,
     CurationMetric,
-    QCStatus,
-    Status,
     Modality,
+    QCMetric,
+    QCStatus,
+    QualityControl,
     Stage,
+    Status,
 )
 
 from aind_qc_portal.view_contents.data import (

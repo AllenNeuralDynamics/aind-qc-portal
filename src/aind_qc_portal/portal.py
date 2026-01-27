@@ -1,6 +1,7 @@
 """Portal main entrypoint"""
 
 import panel as pn
+
 from aind_qc_portal.portal_contents.database import Database
 from aind_qc_portal.portal_contents.panel import Portal
 from aind_qc_portal.utils import format_css_background

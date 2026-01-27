@@ -9,12 +9,12 @@ import panel_material_ui as pmui
 import param
 from panel.custom import PyComponent
 
-from aind_qc_portal.layout import WIDGET_WIDTH, METRIC_VALUE_WIDTH, MARGIN, OUTER_STYLE, AIND_COLORS
+from aind_qc_portal.layout import AIND_COLORS, MARGIN, METRIC_VALUE_WIDTH, OUTER_STYLE, WIDGET_WIDTH
 from aind_qc_portal.utils import df_scalar_to_list, replace_markdown_with_html
 from aind_qc_portal.view_contents.data import ViewData, decode_dict_value
+from aind_qc_portal.view_contents.panels.media.curation_apps.curation import EphysCuration, GenericCuration
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.metric.metric import CustomMetricValue
-from aind_qc_portal.view_contents.panels.media.curation_apps.curation import GenericCuration, EphysCuration
 
 
 class MetricValue(PyComponent):
@@ -314,16 +314,18 @@ def get_status_icon(status: str):
         return "check_circle"
 
 
-def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status_df=None):
-    """Recursively build tree levels based on grouping levels and metrics"""
-    if level_idx >= len(grouping_levels):
-        return None
-
-    level_keys = grouping_levels[level_idx]
-    tag_keys = get_tag_keys_from_level(level_keys)
-
+def group_metrics_by_tags(metrics, tag_keys):
+    """Group metrics by tag keys, returning a dict mapping (tag_key, tag_value) to metric rows
+    
+    Args:
+        metrics: List of metric row dictionaries
+        tag_keys: List of tag keys to group by
+        
+    Returns:
+        Dictionary mapping (tag_key, tag_value) tuples to lists of metric rows
+    """
     level_data = {}
-
+    
     for row in metrics:
         metric_tags = decode_dict_value(row.get("tags", {}))
 
@@ -340,6 +342,18 @@ def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status
                     level_data[key] = []
                 level_data[key].append(row)
                 break
+    
+    return level_data
+
+
+def build_tree_level(grouping_levels, metrics, level_idx, path_prefix="", status_df=None):
+    """Recursively build tree levels based on grouping levels and metrics"""
+    if level_idx >= len(grouping_levels):
+        return None
+
+    level_keys = grouping_levels[level_idx]
+    tag_keys = get_tag_keys_from_level(level_keys)
+    level_data = group_metrics_by_tags(metrics, tag_keys)
 
     nodes = []
     for (tag_key, tag_value), tag_metrics in level_data.items():
@@ -716,45 +730,45 @@ class Metrics(PyComponent):
         custom_js = f"""
         <script>
         console.log('[TreeColors] Script loaded');
-        
+
         function getAllElementsIncludingShadow(root = document.body) {{
             const elements = [];
-            
+
             function traverse(node) {{
                 elements.push(node);
-                
+
                 if (node.shadowRoot) {{
                     traverse(node.shadowRoot);
                 }}
-                
+
                 for (const child of node.children || []) {{
                     traverse(child);
                 }}
             }}
-            
+
             traverse(root);
             return elements;
         }}
-        
+
         function applyTreeColors(source) {{
             console.log('[TreeColors] Applying icon colors, triggered by:', source);
-            
+
             const allElements = getAllElementsIncludingShadow();
-            
-            const icons = allElements.filter(el => 
-                el.tagName === 'SPAN' && 
-                el.classList && 
+
+            const icons = allElements.filter(el =>
+                el.tagName === 'SPAN' &&
+                el.classList &&
                 el.classList.contains('material-icons')
             );
             console.log('[TreeColors] Found icons:', icons.length);
-            
+
             let coloredCount = 0;
-            
+
             icons.forEach((icon) => {{
                 const iconText = icon.textContent.trim();
-                
+
                 let iconColor;
-                
+
                 if (iconText === 'check_circle') {{
                     iconColor = '{AIND_COLORS["green"]}';
                 }} else if (iconText === 'cancel') {{
@@ -762,19 +776,19 @@ class Metrics(PyComponent):
                 }} else if (iconText === 'help') {{
                     iconColor = '{AIND_COLORS["light_blue"]}';
                 }}
-                
+
                 if (iconColor) {{
                     icon.style.setProperty('color', iconColor, 'important');
                     coloredCount++;
                 }}
             }});
-            
+
             console.log('[TreeColors] Colored', coloredCount, 'icons');
         }}
-        
+
         // Initial application
         applyTreeColors('initial-load');
-        
+
         // Set up debounced reapplication
         let reapplyTimeout;
         function scheduleReapply(reason) {{
@@ -782,13 +796,13 @@ class Metrics(PyComponent):
             clearTimeout(reapplyTimeout);
             reapplyTimeout = setTimeout(() => applyTreeColors('debounced-' + reason), 20);
         }}
-        
+
         // Set up observer with debouncing
         const observer = new MutationObserver(function(mutations) {{
             // Only reapply on meaningful changes
             let shouldReapply = false;
             let reasons = new Set();
-            
+
             mutations.forEach(m => {{
                 if (m.type === 'childList') {{
                     shouldReapply = true;
@@ -801,13 +815,13 @@ class Metrics(PyComponent):
                     reasons.add('attr:data-expanded');
                 }}
             }});
-            
+
             if (shouldReapply) {{
                 console.log('[TreeColors] MutationObserver triggered:', Array.from(reasons).join(', '));
                 scheduleReapply('mutation:' + Array.from(reasons).join(','));
             }}
         }});
-        
+
         // Observe body and all shadow roots
         function setupObservers() {{
             console.log('[TreeColors] setupObservers called');
@@ -818,7 +832,7 @@ class Metrics(PyComponent):
                 attributes: true,
                 attributeFilter: ['data-selected', 'data-expanded']
             }});
-            
+
             // Find and observe all shadow roots
             const allElements = getAllElementsIncludingShadow();
             let newShadowRoots = 0;
@@ -838,15 +852,15 @@ class Metrics(PyComponent):
                 console.log('[TreeColors] Found and observing', newShadowRoots, 'new shadow roots');
             }}
         }}
-        
+
         setupObservers();
-        
+
         // Re-setup observers periodically to catch new shadow roots
         // setInterval(() => {{
         //     console.log('[TreeColors] Periodic setupObservers check');
         //     setupObservers();
         // }}, 500);
-        
+
         console.log('[TreeColors] Observers set up');
         </script>
         """

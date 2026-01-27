@@ -8,21 +8,21 @@ import panel as pn
 import param
 from panel.custom import PyComponent
 
+from aind_qc_portal.view_contents.panels.media.curation_apps.z_slice_h5_viewer import ZSliceH5Viewer
 from aind_qc_portal.view_contents.panels.media.utils import (
     Fullscreen,
     _get_s3_file,
-    get_s3_url,
-    parse_ephys_gui_app,
     _parse_rrd,
     _parse_sortingview,
+    clean_reference_prefix,
+    clean_reference_url,
+    get_s3_url,
+    is_presigned_url_valid,
+    parse_ephys_gui_app,
     reference_is_image,
     reference_is_pdf,
     reference_is_video,
-    clean_reference_prefix,
-    clean_reference_url,
-    is_presigned_url_valid,
 )
-from aind_qc_portal.view_contents.panels.media.curation_apps.z_slice_h5_viewer import ZSliceH5Viewer
 
 
 class Media(PyComponent):

@@ -1,9 +1,9 @@
 """Generic curation panel for displaying curation data with media references"""
 
 import pandas as pd
-from panel.custom import PyComponent
 import panel as pn
 import param
+from panel.custom import PyComponent
 
 from aind_qc_portal.view_contents.panels.media.media import Media
 

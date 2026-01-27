@@ -1,18 +1,17 @@
 """Util functions"""
 
-from datetime import datetime
 import os
 import tempfile
-from urllib.parse import unquote, quote
+import urllib
+from urllib.parse import quote, unquote
 
 import boto3
 import httpx
 import panel as pn
 import param
+import requests
 from panel.custom import JSComponent
 from panel.reactive import ReactiveHTML
-import requests
-import urllib
 
 
 def get_s3_client(reference=None):
