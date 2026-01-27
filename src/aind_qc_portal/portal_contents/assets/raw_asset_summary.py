@@ -1,9 +1,11 @@
 """Generic mouse subject panel"""
 
 from typing import Optional
+
 import pandas as pd
 import panel as pn
 from panel.custom import PyComponent
+
 from aind_qc_portal.portal_contents.settings import settings
 
 

@@ -1,52 +1,51 @@
 """Util functions"""
 
-from datetime import datetime
 import os
 import tempfile
-from urllib.parse import unquote, quote
+import urllib
+from urllib.parse import quote, unquote
 
 import boto3
 import httpx
 import panel as pn
 import param
+import requests
 from panel.custom import JSComponent
 from panel.reactive import ReactiveHTML
-import requests
-import urllib
 
 
 def get_s3_client(reference=None):
     """Get a fresh boto3 S3 client with current credentials
-    
+
     Parameters
     ----------
     reference : str, optional
         Reference string (bucket name or URL) to determine which client to use.
         If contains 'codeocean', returns a client with assumed role credentials.
         Otherwise returns a standard S3 client.
-    
+
     Returns
     -------
     boto3.client
         Fresh S3 client with current credentials
     """
     use_codeocean = reference and "codeocean" in reference
-    
+
     if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
         return boto3.client(
             "s3",
             region_name="us-west-2",
             config=boto3.session.Config(signature_version="s3v4"),
         )
-    
+
     if use_codeocean:
         sts_client = boto3.client("sts")
         response = sts_client.assume_role(
             RoleArn="arn:aws:iam::467914378000:role/AindCodeOceanBucketCrossAccountAccess",
-            RoleSessionName="qc-portal-session"
+            RoleSessionName="qc-portal-session",
         )
         creds = response["Credentials"]
-        
+
         role_session = boto3.Session(
             aws_access_key_id=creds["AccessKeyId"],
             aws_secret_access_key=creds["SecretAccessKey"],
@@ -122,9 +121,7 @@ class Fullscreen(ReactiveHTML):
         </span>
         <div id="object_el" class="object-container">${object}</div>
 </div>
-""".replace(
-        "{path_str}", _path_str
-    )
+""".replace("{path_str}", _path_str)
     _stylesheets = [FULLSCREEN_CSS]
     _scripts = {
         "maximize": """
@@ -321,19 +318,39 @@ def _parse_sortingview(reference, data, media_obj):
     )
 
 
-def parse_ephys_gui_app(reference, data, raw_asset_s3, derived_asset_s3):
-    """Parse a sortingview URL and return the appropriate object"""
+def parse_ephys_gui_app(reference, data, raw_asset_s3, derived_asset_s3, media_obj):
+    """Parse an ephys GUI URL and return the appropriate object with callback support"""
     data = data.replace("{derived_asset_location}", f"s3://{derived_asset_s3.lstrip('s3://')}")
     data = data.replace("{raw_asset_location}", f"s3://{raw_asset_s3.lstrip('s3://')}")
     data = quote(data, safe=":/?&=")
     iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
-    return pn.Column(
-        pn.pane.HTML(
-            iframe_html,
-            sizing_mode="stretch_width",
-            height=1000,
-        ),
-    )
+
+    if media_obj.value_callback and media_obj.parent:
+        curation_data = EphysGUICurationData()
+
+        def on_msg(event):
+            """Handle messages from the ephys GUI iframe"""
+            print(f"Received message from Ephys GUI: {event.data}")
+            media_obj.value_callback(event.data)
+            media_obj.parent.set_submit_dirty()
+
+        curation_data.on_msg(on_msg)
+        return pn.Column(
+            pn.pane.HTML(
+                iframe_html,
+                sizing_mode="stretch_width",
+                height=1000,
+            ),
+            curation_data,
+        )
+    else:
+        return pn.Column(
+            pn.pane.HTML(
+                iframe_html,
+                sizing_mode="stretch_width",
+                height=1000,
+            ),
+        )
 
 
 class CurationData(JSComponent):
@@ -351,6 +368,28 @@ class CurationData(JSComponent):
             }
 
             model.curation_json = event.data.curation;
+            model.send_msg(model.curation_json);
+        });
+        return ""
+    }
+"""
+
+
+class EphysGUICurationData(JSComponent):
+    """A CurationData component for Ephys GUI that receives curation data from iframe messages."""
+
+    curation_json = param.Dict()
+
+    _esm = r"""
+    export function render({ model }) {
+        window.addEventListener('message', (event) => {
+            // Check if the message is from the expected origin (ephys GUI domain)
+            if (!event.origin.match(/^https?:\/\/(.*\.)?allenneuraldynamics\.org$/)) {
+                console.warn('Received message from unexpected origin:', event.origin);
+                return;
+            }
+
+            model.curation_json = event.data;
             model.send_msg(model.curation_json);
         });
         return ""

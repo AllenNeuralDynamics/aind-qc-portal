@@ -1,9 +1,9 @@
 """Script to replace QC tags in the metadata database records."""
 
-from aind_data_access_api.document_db import MetadataDbClient
 import json
 import re
 
+from aind_data_access_api.document_db import MetadataDbClient
 
 client = MetadataDbClient(
     host="api.allenneuraldynamics.org",

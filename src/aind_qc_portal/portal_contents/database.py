@@ -8,9 +8,10 @@ page load times for users looking at large numbers of records.
 
 from datetime import datetime
 from typing import Optional
-from aind_data_access_api.document_db import MetadataDbClient
+
 import panel as pn
-from zombie_squirrel import unique_project_names, asset_basics
+from aind_data_access_api.document_db import MetadataDbClient
+from zombie_squirrel import asset_basics, unique_project_names
 
 client = MetadataDbClient(
     host="api.allenneuraldynamics.org",

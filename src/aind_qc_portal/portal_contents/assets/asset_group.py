@@ -1,17 +1,17 @@
 """Panel for a group of assets selected from a query"""
 
 from datetime import datetime
+
 import pandas as pd
+import panel as pn
 import param
-
 from aind_metadata_utils.data_assets import co_id_to_co_link
+from panel.custom import PyComponent
 
+from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.portal_contents.database import Database
 from aind_qc_portal.portal_contents.settings import settings
-from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.utils import format_link
-from panel.custom import PyComponent
-import panel as pn
 
 
 class AssetGroup(PyComponent):

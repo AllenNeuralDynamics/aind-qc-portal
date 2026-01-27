@@ -8,21 +8,21 @@ import panel as pn
 import param
 from panel.custom import PyComponent
 
+from aind_qc_portal.view_contents.panels.media.curation_apps.z_slice_h5_viewer import ZSliceH5Viewer
 from aind_qc_portal.view_contents.panels.media.utils import (
     Fullscreen,
     _get_s3_file,
-    get_s3_url,
-    parse_ephys_gui_app,
     _parse_rrd,
     _parse_sortingview,
+    clean_reference_prefix,
+    clean_reference_url,
+    get_s3_url,
+    is_presigned_url_valid,
+    parse_ephys_gui_app,
     reference_is_image,
     reference_is_pdf,
     reference_is_video,
-    clean_reference_prefix,
-    clean_reference_url,
-    is_presigned_url_valid,
 )
-from aind_qc_portal.view_contents.panels.media.curation_apps.z_slice_h5_viewer import ZSliceH5Viewer
 
 
 class Media(PyComponent):
@@ -32,7 +32,16 @@ class Media(PyComponent):
     loaded = param.Boolean(default=False, doc="Whether the media has been loaded")
     refresh_trigger = param.Integer(default=0, doc="Counter to trigger URL refresh")
 
-    def __init__(self, reference: str, s3_bucket: str, s3_prefix: str, raw_s3_loc: str, lazy_load: bool = True):
+    def __init__(
+        self,
+        reference: str,
+        s3_bucket: str,
+        s3_prefix: str,
+        raw_s3_loc: str,
+        lazy_load: bool = True,
+        value_callback=None,
+        parent=None,
+    ):
         """Build a media object
 
         Parameters
@@ -43,6 +52,10 @@ class Media(PyComponent):
         raw_s3_loc : str
         lazy_load : bool
             If True, display a button that loads media when clicked. If False, load immediately.
+        value_callback : callable, optional
+            Callback function to handle value updates from interactive media (e.g., sortingview, ephys GUI)
+        parent : object, optional
+            Parent object that has a set_submit_dirty method for marking changes
         """
         super().__init__()
 
@@ -51,6 +64,8 @@ class Media(PyComponent):
         self.raw_s3_loc = raw_s3_loc
         self.reference = reference
         self.lazy_load = lazy_load
+        self.value_callback = value_callback
+        self.parent = parent
         self._refresh_callback = None
         self._current_reference_data = None
 
@@ -220,7 +235,9 @@ class Media(PyComponent):
     def _handle_ephys_gui(self, reference: str, reference_data: Any):
         """Handle Ephys GUI media type"""
         self.media_type = "Ephys GUI"
-        return parse_ephys_gui_app(reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}")
+        return parse_ephys_gui_app(
+            reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}", self
+        )
 
     def _handle_link(self, reference: str, reference_data: Any):
         """Handle HTTP link media type"""
@@ -272,32 +289,30 @@ class Media(PyComponent):
         """Start periodic callback to refresh URLs before they expire"""
         if self.media_type not in ["Image", "PDF", "Video"]:
             return
-        
+
         if self._refresh_callback:
             self._refresh_callback.stop()
-        
+
         refresh_interval = 50 * 60 * 1000
-        self._refresh_callback = pn.state.add_periodic_callback(
-            self._refresh_url, period=refresh_interval
-        )
+        self._refresh_callback = pn.state.add_periodic_callback(self._refresh_url, period=refresh_interval)
 
     def _refresh_url(self):
         """Refresh the presigned URL for the current media"""
         if not self.reference or not self._current_reference_data:
             return
-        
+
         print(f"Refreshing URL for {self.reference}")
-        
+
         reference_data = self._get_media_data(self.reference, force_refresh=True)
         self._current_reference_data = reference_data
-        
+
         if self.media_type == "Image":
             self.image_pane.object = reference_data
         elif self.media_type == "PDF":
             self.pdf_pane.object = reference_data
         elif self.media_type == "Video":
             self.video_pane.object = reference_data
-        
+
         self.refresh_trigger += 1
 
     @param.depends("loaded", watch=False)

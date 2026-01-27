@@ -1,9 +1,9 @@
 """Generic curation panel for displaying curation data with media references"""
 
 import pandas as pd
-from panel.custom import PyComponent
 import panel as pn
 import param
+from panel.custom import PyComponent
 
 from aind_qc_portal.view_contents.panels.media.media import Media
 
@@ -33,7 +33,6 @@ class GenericCuration(PyComponent):
         self._init_panel_objects()
 
         self._populate_data(data)
-
 
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
@@ -108,7 +107,7 @@ class GenericCuration(PyComponent):
 class EphysCuration(PyComponent):
     """Ephys/Spike sorting curation panel"""
 
-    def __init__(self, data: dict, bucket, prefix, raw_s3_loc=None, reference=None):
+    def __init__(self, data: dict, bucket, prefix, raw_s3_loc=None, reference=None, value_callback=None):
         """Initialize EphysCuration panel"""
         super().__init__()
 
@@ -117,6 +116,7 @@ class EphysCuration(PyComponent):
         self.prefix = prefix
         self.raw_s3_loc = raw_s3_loc
         self.reference = reference
+        self.value_callback = value_callback
 
         self._init_panel_objects()
 
@@ -124,7 +124,6 @@ class EphysCuration(PyComponent):
         """Initialize empty panel objects"""
         self.json_editor = pn.pane.JSON(
             object=self.data,
-            sizing_mode="stretch_width",
         )
 
         if self.reference:
@@ -134,6 +133,8 @@ class EphysCuration(PyComponent):
                 s3_prefix=self.prefix,
                 raw_s3_loc=self.raw_s3_loc,
                 lazy_load=False,
+                value_callback=self._value_callback_wrapper,
+                parent=self,
             )
             self.content = pn.Row(
                 self.json_editor,
@@ -141,6 +142,24 @@ class EphysCuration(PyComponent):
             )
         else:
             self.content = self.json_editor
+
+    def _value_callback_wrapper(self, new_value):
+        """Wrapper to handle value callback from media panel"""
+
+        if isinstance(new_value, dict) and new_value.get("command") == "calculateSubFramePositioning":
+            # Ignore positioning commands
+            return
+
+        self.data = new_value
+        self.json_editor.object = self.data
+        if self.value_callback:
+            self.value_callback(new_value)
+
+    def set_submit_dirty(self):
+        """Mark that there are pending changes to submit"""
+        # This gets called when interactive media (ephys GUI) updates values
+        # The actual submission is handled by the value_callback mechanism
+        print("EphysCuration: Changes detected from interactive media")
 
     def __panel__(self):
         """Return the panel representation of this component"""

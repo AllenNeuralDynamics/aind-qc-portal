@@ -90,7 +90,7 @@ class SubmitPanel(PyComponent):
 
         # Update header
         self.modal_header.object = (
-            f"**{change_count} metrics** with pending changes. " "Changed rows are highlighted in yellow."
+            f"**{change_count} metrics** with pending changes. Changed rows are highlighted in yellow."
         )
 
         # Create Tabulator with styling

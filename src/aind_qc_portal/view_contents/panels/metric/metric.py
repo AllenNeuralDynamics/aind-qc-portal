@@ -4,8 +4,8 @@ from typing import Any, Callable
 
 import panel as pn
 from aind_data_schema.core.quality_control import Status
-
 from aind_qcportal_schema.metric_value import CheckboxMetric, DropdownMetric
+
 from aind_qc_portal.layout import WIDGET_WIDTH
 
 
@@ -41,7 +41,7 @@ class CustomMetricValue:
                 self._auto_state = self._data.status is not None
                 self._checkbox_helper(data)
             else:
-                raise ValueError(f"Unknown type '{data["type"]}' for custom metric value")
+                raise ValueError(f"Unknown type '{data['type']}' for custom metric value")
         else:
             raise ValueError("Unknown custom metric value")
 
