@@ -1,5 +1,6 @@
 """Util functions"""
 
+from datetime import datetime
 import os
 import tempfile
 from urllib.parse import unquote, quote
@@ -13,42 +14,55 @@ from panel.reactive import ReactiveHTML
 import requests
 import urllib
 
-s3_client = boto3.client(
-    "s3",
-    region_name="us-west-2",
-    config=boto3.session.Config(signature_version="s3v4"),
-)
 
-
-# TEMP CODE TO HANDLE AUTH ISSUES
-if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
-    codeocean_s3_client = s3_client
-else:
-
-    def get_role_session(role_arn, session_name="assumed-session"):
-        """Assume a role and return a boto3 Session for it"""
-        # Use your default credentials (from ~/.aws/credentials or env vars)
+def get_s3_client(reference=None):
+    """Get a fresh boto3 S3 client with current credentials
+    
+    Parameters
+    ----------
+    reference : str, optional
+        Reference string (bucket name or URL) to determine which client to use.
+        If contains 'codeocean', returns a client with assumed role credentials.
+        Otherwise returns a standard S3 client.
+    
+    Returns
+    -------
+    boto3.client
+        Fresh S3 client with current credentials
+    """
+    use_codeocean = reference and "codeocean" in reference
+    
+    if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
+        return boto3.client(
+            "s3",
+            region_name="us-west-2",
+            config=boto3.session.Config(signature_version="s3v4"),
+        )
+    
+    if use_codeocean:
         sts_client = boto3.client("sts")
-
-        # Assume the role
-        response = sts_client.assume_role(RoleArn=role_arn, RoleSessionName=session_name)
-
+        response = sts_client.assume_role(
+            RoleArn="arn:aws:iam::467914378000:role/AindCodeOceanBucketCrossAccountAccess",
+            RoleSessionName="qc-portal-session"
+        )
         creds = response["Credentials"]
-
-        # Create a new session with the assumed role credentials
-        return boto3.Session(
+        
+        role_session = boto3.Session(
             aws_access_key_id=creds["AccessKeyId"],
             aws_secret_access_key=creds["SecretAccessKey"],
             aws_session_token=creds["SessionToken"],
         )
-
-    role_session = get_role_session("arn:aws:iam::467914378000:role/AindCodeOceanBucketCrossAccountAccess")
-    codeocean_s3_client = role_session.client(
-        "s3",
-        region_name="us-west-2",
-        config=boto3.session.Config(signature_version="s3v4"),
-    )
-# END TEMP CODE TO HANDLE AUTH ISSUES
+        return role_session.client(
+            "s3",
+            region_name="us-west-2",
+            config=boto3.session.Config(signature_version="s3v4"),
+        )
+    else:
+        return boto3.client(
+            "s3",
+            region_name="us-west-2",
+            config=boto3.session.Config(signature_version="s3v4"),
+        )
 
 
 MEDIA_TTL = 60 * 60  # 1 hour
@@ -229,22 +243,15 @@ def get_s3_url(bucket, key):
     key : str
         S3 key name
     """
-    # print(f"Generating presigned URL for s3://{bucket}/{key}")
     if not bucket or not key:
         return None
 
-    if "codeocean" in bucket:
-        url = codeocean_s3_client.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=MEDIA_TTL,
-        )
-    else:
-        url = s3_client.generate_presigned_url(
-            "get_object",
-            Params={"Bucket": bucket, "Key": key},
-            ExpiresIn=MEDIA_TTL,
-        )
+    client = get_s3_client(bucket)
+    url = client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket, "Key": key},
+        ExpiresIn=MEDIA_TTL,
+    )
     return url
 
 
