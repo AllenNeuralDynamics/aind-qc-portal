@@ -73,7 +73,7 @@ class Media(PyComponent):
 
         if not lazy_load:
             self._load_media()
-        elif reference:
+        else:
             # Parse reference to determine media type without loading
             self._determine_media_type(reference)
 
