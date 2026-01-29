@@ -142,6 +142,7 @@ class ViewData(param.Parameterized):
 
         self._load_record()
         self._parse_record()
+        self.load_changes_from_cache()
 
     @property
     def s3_bucket(self) -> str:
@@ -242,6 +243,9 @@ class ViewData(param.Parameterized):
         # Update metric_status to reflect pending change
         if column_name == "status":
             self.metric_status.loc[self.metric_status["name"] == metric_name, "evaluated_status"] = value
+
+        # Save changes to cache
+        self.save_changes_to_cache()
 
     @property
     def default_grouping(self) -> list:
@@ -379,6 +383,58 @@ class ViewData(param.Parameterized):
                     raw_location = raw_records[0]["location"].replace("s3://", "")
                     self._raw_s3_bucket, self._raw_s3_prefix = raw_location.split("/", 1)
 
+    @property
+    def _cache_key(self) -> tuple[str, str]:
+        """Get the cache key for this user and asset."""
+        username = pn.state.user if hasattr(pn.state, "user") and pn.state.user != "guest" else None
+        return (username, self.asset_name) if username else (None, None)
+
+    def save_changes_to_cache(self):
+        """Save pending changes to pn.state.cache."""
+        username, asset_name = self._cache_key
+        if not username:
+            return
+
+        if not hasattr(pn.state, "cache"):
+            pn.state.cache = {}
+
+        if username not in pn.state.cache:
+            pn.state.cache[username] = {}
+
+        pn.state.cache[username][asset_name] = self.changes.to_dict(orient="records")
+
+    def load_changes_from_cache(self):
+        """Load pending changes from pn.state.cache if available."""
+        username, asset_name = self._cache_key
+        if not username:
+            return
+
+        if not hasattr(pn.state, "cache"):
+            return
+
+        if username in pn.state.cache and asset_name in pn.state.cache[username]:
+            cached_changes = pn.state.cache[username][asset_name]
+            if cached_changes:
+                # Convert back to DataFrame and apply changes using submit_change
+                for change in cached_changes:
+                    self.submit_change(
+                        change["metric_name"],
+                        change["column_name"],
+                        decode_dict_value(change["value"]),
+                    )
+
+    def clear_changes_cache(self):
+        """Clear pending changes from both DataFrame and cache."""
+        username, asset_name = self._cache_key
+
+        # Clear the changes DataFrame
+        self.changes = pd.DataFrame(columns=["metric_name", "column_name", "value"])
+
+        # Clear from cache if exists
+        if username and hasattr(pn.state, "cache"):
+            if username in pn.state.cache and asset_name in pn.state.cache[username]:
+                del pn.state.cache[username][asset_name]
+
     def get_fresh_record(self) -> dict:
         """Re-pull the full record from DocDB as a dict."""
         records = self._client.retrieve_docdb_records(
@@ -505,7 +561,7 @@ class ViewData(param.Parameterized):
                     return False, f"DocDB upsert failed with status {response.status_code}: {response.text}"
 
                 # Clear changes on success
-                self.changes = pd.DataFrame(columns=["metric_name", "column_name", "value"])
+                self.clear_changes_cache()
 
                 return True, "Changes submitted successfully"
 
