@@ -170,6 +170,8 @@ toggleFullScreen()
 
 def reference_is_image(reference):
     """Check if the reference is an image"""
+    if not reference or not isinstance(reference, str):
+        return False
     return (
         reference.endswith(".png")
         or reference.endswith(".jpg")  # noqa: W503
