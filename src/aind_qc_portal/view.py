@@ -3,8 +3,10 @@
 import altair as alt
 import panel as pn
 import param
+import traceback
 
 # Setup Panel and Altair
+from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.utils import format_css_background
 from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panel import QCPanel
@@ -27,8 +29,20 @@ class Settings(param.Parameterized):
 settings = Settings()
 pn.state.location.sync(settings, {"asset_name": "name"})
 
-data = ViewData(asset_name=settings.asset_name)
+loaded = False
+try:
+    data = ViewData(asset_name=settings.asset_name)
 
-qc_panel = QCPanel(record_name=settings.asset_name, data=data)
+    qc_panel = QCPanel(record_name=settings.asset_name, data=data)
+    loaded = True
+except Exception:
+    qc_panel = pn.pane.Markdown(
+        f"# Error loading QC View for asset: {settings.asset_name}\n\n"
+        f"**Error details:**\n```\n{traceback.format_exc()}\n```",
+        styles=OUTER_STYLE,
+    )
 
-qc_panel.__panel__().servable(title=f"QC View: {settings.asset_name}")
+if loaded:
+    qc_panel.__panel__().servable(title=f"QC View: {settings.asset_name}")
+else:
+    qc_panel.servable(title="QC View: Error Loading Asset")
