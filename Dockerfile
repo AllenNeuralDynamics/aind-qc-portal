@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-ENV TREE_SPECIES="s3"
+ENV FOREST_TYPE="S3"
 
 ADD src ./src
 ADD pyproject.toml .
