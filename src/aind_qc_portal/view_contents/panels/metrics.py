@@ -107,7 +107,7 @@ class MetricValue(PyComponent):
                 if key.lower() == "index":
                     index_key = key
                     break
-            
+
             # first, check if every key/value pair has the same length, if so coerce to a dataframe
             if all([isinstance(v, list) for v in self.value.values()]) and all(
                 [len(v) == len(self.value[list(self.value.keys())[0]]) for v in self.value.values()]
