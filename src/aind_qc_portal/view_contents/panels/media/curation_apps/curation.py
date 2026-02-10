@@ -1,9 +1,12 @@
 """Generic curation panel for displaying curation data with media references"""
 
+from urllib.parse import unquote
+
 import pandas as pd
 import panel as pn
 import param
 from panel.custom import PyComponent
+from panel.reactive import ReactiveHTML
 
 from aind_qc_portal.view_contents.panels.media.media import Media
 
@@ -28,7 +31,10 @@ class GenericCuration(PyComponent):
         self.raw_s3_loc = raw_s3_loc
 
         keys = list(data.keys())
-        self.has_references = "reference" in data[keys[0]] if keys and isinstance(data[keys[0]], dict) else False
+        first_is_dict = keys and isinstance(data[keys[0]], dict)
+        self.has_references = (
+            "reference" in data[keys[0]] if first_is_dict else False
+        )
 
         self._init_panel_objects()
 
@@ -37,7 +43,11 @@ class GenericCuration(PyComponent):
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
 
-        self.dropdown = pn.widgets.Select.from_param(self.param.selected_key, name="Curation Key", options=[])
+        self.dropdown = pn.widgets.Select.from_param(
+            self.param.selected_key,
+            name="Curation Key",
+            options=[]
+        )
         self.table = pn.pane.DataFrame()
 
         if self.has_references:
@@ -104,18 +114,79 @@ class GenericCuration(PyComponent):
         return self.content
 
 
+class EphysIframe(ReactiveHTML):
+    """ReactiveHTML iframe component with message posting"""
+
+    iframe_src = param.String(default="")
+    curation_message = param.Dict(default={})
+
+    _template = """
+    <iframe id="ephys_iframe"
+            src="${iframe_src}"
+            style="width: 100%; height: 100%; border: none;">
+    </iframe>
+    """
+
+    _scripts = {
+        "curation_message": """
+            const msg_len = Object.keys(data.curation_message).length;
+            if (msg_len > 0 && ephys_iframe) {
+                console.log('[EphysIframe] Sending curation data');
+                console.log('[EphysIframe] Message:', data.curation_message);
+
+                const message = {
+                    payload: {
+                        type: 'curation-data',
+                        data: data.curation_message
+                    }
+                };
+
+                try {
+                    ephys_iframe.contentWindow.postMessage(message, '*');
+                    console.log('[EphysIframe] Message sent');
+                } catch (e) {
+                    console.error('[EphysIframe] Error:', e);
+                }
+            }
+        """,
+        "after_layout": """
+            console.log('[EphysIframe] Component rendered');
+        """
+    }
+
+    _dom_events = {"ephys_iframe": ["load"]}
+
+    def _ephys_iframe_load(self, event):
+        """Resend curation data when iframe loads"""
+        print("[EphysIframe] Iframe loaded, resending curation data")
+        if self.curation_message:
+            temp = self.curation_message
+            self.curation_message = {}
+            self.curation_message = temp
+
+
 class EphysCuration(PyComponent):
     """Ephys/Spike sorting curation panel"""
 
     selected_curation_index = param.Integer(default=0)
 
-    def __init__(self, data: dict, bucket, prefix, raw_s3_loc=None, reference=None, value_callback=None, curation_values=None, curation_history=None):
+    def __init__(
+        self,
+        data: dict,
+        bucket,
+        prefix,
+        raw_s3_loc=None,
+        reference=None,
+        value_callback=None,
+        curation_values=None,
+        curation_history=None,
+    ):
         """Initialize EphysCuration panel
-        
+
         Parameters
         ----------
         data : dict
-            Current curation data (deprecated, use curation_values instead)
+            Current curation data
         bucket : str
             S3 bucket name
         prefix : str
@@ -138,63 +209,56 @@ class EphysCuration(PyComponent):
         self.raw_s3_loc = raw_s3_loc
         self.reference = reference
         self.value_callback = value_callback
-        
+
         self.curation_values = curation_values or [data]
         self.curation_history = curation_history or {}
         self.data = self.curation_values[-1] if self.curation_values else data
-        self.iframe_ref = None
+        self.iframe_component = None
 
         self._init_panel_objects()
         self._send_curation_to_iframe()
 
     def _init_panel_objects(self):
-        """Initialize empty panel objects"""
+        """Initialize panel objects"""
         self.json_editor = pn.pane.JSON(
             object=self.data,
         )
 
         curation_options = self._build_curation_options()
         self.curation_dropdown = pn.widgets.Select.from_param(
-            self.param.selected_curation_index, 
-            name="Select Curation", 
+            self.param.selected_curation_index,
+            name="Select Curation",
             options=curation_options
         )
-        self.param.watch(self._on_curation_selection_change, "selected_curation_index")
+        self.param.watch(
+            self._on_curation_selection_change,
+            "selected_curation_index"
+        )
 
-        # Metadata display for selected curation
         self.metadata_pane = pn.pane.Markdown("", sizing_mode="stretch_width")
         self._update_metadata_display()
 
-        # Initialize reusable script pane for iframe messaging
-        self.script_pane = pn.pane.HTML("", sizing_mode="stretch_width", height=0)
-
         if self.reference:
-            media_panel = Media(
-                reference=self.reference,
-                s3_bucket=self.bucket,
-                s3_prefix=self.prefix,
-                raw_s3_loc=self.raw_s3_loc,
-                lazy_load=False,
-                value_callback=self._value_callback_wrapper,
-                parent=self,
+            processed_url = self._process_ephys_url(self.reference)
+            print(f"EphysCuration: Processed ephys GUI URL: {processed_url}")
+            self.iframe_component = EphysIframe(
+                iframe_src=processed_url,
+                sizing_mode="stretch_both",
             )
-            self.iframe_ref = media_panel
-            self.iframe_src = self.reference
+
             self.content = pn.Row(
                 pn.Column(
                     self.curation_dropdown,
                     self.metadata_pane,
                     self.json_editor,
-                    self.script_pane,
                 ),
-                media_panel,
+                self.iframe_component,
             )
         else:
             self.content = pn.Column(
                 self.curation_dropdown,
                 self.metadata_pane,
                 self.json_editor,
-                self.script_pane,
             )
 
     def _build_curation_options(self):
@@ -205,7 +269,6 @@ class EphysCuration(PyComponent):
                 history_entry = self.curation_history[i]
                 curator = history_entry.get("curator", "Unknown")
                 timestamp = history_entry.get("timestamp", "")
-                # Truncate milliseconds from timestamp
                 if "." in timestamp:
                     timestamp = timestamp.split(".")[0]
                 label = f"{curator} - {timestamp}"
@@ -222,116 +285,57 @@ class EphysCuration(PyComponent):
         self._send_curation_to_iframe()
 
     def _update_metadata_display(self):
-        """Update the metadata display for the currently selected curation"""
+        """Update metadata display for the selected curation"""
         if self.selected_curation_index < len(self.curation_history):
-            history_entry = self.curation_history[self.selected_curation_index]
+            history_entry = self.curation_history[
+                self.selected_curation_index
+            ]
             curator = history_entry.get("curator", "Unknown")
             timestamp = history_entry.get("timestamp", "")
-            # Truncate milliseconds from timestamp
             if "." in timestamp:
                 timestamp = timestamp.split(".")[0]
-            self.metadata_pane.object = f"**Curator:** {curator} | **Time:** {timestamp}"
+            curator_time = f"**Curator:** {curator} | **Time:** {timestamp}"
+            self.metadata_pane.object = curator_time
         else:
-            self.metadata_pane.object = f"**Curation {self.selected_curation_index}**"
+            curation_label = (
+                f"**Curation {self.selected_curation_index}**"
+            )
+            self.metadata_pane.object = curation_label
+
+    def _process_ephys_url(self, reference: str) -> str:
+        """Process ephys GUI URL by decoding and replacing placeholders"""
+        if not reference:
+            return ""
+    
+        print(reference)
+
+        processed = unquote(reference)
+
+        print(processed)
+        if "{derived_asset_location}" in processed:
+            derived_loc = f"s3://{self.bucket}/{self.prefix}"
+            processed = processed.replace(
+                "{derived_asset_location}",
+                derived_loc
+            )
+        if "{raw_asset_location}" in processed and self.raw_s3_loc:
+            raw_loc = f"s3://{self.raw_s3_loc.lstrip('s3://')}"
+            processed = processed.replace("{raw_asset_location}", raw_loc)
+
+        print(processed)
+
+        return processed
 
     def _send_curation_to_iframe(self):
-        """Send curation data to iframe via postMessage"""
-        if self.iframe_ref is None or not hasattr(self, 'iframe_src'):
-            return
-        
-        import json
-        
-        curation_message = {
-            "payload": {
-                "type": "curation-data",
-                "data": self.data
-            }
-        }
-        
-        message_json = json.dumps(curation_message)
-        iframe_src_json = json.dumps(self.iframe_src)
-        
-        # Generate script that traverses shadowDOM to find iframes
-        script = f"""
-        <script>
-        (function() {{
-            console.log('[EphysCuration] Attempting to send curation data');
-            console.log('[EphysCuration] Target iframe src:', {iframe_src_json});
-            console.log('[EphysCuration] Message:', {message_json});
-            
-            const targetSrc = {iframe_src_json};
-            const message = {message_json};
-            
-            // Function to traverse shadowDOM and find all iframes
-            function getAllElementsIncludingShadow(root = document.body) {{
-                const elements = [];
-
-                function traverse(node) {{
-                    elements.push(node);
-
-                    if (node.shadowRoot) {{
-                        traverse(node.shadowRoot);
-                    }}
-
-                    for (const child of node.children || []) {{
-                        traverse(child);
-                    }}
-                }}
-
-                traverse(root);
-                return elements;
-            }}
-            
-            const allElements = getAllElementsIncludingShadow();
-            const iframes = allElements.filter(el => el.tagName === 'IFRAME');
-            
-            console.log('[EphysCuration] Found', iframes.length, 'iframes');
-            
-            let messagePosted = false;
-            iframes.forEach((iframe, index) => {{
-                console.log('[EphysCuration] iframe', index, 'src:', iframe.src);
-                if (iframe.src && 
-                    iframe.src.includes('ephys.allenneuraldynamics.org')) {{
-                    console.log('[EphysCuration] Posting to iframe', index);
-                    try {{
-                        iframe.contentWindow.postMessage(message, '*');
-                        messagePosted = true;
-                        console.log('[EphysCuration] Posted successfully');
-                    }} catch (e) {{
-                        console.error('[EphysCuration] Error:', e);
-                    }}
-                }}
-            }});
-            
-            if (!messagePosted) {{
-                console.warn('[EphysCuration] No matching iframe found');
-            }}
-        }})();
-        </script>
-        """
-        
-        # Update the reusable script pane with new content
-        self.script_pane.object = script
-
-    def _value_callback_wrapper(self, new_value):
-        """Wrapper to handle value callback from media panel"""
-
-        if isinstance(new_value, dict) and new_value.get("command") == "calculateSubFramePositioning":
-            # Ignore positioning commands
-            return
-
-        self.data = new_value
-        self.json_editor.object = self.data
-        
-        if self.value_callback:
-            self.value_callback(new_value)
+        """Send curation data to iframe by updating the reactive parameter"""
+        if self.iframe_component:
+            self.iframe_component.curation_message = self.data
 
     def set_submit_dirty(self):
         """Mark that there are pending changes to submit"""
-        # This gets called when interactive media (ephys GUI) updates values
-        # The actual submission is handled by the value_callback mechanism
         print("EphysCuration: Changes detected from interactive media")
 
     def __panel__(self):
         """Return the panel representation of this component"""
         return self.content
+
