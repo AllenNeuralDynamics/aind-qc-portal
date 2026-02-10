@@ -293,6 +293,7 @@ The following environment variables are used by the QC Portal:
 |----------|-------------|---------------|-------|
 | `BYPASS_CODEOCEAN_S3` | Bypasses Code Ocean cross-account S3 access | `1` | **Required for local dev** unless you have the `AindCodeOceanBucketCrossAccountAccess` IAM role. Set to `1` to skip role assumption. |
 | `AWS_PROFILE` | AWS credentials profile to use | `dev` or `prod` | Required for accessing S3 media files in aind-open-data and the private codeocean buckets. AIND dev credentials will not work on the development branch for testing assets that have media in private buckets. |
+| `FOREST_TYPE` | zombie-squirrel back-end | `s3` | **Required** this is what allows the QC portal to quickly pull metadata about all assets on the `/portal` endpoint |
 
 #### Required for Panel Server (Docker & Production)
 
