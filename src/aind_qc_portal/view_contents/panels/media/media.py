@@ -257,7 +257,7 @@ class Media(PyComponent):
         ----------
         data : str
         """
-        if not reference:
+        if not reference or not isinstance(reference, str):
             return
 
         print(f"Parsing reference: {reference}")
