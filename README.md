@@ -383,7 +383,7 @@ MSYS_NO_PATHCONV=1 docker run \
   -e OAUTH_REDIRECT=http://localhost:5007 \
   -e AWS_PROFILE=<your-profile> \
   -e BYPASS_CODEOCEAN_S3=1 \
-  -p 5007:5007 \
+  -p 5007:8000 \
   aind-qc-portal
 ```
 
@@ -395,7 +395,7 @@ docker run \
   -e OAUTH_REDIRECT=http://localhost:5007 \
   -e AWS_PROFILE=<your-profile> \
   -e BYPASS_CODEOCEAN_S3=1 \
-  -p 5007:5007 \
+  -p 5007:8000 \
   aind-qc-portal
 ```
 

@@ -102,17 +102,45 @@ class MetricValue(PyComponent):
             self.auto_state = self.value.auto_state
             self.value_widget = self.value.panel()
         else:
+            # Check if there's an 'index' key (case-insensitive) to use as the DataFrame index
+            index_values = None
+            index_key = None
+            data_dict = self.value
+            
+            # Find the index key case-insensitively
+            for key in self.value.keys():
+                if key.lower() == "index":
+                    index_key = key
+                    index_values = self.value[key]
+                    break
+            
+            # Create a copy without the index key for DataFrame creation
+            if index_key is not None:
+                data_dict = {k: v for k, v in self.value.items() if k != index_key}
+            
             # first, check if every key/value pair has the same length, if so coerce to a dataframe
-            if all([isinstance(v, list) for v in self.value.values()]) and all(
-                [len(v) == len(self.value[list(self.value.keys())[0]]) for v in self.value.values()]
+            if all([isinstance(v, list) for v in data_dict.values()]) and all(
+                [len(v) == len(data_dict[list(data_dict.keys())[0]]) for v in data_dict.values()]
             ):
                 self.auto_value = True
-                df = pd.DataFrame(df_scalar_to_list(self.value))
+                df = pd.DataFrame(df_scalar_to_list(data_dict))
+                if index_values is not None:
+                    # Set the index if provided
+                    if isinstance(index_values, list) and len(index_values) == len(df):
+                        df.index = index_values
+                    elif not isinstance(index_values, list):
+                        df.index = [index_values]
                 self.value_widget = pn.pane.DataFrame(df)
             # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
-            elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in self.value.values()]):
+            elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in data_dict.values()]):
                 self.auto_value = True
-                df = pd.DataFrame(df_scalar_to_list(self.value))
+                df = pd.DataFrame(df_scalar_to_list(data_dict))
+                if index_values is not None:
+                    # Set the index if provided
+                    if isinstance(index_values, list) and len(index_values) == len(df):
+                        df.index = index_values
+                    elif not isinstance(index_values, list):
+                        df.index = [index_values]
                 self.value_widget = pn.pane.DataFrame(df)
             else:
                 self.value_widget = pn.widgets.JSONEditor(name=self.metric_name, width=WIDGET_WIDTH)
