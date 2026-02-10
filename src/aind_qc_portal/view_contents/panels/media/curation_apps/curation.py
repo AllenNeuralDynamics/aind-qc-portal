@@ -32,9 +32,7 @@ class GenericCuration(PyComponent):
 
         keys = list(data.keys())
         first_is_dict = keys and isinstance(data[keys[0]], dict)
-        self.has_references = (
-            "reference" in data[keys[0]] if first_is_dict else False
-        )
+        self.has_references = "reference" in data[keys[0]] if first_is_dict else False
 
         self._init_panel_objects()
 
@@ -43,11 +41,7 @@ class GenericCuration(PyComponent):
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
 
-        self.dropdown = pn.widgets.Select.from_param(
-            self.param.selected_key,
-            name="Curation Key",
-            options=[]
-        )
+        self.dropdown = pn.widgets.Select.from_param(self.param.selected_key, name="Curation Key", options=[])
         self.table = pn.pane.DataFrame()
 
         if self.has_references:
@@ -151,7 +145,7 @@ class EphysIframe(ReactiveHTML):
         """,
         "after_layout": """
             console.log('[EphysIframe] Component rendered');
-        """
+        """,
     }
 
     _dom_events = {"ephys_iframe": ["load"]}
@@ -226,14 +220,9 @@ class EphysCuration(PyComponent):
 
         curation_options = self._build_curation_options()
         self.curation_dropdown = pn.widgets.Select.from_param(
-            self.param.selected_curation_index,
-            name="Select Curation",
-            options=curation_options
+            self.param.selected_curation_index, name="Select Curation", options=curation_options
         )
-        self.param.watch(
-            self._on_curation_selection_change,
-            "selected_curation_index"
-        )
+        self.param.watch(self._on_curation_selection_change, "selected_curation_index")
 
         self.metadata_pane = pn.pane.Markdown("", sizing_mode="stretch_width")
         self._update_metadata_display()
@@ -287,9 +276,7 @@ class EphysCuration(PyComponent):
     def _update_metadata_display(self):
         """Update metadata display for the selected curation"""
         if self.selected_curation_index < len(self.curation_history):
-            history_entry = self.curation_history[
-                self.selected_curation_index
-            ]
+            history_entry = self.curation_history[self.selected_curation_index]
             curator = history_entry.get("curator", "Unknown")
             timestamp = history_entry.get("timestamp", "")
             if "." in timestamp:
@@ -297,16 +284,14 @@ class EphysCuration(PyComponent):
             curator_time = f"**Curator:** {curator} | **Time:** {timestamp}"
             self.metadata_pane.object = curator_time
         else:
-            curation_label = (
-                f"**Curation {self.selected_curation_index}**"
-            )
+            curation_label = f"**Curation {self.selected_curation_index}**"
             self.metadata_pane.object = curation_label
 
     def _process_ephys_url(self, reference: str) -> str:
         """Process ephys GUI URL by decoding and replacing placeholders"""
         if not reference:
             return ""
-    
+
         print(reference)
 
         processed = unquote(reference)
@@ -314,10 +299,7 @@ class EphysCuration(PyComponent):
         print(processed)
         if "{derived_asset_location}" in processed:
             derived_loc = f"s3://{self.bucket}/{self.prefix}"
-            processed = processed.replace(
-                "{derived_asset_location}",
-                derived_loc
-            )
+            processed = processed.replace("{derived_asset_location}", derived_loc)
         if "{raw_asset_location}" in processed and self.raw_s3_loc:
             raw_loc = f"s3://{self.raw_s3_loc.lstrip('s3://')}"
             processed = processed.replace("{raw_asset_location}", raw_loc)
@@ -338,4 +320,3 @@ class EphysCuration(PyComponent):
     def __panel__(self):
         """Return the panel representation of this component"""
         return self.content
-

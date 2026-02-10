@@ -318,14 +318,14 @@ class Media(PyComponent):
 
     def _send_message_to_iframe(self, message: dict):
         """Send a postMessage to the iframe
-        
+
         Parameters
         ----------
         message : dict
             Message object to send to the iframe
         """
         import json
-        
+
         message_json = json.dumps(message)
         script = f"""
         <script>
@@ -338,9 +338,9 @@ class Media(PyComponent):
         }})();
         </script>
         """
-        
+
         # Add the script to the content to execute the postMessage
-        if hasattr(self, 'content') and self.content:
+        if hasattr(self, "content") and self.content:
             script_pane = pn.pane.HTML(script)
             if script_pane not in self.content:
                 self.content.append(script_pane)

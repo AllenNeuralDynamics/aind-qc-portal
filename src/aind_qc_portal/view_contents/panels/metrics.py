@@ -638,7 +638,9 @@ class Metrics(PyComponent):
             curation_value = decode_dict_value(row["value"])
 
             # Parse each value in the list
-            curation_values = [json.loads(val) if isinstance(val, str) else val for val in curation_value] if curation_value else []
+            curation_values = (
+                [json.loads(val) if isinstance(val, str) else val for val in curation_value] if curation_value else []
+            )
             curation_data = curation_values[-1] if curation_values else {}
 
             curation_type = row.get("type", "")
