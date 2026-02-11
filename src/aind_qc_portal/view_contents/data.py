@@ -7,6 +7,9 @@ from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_schema.core.quality_control import QualityControl
 
 from aind_qc_portal.view_contents.data_utils import (
+    apply_curation_metric_change,
+    apply_qc_metric_change,
+    apply_status_change,
     decode_dict_value,
     encode_dict_value,
 )

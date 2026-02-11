@@ -73,9 +73,9 @@ class TestUploadTemporaryMetadata(unittest.TestCase):
         """Test that upload_temporary_metadata creates metadata dict if it doesn't exist"""
         del mock_state.metadata
         test_metadata = {"name": "test_asset", "data": "test_data"}
-        
+
         upload_temporary_metadata(test_metadata)
-        
+
         self.assertEqual(mock_state.metadata, {"test_asset": test_metadata})
 
     @patch("aind_qc_portal.view_contents.data_utils.pn.state")
@@ -83,9 +83,9 @@ class TestUploadTemporaryMetadata(unittest.TestCase):
         """Test that upload_temporary_metadata appends to existing metadata dict"""
         mock_state.metadata = {"existing": {"name": "existing", "data": "old"}}
         test_metadata = {"name": "test_asset", "data": "new_data"}
-        
+
         upload_temporary_metadata(test_metadata)
-        
+
         self.assertEqual(len(mock_state.metadata), 2)
         self.assertIn("existing", mock_state.metadata)
         self.assertIn("test_asset", mock_state.metadata)

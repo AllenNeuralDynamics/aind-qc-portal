@@ -1,8 +1,7 @@
-"""Utility functions for handling data/metadata from assets """
+"""Utility functions for handling data/metadata from assets"""
 
-
-from datetime import datetime
 import json
+from datetime import datetime
 
 import panel as pn
 
