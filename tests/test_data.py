@@ -16,7 +16,7 @@ from aind_data_schema.core.quality_control import (
     Status,
 )
 
-from aind_qc_portal.view_contents.data import (
+from aind_qc_portal.view_contents.data_utils import (
     apply_curation_metric_change,
     apply_qc_metric_change,
     apply_status_change,
@@ -24,11 +24,15 @@ from aind_qc_portal.view_contents.data import (
     create_status_history_entry,
     decode_dict_value,
     encode_dict_value,
+    upload_temporary_metadata,
 )
 
 
 class TestEncodeDecodeHelpers(unittest.TestCase):
+    """Test the helper functions for encoding and decoding dictionary values in QC metrics"""
+
     def test_encode_dict_value(self):
+        """Test that a dictionary value is correctly encoded as a JSON string with 'json:' prefix"""
         test_dict = {"key": "value", "nested": {"inner": 123}}
         encoded = encode_dict_value(test_dict)
         self.assertTrue(encoded.startswith("json:"))
@@ -36,30 +40,64 @@ class TestEncodeDecodeHelpers(unittest.TestCase):
         self.assertIn("value", encoded)
 
     def test_encode_non_dict_value(self):
+        """Test that non-dictionary values are returned unchanged by the encoding function"""
         self.assertEqual(encode_dict_value("string"), "string")
         self.assertEqual(encode_dict_value(123), 123)
         self.assertEqual(encode_dict_value([1, 2, 3]), [1, 2, 3])
 
     def test_decode_dict_value(self):
+        """Test that a JSON string with 'json:' prefix is correctly decoded back to a dictionary"""
         test_dict = {"key": "value", "nested": {"inner": 123}}
         encoded = f"json:{json.dumps(test_dict)}"
         decoded = decode_dict_value(encoded)
         self.assertEqual(decoded, test_dict)
 
     def test_decode_non_json_value(self):
+        """Test that values without 'json:' prefix are returned unchanged by the decoding function"""
         self.assertEqual(decode_dict_value("string"), "string")
         self.assertEqual(decode_dict_value(123), 123)
 
     def test_encode_decode_roundtrip(self):
+        """Test that encoding and then decoding a dictionary value returns the original dictionary"""
         test_dict = {"status": "Pass", "units": [1, 2, 3], "threshold": 0.5}
         encoded = encode_dict_value(test_dict)
         decoded = decode_dict_value(encoded)
         self.assertEqual(decoded, test_dict)
 
 
+class TestUploadTemporaryMetadata(unittest.TestCase):
+    """Test the function that uploads temporary metadata to the database, ensuring it correctly creates or appends to the metadata dictionary in pn.state"""
+
+    @patch("aind_qc_portal.view_contents.data_utils.pn.state")
+    def test_upload_temporary_metadata_creates_metadata_dict(self, mock_state):
+        """Test that upload_temporary_metadata creates metadata dict if it doesn't exist"""
+        del mock_state.metadata
+        test_metadata = {"name": "test_asset", "data": "test_data"}
+
+        upload_temporary_metadata(test_metadata)
+
+        self.assertEqual(mock_state.metadata, {"test_asset": test_metadata})
+
+    @patch("aind_qc_portal.view_contents.data_utils.pn.state")
+    def test_upload_temporary_metadata_appends_to_existing(self, mock_state):
+        """Test that upload_temporary_metadata appends to existing metadata dict"""
+        mock_state.metadata = {"existing": {"name": "existing", "data": "old"}}
+        test_metadata = {"name": "test_asset", "data": "new_data"}
+
+        upload_temporary_metadata(test_metadata)
+
+        self.assertEqual(len(mock_state.metadata), 2)
+        self.assertIn("existing", mock_state.metadata)
+        self.assertIn("test_asset", mock_state.metadata)
+        self.assertEqual(mock_state.metadata["test_asset"], test_metadata)
+
+
 class TestHistoryEntryCreation(unittest.TestCase):
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    """Test the creation of history entries for curation and status changes"""
+
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_create_curation_history_entry(self, mock_datetime):
+        """Test that a curation history entry is created with the correct structure and timestamp"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         entry = create_curation_history_entry("test_user")
@@ -68,8 +106,9 @@ class TestHistoryEntryCreation(unittest.TestCase):
         self.assertEqual(entry["curator"], "test_user")
         self.assertEqual(entry["timestamp"], "2026-01-27T12:00:00")
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_create_status_history_entry(self, mock_datetime):
+        """Test that a status history entry is created with the correct structure and timestamp"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         entry = create_status_history_entry("Pass", "test_evaluator")
@@ -80,11 +119,15 @@ class TestHistoryEntryCreation(unittest.TestCase):
 
 
 class TestApplyCurationMetricChange(unittest.TestCase):
+    """Test the function that applies changes to curation metrics, ensuring it correctly updates the value and history"""
+
     def setUp(self):
+        """Set up a sample curation metric for testing"""
         self.metric = {"name": "test_curation", "object_type": "Curation metric", "value": [], "curation_history": []}
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_apply_curation_metric_change_to_empty_list(self, mock_datetime):
+        """Test that applying a curation change to an empty value list correctly appends the new data and history entry"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         new_data = {"unit_id": 1, "label": "good"}
@@ -95,8 +138,9 @@ class TestApplyCurationMetricChange(unittest.TestCase):
         self.assertEqual(len(self.metric["curation_history"]), 1)
         self.assertEqual(self.metric["curation_history"][0]["curator"], "curator1")
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_apply_curation_metric_change_appends_to_existing(self, mock_datetime):
+        """Test that applying a curation change to a metric with existing values correctly appends the new data and history entry"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Add first curation
@@ -114,8 +158,9 @@ class TestApplyCurationMetricChange(unittest.TestCase):
         self.assertEqual(len(self.metric["curation_history"]), 2)
         self.assertEqual(self.metric["curation_history"][1]["curator"], "curator2")
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_apply_curation_metric_change_initializes_missing_fields(self, mock_datetime):
+        """Test that applying a curation change to a metric missing the 'value' or 'curation_history' fields initializes them correctly"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Metric without value or curation_history fields
@@ -131,8 +176,9 @@ class TestApplyCurationMetricChange(unittest.TestCase):
         self.assertEqual(len(metric["value"]), 1)
         self.assertEqual(len(metric["curation_history"]), 1)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_apply_curation_metric_change_converts_non_list_value(self, mock_datetime):
+        """Test that if the existing value is not a list, it is converted to a list before appending the new curation data"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Metric with non-list value
@@ -146,7 +192,10 @@ class TestApplyCurationMetricChange(unittest.TestCase):
 
 
 class TestApplyQCMetricChange(unittest.TestCase):
+    """Test the function that applies changes to regular QC metrics, ensuring it correctly replaces the value without appending"""
+
     def test_apply_qc_metric_change_replaces_value(self):
+        """Test that applying a QC metric change replaces the existing value rather than appending to it"""
         metric = {"name": "test_qc", "object_type": "QC metric", "value": "old_value"}
 
         apply_qc_metric_change(metric, "new_value")
@@ -154,6 +203,7 @@ class TestApplyQCMetricChange(unittest.TestCase):
         self.assertEqual(metric["value"], "new_value")
 
     def test_apply_qc_metric_change_with_dict_value(self):
+        """Test that applying a QC metric change with a dictionary value correctly replaces the existing value"""
         metric = {"name": "test_qc", "object_type": "QC metric", "value": {"old": "data"}}
 
         new_value = {"new": "data", "count": 5}
@@ -162,6 +212,7 @@ class TestApplyQCMetricChange(unittest.TestCase):
         self.assertEqual(metric["value"], new_value)
 
     def test_apply_qc_metric_change_with_numeric_value(self):
+        """Test that applying a QC metric change with a numeric value correctly replaces the existing value"""
         metric = {"name": "test_qc", "object_type": "QC metric", "value": 0.5}
 
         apply_qc_metric_change(metric, 0.95)
@@ -170,8 +221,11 @@ class TestApplyQCMetricChange(unittest.TestCase):
 
 
 class TestApplyStatusChange(unittest.TestCase):
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    """Test the function that applies status changes to QC metrics, ensuring it correctly updates the status history"""
+
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_apply_status_change_to_existing_history(self, mock_datetime):
+        """Test that applying a status change to a metric with existing status history correctly appends the new status entry"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         metric = {
@@ -186,8 +240,9 @@ class TestApplyStatusChange(unittest.TestCase):
         self.assertEqual(metric["status_history"][1]["evaluator"], "evaluator1")
         self.assertEqual(metric["status_history"][1]["timestamp"], "2026-01-27T12:00:00")
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_apply_status_change_initializes_missing_history(self, mock_datetime):
+        """Test that applying a status change to a metric missing the 'status_history' field initializes it correctly and adds the new status entry"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         metric = {"name": "test"}
@@ -199,8 +254,9 @@ class TestApplyStatusChange(unittest.TestCase):
         self.assertEqual(len(metric["status_history"]), 1)
         self.assertEqual(metric["status_history"][0]["status"], "Fail")
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_apply_status_change_multiple_times(self, mock_datetime):
+        """Test that applying multiple status changes in sequence correctly appends each new status entry to the history"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         metric = {"name": "test", "status_history": []}
@@ -218,8 +274,9 @@ class TestApplyStatusChange(unittest.TestCase):
 class TestCurationMetricChangeIntegration(unittest.TestCase):
     """Integration tests for the full curation metric update flow"""
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_full_curation_update_workflow(self, mock_datetime):
+        """Test the full workflow of applying a curation change and a status change to a curation metric, ensuring all fields are updated correctly"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Simulate a curation metric with initial data
@@ -248,8 +305,9 @@ class TestCurationMetricChangeIntegration(unittest.TestCase):
         self.assertEqual(len(metric["status_history"]), 2)
         self.assertEqual(metric["status_history"][1]["status"], "Pass")
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_qc_metric_does_not_append_values(self, mock_datetime):
+        """Test that applying a QC metric change to a regular QC metric does not append to the value but replaces it instead"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Regular QC metric
@@ -273,8 +331,9 @@ class TestCurationMetricChangeIntegration(unittest.TestCase):
 class TestCurationDataTypes(unittest.TestCase):
     """Test that curation data handles various data types correctly"""
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_curation_with_complex_nested_data(self, mock_datetime):
+        """Test that applying a curation change with complex nested data structures is correctly encoded and stored in the metric value"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         metric = {"name": "test", "object_type": "Curation metric", "value": []}
@@ -342,7 +401,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         # Convert to dict for testing (this is what the actual code works with)
         self.test_qc_structure = qc.model_dump()
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_qc_metric_change_preserves_tags(self, mock_datetime):
         """Test that QC metric changes preserve tags"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -360,7 +419,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         self.assertEqual(metric["tags"], original_tags)
         self.assertEqual(metric["value"], 0.95)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_curation_metric_change_preserves_tags(self, mock_datetime):
         """Test that curation metric changes preserve tags"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -379,7 +438,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         self.assertEqual(metric["tags"], original_tags)
         self.assertEqual(len(metric["value"]), 2)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_status_change_preserves_tags(self, mock_datetime):
         """Test that status changes preserve tags"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -397,7 +456,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         self.assertEqual(metric["tags"], original_tags)
         self.assertEqual(len(metric["status_history"]), 2)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_modified_qc_validates_with_schema(self, mock_datetime):
         """Test that modified QC structure validates against schema"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -412,13 +471,9 @@ class TestSubmitFunctionality(unittest.TestCase):
         apply_curation_metric_change(qc_copy["metrics"][1], new_curation, "curator2")
         apply_status_change(qc_copy["metrics"][1], "Pass", "curator2")
 
-        # Validate against schema
-        try:
-            QualityControl.model_validate(qc_copy)
-        except Exception as e:
-            self.fail(f"Modified QC structure failed validation: {str(e)}")
+        QualityControl.model_validate(qc_copy)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_default_grouping_unchanged_after_modifications(self, mock_datetime):
         """Test that default_grouping field is not modified by metric changes"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -436,7 +491,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         # Verify default_grouping is unchanged
         self.assertEqual(qc_copy["default_grouping"], original_grouping)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_multiple_sequential_changes_preserve_structure(self, mock_datetime):
         """Test that multiple sequential changes don't corrupt the structure"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -458,13 +513,9 @@ class TestSubmitFunctionality(unittest.TestCase):
         self.assertEqual(curation_metric["tags"], original_tags)
         self.assertEqual(curation_metric["object_type"], original_object_type)
 
-        # Validate entire structure
-        try:
-            QualityControl.model_validate(qc_copy)
-        except Exception as e:
-            self.fail(f"QC structure after multiple changes failed validation: {str(e)}")
+        QualityControl.model_validate(qc_copy)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_tags_with_special_characters_preserved(self, mock_datetime):
         """Test that tags with special characters are preserved correctly"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -487,7 +538,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         # Verify tags are unchanged
         self.assertEqual(metric["tags"], original_tags)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_empty_tags_preserved(self, mock_datetime):
         """Test that empty tags dict is preserved"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -502,7 +553,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         # Verify tags remain as empty dict
         self.assertEqual(metric["tags"], {})
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_modality_and_stage_preserved(self, mock_datetime):
         """Test that modality and stage fields are not modified"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -521,7 +572,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         self.assertEqual(metric["modality"], original_modality)
         self.assertEqual(metric["stage"], original_stage)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_curation_type_field_preserved(self, mock_datetime):
         """Test that the 'type' field in curation metrics is preserved"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -538,7 +589,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         # Verify type field unchanged
         self.assertEqual(metric.get("type"), original_type)
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_validation_roundtrip_preserves_tags(self, mock_datetime):
         """Test that validating through QualityControl and back preserves tags as dicts"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
@@ -566,7 +617,7 @@ class TestSubmitFunctionality(unittest.TestCase):
         # Check that default_grouping didn't trigger the validator
         self.assertEqual(qc_dict["default_grouping"], original_grouping, "default_grouping was modified by validator")
 
-    @patch("aind_qc_portal.view_contents.data.datetime")
+    @patch("aind_qc_portal.view_contents.data_utils.datetime")
     def test_exact_production_structure_preserved(self, mock_datetime):
         """Test exact production structure: tags as dict, default_grouping as list of strings"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
