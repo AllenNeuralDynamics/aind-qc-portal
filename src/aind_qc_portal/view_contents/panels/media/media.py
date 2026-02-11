@@ -257,7 +257,7 @@ class Media(PyComponent):
         ----------
         data : str
         """
-        if not reference:
+        if not reference or not isinstance(reference, str):
             return
 
         print(f"Parsing reference: {reference}")
@@ -315,6 +315,35 @@ class Media(PyComponent):
             self.video_pane.object = reference_data
 
         self.refresh_trigger += 1
+
+    def _send_message_to_iframe(self, message: dict):
+        """Send a postMessage to the iframe
+
+        Parameters
+        ----------
+        message : dict
+            Message object to send to the iframe
+        """
+        import json
+
+        message_json = json.dumps(message)
+        script = f"""
+        <script>
+        (function() {{
+            const iframes = document.querySelectorAll('iframe');
+            const message = {message_json};
+            iframes.forEach(iframe => {{
+                iframe.contentWindow.postMessage(message, '*');
+            }});
+        }})();
+        </script>
+        """
+
+        # Add the script to the content to execute the postMessage
+        if hasattr(self, "content") and self.content:
+            script_pane = pn.pane.HTML(script)
+            if script_pane not in self.content:
+                self.content.append(script_pane)
 
     @param.depends("loaded", watch=False)
     def __panel__(self):  # pragma: no cover

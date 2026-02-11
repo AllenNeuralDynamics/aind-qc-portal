@@ -645,30 +645,27 @@ class Metrics(PyComponent):
         tabs = []
 
         for row in curation_metrics:
-            # Parse the value - it's a JSON string containing the curation data
+            # Parse the value - it's a list of JSON-stringified dicts
             curation_value = decode_dict_value(row["value"])
 
-            # The value is a list with a single JSON string element
-            if not curation_value:
-                curation_data = {}
-            elif isinstance(curation_value, list) and len(curation_value) > 0:
-                curation_data = json.loads(curation_value[-1])
-            elif isinstance(curation_value, str):
-                curation_data = json.loads(curation_value)
-            else:
-                curation_data = curation_value
+            # Parse each value in the list
+            curation_values = (
+                [json.loads(val) if isinstance(val, str) else val for val in curation_value] if curation_value else []
+            )
+            curation_data = curation_values[-1] if curation_values else {}
 
             curation_type = row.get("type", "")
             reference = row.get("reference")
+            curation_history = row.get("curation_history", [])
 
             # Create a callback that updates this curation metric's value
             metric_name = row["name"]
 
             def make_value_callback(name):
-                """Create a callback function for updating curation metric values."""
+                """Create a callback function that captures the metric name"""
 
                 def update_curation_value(new_data):
-                    """Update curation metric with new data."""
+                    """Callback to update the curation metric value when changes are made in the curation panel"""
                     print(f"Updating curation metric '{name}' with new data: {new_data}")
                     # Just pass the new data - get_submission_data will handle list appending and curation_history
                     self.callback(metric_name=name, column_name="value", value=new_data)
@@ -683,6 +680,8 @@ class Metrics(PyComponent):
                     raw_s3_loc=self.data.raw_s3_location,
                     reference=reference,
                     value_callback=make_value_callback(metric_name),
+                    curation_values=curation_values,
+                    curation_history=curation_history,
                 )
             else:
                 curation_panel = GenericCuration(

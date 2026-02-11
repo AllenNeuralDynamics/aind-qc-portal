@@ -34,18 +34,27 @@ class SubmitPanel(PyComponent):
             disabled=True,
         )
 
+        # Clear changes button
+        self.clear_button = pn.widgets.Button(
+            name="Clear all changes",
+            button_type="warning",
+        )
+
         # Tabulator placeholder
         self.modal_tabulator = pn.Column()
 
         # Header
         self.modal_header = pn.pane.Markdown("")
 
+        # Button row
+        button_row = pn.Row(self.upload_button, self.clear_button)
+
         # Create modal with all content
         self.modal = pn.layout.Modal(
             self.modal_header,
             self.modal_tabulator,
             self.status_pane,
-            self.upload_button,
+            button_row,
             name="Review Changes",
             show_close_button=True,
             background_close=True,
@@ -53,6 +62,7 @@ class SubmitPanel(PyComponent):
 
         # Set up button callbacks
         self.upload_button.on_click(self._on_upload)
+        self.clear_button.on_click(self._on_clear)
 
     def _on_upload(self, event):
         """Handle submit button click in modal"""
@@ -67,6 +77,14 @@ class SubmitPanel(PyComponent):
         else:
             self.status_pane.object = f"❌ **Error:** {message}"
             self.upload_button.button_type = "danger"
+
+    def _on_clear(self, event):
+        """Handle clear button click in modal"""
+        self.clear_button.loading = True
+        self.data.clear_changes_cache()
+        self.clear_button.loading = False
+        self.status_pane.object = "✅ **All changes cleared**"
+        self.refresh_page()
 
     def _update_modal_content(self):
         """Update the modal content with current preview data"""

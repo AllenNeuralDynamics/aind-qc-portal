@@ -1,13 +1,18 @@
 """Database for the QC view application."""
 
-import json
-from datetime import datetime
-
 import pandas as pd
 import panel as pn
 import param
 from aind_data_access_api.document_db import MetadataDbClient
 from aind_data_schema.core.quality_control import QualityControl
+
+from aind_qc_portal.view_contents.data_utils import (
+    apply_curation_metric_change,
+    apply_qc_metric_change,
+    apply_status_change,
+    decode_dict_value,
+    encode_dict_value,
+)
 
 TIMEOUT_1M = 60
 TIMEOUT_1H = 60 * 60
@@ -17,109 +22,6 @@ client = MetadataDbClient(
     host="api.allenneuraldynamics.org",
     version="v2",
 )
-
-
-def encode_dict_value(value):
-    """Encode a dict value as a JSON string with 'json:' prefix."""
-    if isinstance(value, dict):
-        return f"json:{json.dumps(value)}"
-    return value
-
-
-def decode_dict_value(value):
-    """Decode a 'json:' prefixed string back to a dict."""
-    if isinstance(value, str) and value.startswith("json:"):
-        return json.loads(value[5:])  # Remove 'json:' prefix and parse
-    return value
-
-
-def upload_temporary_metadata(metadata: dict):
-    """Upload metadata to the database."""
-    if not hasattr(pn.state, "metadata"):
-        pn.state.metadata = {}
-    pn.state.metadata[metadata["name"]] = metadata
-
-    print(f"Uploaded temporary metadata for {metadata['name']}")
-    print(f"Full data: {metadata}")
-
-
-def create_curation_history_entry(curator: str) -> dict:
-    """Create a curation history entry.
-
-    Args:
-        curator: Name of the curator
-
-    Returns:
-        Dict with object_type, curator, and timestamp
-    """
-    return {
-        "object_type": "Curation history",
-        "curator": curator,
-        "timestamp": datetime.now().isoformat(),
-    }
-
-
-def create_status_history_entry(status: str, evaluator: str) -> dict:
-    """Create a status history entry.
-
-    Args:
-        status: Status value (Pass, Fail, Pending)
-        evaluator: Name of the evaluator
-
-    Returns:
-        Dict with status, evaluator, and timestamp
-    """
-    return {
-        "status": status,
-        "evaluator": evaluator,
-        "timestamp": datetime.now().isoformat(),
-    }
-
-
-def apply_curation_metric_change(metric_obj: dict, value_change: any, curator: str) -> None:
-    """Apply a value change to a curation metric in-place.
-
-    Args:
-        metric_obj: The metric dictionary to modify
-        value_change: The new value to append
-        curator: Name of the curator
-    """
-    # Ensure value exists and is a list
-    if "value" not in metric_obj or not isinstance(metric_obj["value"], list):
-        metric_obj["value"] = []
-
-    # Append new value as JSON string
-    metric_obj["value"].append(json.dumps(value_change))
-
-    # Add curation history entry
-    if "curation_history" not in metric_obj:
-        metric_obj["curation_history"] = []
-    metric_obj["curation_history"].append(create_curation_history_entry(curator))
-
-
-def apply_qc_metric_change(metric_obj: dict, value_change: any) -> None:
-    """Apply a value change to a regular QC metric in-place.
-
-    Args:
-        metric_obj: The metric dictionary to modify
-        value_change: The new value to set
-    """
-    metric_obj["value"] = value_change
-
-
-def apply_status_change(metric_obj: dict, status_change: str, evaluator: str) -> None:
-    """Apply a status change to a metric in-place.
-
-    Args:
-        metric_obj: The metric dictionary to modify
-        status_change: The new status value
-        evaluator: Name of the evaluator
-    """
-    # Ensure status_history exists
-    if "status_history" not in metric_obj:
-        metric_obj["status_history"] = []
-
-    metric_obj["status_history"].append(create_status_history_entry(status_change, evaluator))
 
 
 class ViewData(param.Parameterized):
@@ -142,6 +44,7 @@ class ViewData(param.Parameterized):
 
         self._load_record()
         self._parse_record()
+        self.load_changes_from_cache()
 
     @property
     def s3_bucket(self) -> str:
@@ -242,6 +145,9 @@ class ViewData(param.Parameterized):
         # Update metric_status to reflect pending change
         if column_name == "status":
             self.metric_status.loc[self.metric_status["name"] == metric_name, "evaluated_status"] = value
+
+        # Save changes to cache
+        self.save_changes_to_cache()
 
     @property
     def default_grouping(self) -> list:
@@ -379,6 +285,58 @@ class ViewData(param.Parameterized):
                     raw_location = raw_records[0]["location"].replace("s3://", "")
                     self._raw_s3_bucket, self._raw_s3_prefix = raw_location.split("/", 1)
 
+    @property
+    def _cache_key(self) -> tuple[str, str]:
+        """Get the cache key for this user and asset."""
+        username = pn.state.user if hasattr(pn.state, "user") and pn.state.user != "guest" else None
+        return (username, self.asset_name) if username else (None, None)
+
+    def save_changes_to_cache(self):
+        """Save pending changes to pn.state.cache."""
+        username, asset_name = self._cache_key
+        if not username:
+            return
+
+        if not hasattr(pn.state, "cache"):
+            pn.state.cache = {}
+
+        if username not in pn.state.cache:
+            pn.state.cache[username] = {}
+
+        pn.state.cache[username][asset_name] = self.changes.to_dict(orient="records")
+
+    def load_changes_from_cache(self):
+        """Load pending changes from pn.state.cache if available."""
+        username, asset_name = self._cache_key
+        if not username:
+            return
+
+        if not hasattr(pn.state, "cache"):
+            return
+
+        if username in pn.state.cache and asset_name in pn.state.cache[username]:
+            cached_changes = pn.state.cache[username][asset_name]
+            if cached_changes:
+                # Convert back to DataFrame and apply changes using submit_change
+                for change in cached_changes:
+                    self.submit_change(
+                        change["metric_name"],
+                        change["column_name"],
+                        decode_dict_value(change["value"]),
+                    )
+
+    def clear_changes_cache(self):
+        """Clear pending changes from both DataFrame and cache."""
+        username, asset_name = self._cache_key
+
+        # Clear the changes DataFrame
+        self.changes = pd.DataFrame(columns=["metric_name", "column_name", "value"])
+
+        # Clear from cache if exists
+        if username and hasattr(pn.state, "cache"):
+            if username in pn.state.cache and asset_name in pn.state.cache[username]:
+                del pn.state.cache[username][asset_name]
+
     def get_fresh_record(self) -> dict:
         """Re-pull the full record from DocDB as a dict."""
         records = self._client.retrieve_docdb_records(
@@ -505,7 +463,7 @@ class ViewData(param.Parameterized):
                     return False, f"DocDB upsert failed with status {response.status_code}: {response.text}"
 
                 # Clear changes on success
-                self.changes = pd.DataFrame(columns=["metric_name", "column_name", "value"])
+                self.clear_changes_cache()
 
                 return True, "Changes submitted successfully"
 

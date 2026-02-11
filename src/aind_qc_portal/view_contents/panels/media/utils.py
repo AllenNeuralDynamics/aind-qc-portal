@@ -172,12 +172,12 @@ def reference_is_image(reference):
     """Check if the reference is an image"""
     return (
         reference.endswith(".png")
-        or reference.endswith(".jpg")  # noqa: W503
-        or reference.endswith(".gif")  # noqa: W503
-        or reference.endswith(".jpeg")  # noqa: W503
-        or reference.endswith(".svg")  # noqa: W503
-        or reference.endswith(".tiff")  # noqa: W503
-        or reference.endswith(".webp")  # noqa: W503
+        or reference.endswith(".jpg")
+        or reference.endswith(".gif")
+        or reference.endswith(".jpeg")
+        or reference.endswith(".svg")
+        or reference.endswith(".tiff")
+        or reference.endswith(".webp")
     )
 
 
