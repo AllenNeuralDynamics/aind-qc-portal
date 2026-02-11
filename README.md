@@ -51,7 +51,7 @@ We expect the value to refer to a quantitative or qualitative assessment of some
 | Number | Editable number field | [IntInput](https://panel.holoviz.org/reference/widgets/IntInput.html) or [FloatInput](https://panel.holoviz.org/reference/widgets/FloatInput.html) | |
 | String | Editable text field | [TextInput](https://panel.holoviz.org/reference/widgets/TextInput.html) | |
 | Boolean | Checkbox | [Checkbox](https://panel.holoviz.org/reference/widgets/Checkbox.html) | |
-| Dictionary | Table | [Dataframe](https://panel.holoviz.org/reference/panes/DataFrame.html) | Values must have the same length |
+| Dictionary | Table | [Dataframe](https://panel.holoviz.org/reference/panes/DataFrame.html) | Values must have the same length. Use key "index" (case-insensitive) to set custom row labels |
 | DropdownMetric | Dropdown | [Dropdown](https://panel.holoviz.org/reference/widgets/Select.html) | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) |
 | CheckboxMetric | Checkboxes | [Checkbox](https://panel.holoviz.org/reference/widgets/Checkbox.html) | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) |
 | CurationMetric | Custom view | | See [aind-qcportal-schema](https://github.com/AllenNeuralDynamics/aind-qcportal-schema) |
@@ -100,7 +100,16 @@ The portal supports a few special cases to allow a bit more flexibility or to co
 - Checkboxes (again options can auto-set the value)
 - Rule-based metrics (the rule is automatically run to set the value)
 - Multi-asset metrics where each asset is assigned it's own value
-- A dictionary where every value is a list of equal length, it will be displayed as a table where the keys are column headers and the values are rows. If a key "index" is included the values will be used to name the rows.
+- A dictionary where every value is a list of equal length, it will be displayed as a table where the keys are column headers and the values are rows. If a key "index" (case-insensitive: "index", "Index", "INDEX") is included, its values will be used as the row labels instead of appearing as a separate column.
+
+  Example:
+  ```python
+  # Without index - shows default numeric row indices (0, 1, 2)
+  {"channel": ["R", "G", "B"], "value": [0.5, 0.8, 0.3]}
+  
+  # With index - uses custom row labels (R, G, B)
+  {"index": ["R", "G", "B"], "value": [0.5, 0.8, 0.3]}
+  ```
 
 *Special reference conditions*
 

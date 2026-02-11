@@ -665,7 +665,9 @@ class Metrics(PyComponent):
             metric_name = row["name"]
 
             def make_value_callback(name):
+                """Create a callback function for updating curation metric values."""
                 def update_curation_value(new_data):
+                    """Update curation metric with new data."""
                     print(f"Updating curation metric '{name}' with new data: {new_data}")
                     # Just pass the new data - get_submission_data will handle list appending and curation_history
                     self.callback(metric_name=name, column_name="value", value=new_data)

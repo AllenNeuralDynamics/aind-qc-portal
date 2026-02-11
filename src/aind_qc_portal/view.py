@@ -1,9 +1,10 @@
 """QC View main entrypoint"""
 
+import traceback
+
 import altair as alt
 import panel as pn
 import param
-import traceback
 
 # Setup Panel and Altair
 from aind_qc_portal.layout import OUTER_STYLE

@@ -28,7 +28,10 @@ from aind_qc_portal.view_contents.data import (
 
 
 class TestEncodeDecodeHelpers(unittest.TestCase):
+    """Tests for encode_dict_value and decode_dict_value helper functions"""
+
     def test_encode_dict_value(self):
+        """Test that encoding a dictionary adds json: prefix and serializes correctly"""
         test_dict = {"key": "value", "nested": {"inner": 123}}
         encoded = encode_dict_value(test_dict)
         self.assertTrue(encoded.startswith("json:"))
@@ -36,21 +39,25 @@ class TestEncodeDecodeHelpers(unittest.TestCase):
         self.assertIn("value", encoded)
 
     def test_encode_non_dict_value(self):
+        """Test that encoding non-dict values returns them unchanged"""
         self.assertEqual(encode_dict_value("string"), "string")
         self.assertEqual(encode_dict_value(123), 123)
         self.assertEqual(encode_dict_value([1, 2, 3]), [1, 2, 3])
 
     def test_decode_dict_value(self):
+        """Test that decoding a json: prefixed string deserializes to a dictionary"""
         test_dict = {"key": "value", "nested": {"inner": 123}}
         encoded = f"json:{json.dumps(test_dict)}"
         decoded = decode_dict_value(encoded)
         self.assertEqual(decoded, test_dict)
 
     def test_decode_non_json_value(self):
+        """Test that decoding non-json values returns them unchanged"""
         self.assertEqual(decode_dict_value("string"), "string")
         self.assertEqual(decode_dict_value(123), 123)
 
     def test_encode_decode_roundtrip(self):
+        """Test that encoding and decoding a dictionary preserves the original data"""
         test_dict = {"status": "Pass", "units": [1, 2, 3], "threshold": 0.5}
         encoded = encode_dict_value(test_dict)
         decoded = decode_dict_value(encoded)
@@ -58,8 +65,11 @@ class TestEncodeDecodeHelpers(unittest.TestCase):
 
 
 class TestHistoryEntryCreation(unittest.TestCase):
+    """Tests for history entry creation helper functions"""
+
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_create_curation_history_entry(self, mock_datetime):
+        """Test that creating a curation history entry includes curator and timestamp"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         entry = create_curation_history_entry("test_user")
@@ -70,6 +80,7 @@ class TestHistoryEntryCreation(unittest.TestCase):
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_create_status_history_entry(self, mock_datetime):
+        """Test that creating a status history entry includes status, evaluator, and timestamp"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         entry = create_status_history_entry("Pass", "test_evaluator")
@@ -80,11 +91,15 @@ class TestHistoryEntryCreation(unittest.TestCase):
 
 
 class TestApplyCurationMetricChange(unittest.TestCase):
+    """Tests for applying curation metric changes"""
+
     def setUp(self):
+        """Set up test curation metric with empty value and history"""
         self.metric = {"name": "test_curation", "object_type": "Curation metric", "value": [], "curation_history": []}
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_apply_curation_metric_change_to_empty_list(self, mock_datetime):
+        """Test that applying a curation change to an empty metric adds the first entry"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         new_data = {"unit_id": 1, "label": "good"}
@@ -97,6 +112,7 @@ class TestApplyCurationMetricChange(unittest.TestCase):
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_apply_curation_metric_change_appends_to_existing(self, mock_datetime):
+        """Test that applying a curation change appends to existing curation values"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Add first curation
@@ -116,6 +132,7 @@ class TestApplyCurationMetricChange(unittest.TestCase):
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_apply_curation_metric_change_initializes_missing_fields(self, mock_datetime):
+        """Test that applying a curation change initializes missing value and curation_history fields"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Metric without value or curation_history fields
@@ -133,6 +150,7 @@ class TestApplyCurationMetricChange(unittest.TestCase):
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_apply_curation_metric_change_converts_non_list_value(self, mock_datetime):
+        """Test that applying a curation change converts non-list value fields to lists"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Metric with non-list value
@@ -146,7 +164,10 @@ class TestApplyCurationMetricChange(unittest.TestCase):
 
 
 class TestApplyQCMetricChange(unittest.TestCase):
+    """Tests that QC metric changes are applied correctly"""
+
     def test_apply_qc_metric_change_replaces_value(self):
+        """Test that applying a QC metric change replaces the value"""
         metric = {"name": "test_qc", "object_type": "QC metric", "value": "old_value"}
 
         apply_qc_metric_change(metric, "new_value")
@@ -154,6 +175,7 @@ class TestApplyQCMetricChange(unittest.TestCase):
         self.assertEqual(metric["value"], "new_value")
 
     def test_apply_qc_metric_change_with_dict_value(self):
+        """Test applying a QC metric change with a dict value"""
         metric = {"name": "test_qc", "object_type": "QC metric", "value": {"old": "data"}}
 
         new_value = {"new": "data", "count": 5}
@@ -162,6 +184,7 @@ class TestApplyQCMetricChange(unittest.TestCase):
         self.assertEqual(metric["value"], new_value)
 
     def test_apply_qc_metric_change_with_numeric_value(self):
+        """Test applying a QC metric change with a numeric value"""
         metric = {"name": "test_qc", "object_type": "QC metric", "value": 0.5}
 
         apply_qc_metric_change(metric, 0.95)
@@ -170,8 +193,11 @@ class TestApplyQCMetricChange(unittest.TestCase):
 
 
 class TestApplyStatusChange(unittest.TestCase):
+    """Tests that status changes are applied correctly"""
+
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_apply_status_change_to_existing_history(self, mock_datetime):
+        """Test that applying a status change appends to existing status_history"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         metric = {
@@ -188,6 +214,7 @@ class TestApplyStatusChange(unittest.TestCase):
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_apply_status_change_initializes_missing_history(self, mock_datetime):
+        """Test that applying a status change initializes status_history if it doesn't exist"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         metric = {"name": "test"}
@@ -201,6 +228,7 @@ class TestApplyStatusChange(unittest.TestCase):
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_apply_status_change_multiple_times(self, mock_datetime):
+        """Test that applying multiple status changes appends correctly each time"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         metric = {"name": "test", "status_history": []}
@@ -220,6 +248,7 @@ class TestCurationMetricChangeIntegration(unittest.TestCase):
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_full_curation_update_workflow(self, mock_datetime):
+        """Test the full workflow of updating a curation metric and its status"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Simulate a curation metric with initial data
@@ -250,6 +279,7 @@ class TestCurationMetricChangeIntegration(unittest.TestCase):
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_qc_metric_does_not_append_values(self, mock_datetime):
+        """Test that applying a QC metric change does not append values but replaces them"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         # Regular QC metric
@@ -275,6 +305,7 @@ class TestCurationDataTypes(unittest.TestCase):
 
     @patch("aind_qc_portal.view_contents.data.datetime")
     def test_curation_with_complex_nested_data(self, mock_datetime):
+        """Test that applying a curation change with complex nested data structures is handled correctly"""
         mock_datetime.now.return_value.isoformat.return_value = "2026-01-27T12:00:00"
 
         metric = {"name": "test", "object_type": "Curation metric", "value": []}
