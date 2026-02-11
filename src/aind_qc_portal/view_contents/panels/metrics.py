@@ -666,6 +666,7 @@ class Metrics(PyComponent):
 
             def make_value_callback(name):
                 """Create a callback function for updating curation metric values."""
+
                 def update_curation_value(new_data):
                     """Update curation metric with new data."""
                     print(f"Updating curation metric '{name}' with new data: {new_data}")
