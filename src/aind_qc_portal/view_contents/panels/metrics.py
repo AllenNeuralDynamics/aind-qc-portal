@@ -102,17 +102,28 @@ class MetricValue(PyComponent):
             self.auto_state = self.value.auto_state
             self.value_widget = self.value.panel()
         else:
+            index_key = None
+            for key in self.value.keys():
+                if key.lower() == "index":
+                    index_key = key
+                    break
+
             # first, check if every key/value pair has the same length, if so coerce to a dataframe
             if all([isinstance(v, list) for v in self.value.values()]) and all(
                 [len(v) == len(self.value[list(self.value.keys())[0]]) for v in self.value.values()]
             ):
                 self.auto_value = True
                 df = pd.DataFrame(df_scalar_to_list(self.value))
+                if index_key is not None:
+                    df = df.set_index(index_key)
+                    df.index.name = None
                 self.value_widget = pn.pane.DataFrame(df)
             # Check if all values are strings, ints, or floats, we can also coerce to a dataframe for this
             elif all([isinstance(v, str) or isinstance(v, int) or isinstance(v, float) for v in self.value.values()]):
                 self.auto_value = True
                 df = pd.DataFrame(df_scalar_to_list(self.value))
+                if index_key is not None:
+                    df = df.set_index(index_key)
                 self.value_widget = pn.pane.DataFrame(df)
             else:
                 self.value_widget = pn.widgets.JSONEditor(name=self.metric_name, width=WIDGET_WIDTH)

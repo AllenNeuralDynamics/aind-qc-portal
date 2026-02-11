@@ -225,6 +225,11 @@ class TestDfScalarToList(unittest.TestCase):
         result = df_scalar_to_list({})
         self.assertEqual(result, {})
 
+    def test_with_index_key(self):
+        """Test that index key is included in conversion (filtering happens in calling code)"""
+        result = df_scalar_to_list({"index": ["a", "b"], "value1": [1, 2], "value2": [3, 4]})
+        self.assertEqual(result, {"index": ["a", "b"], "value1": [1, 2], "value2": [3, 4]})
+
 
 if __name__ == "__main__":
     """Run the unit tests"""
