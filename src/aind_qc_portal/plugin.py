@@ -4,7 +4,7 @@ import json
 
 from tornado.web import HTTPError, RequestHandler
 
-from aind_qc_portal.view_contents.data import upload_temporary_metadata
+from aind_qc_portal.view_contents.data_utils import upload_temporary_metadata
 
 
 class UploadMetadataHandler(RequestHandler):
