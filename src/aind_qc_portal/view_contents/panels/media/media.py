@@ -18,7 +18,6 @@ from aind_qc_portal.view_contents.panels.media.utils import (
     clean_reference_url,
     get_s3_url,
     is_presigned_url_valid,
-    parse_ephys_gui_app,
     reference_is_image,
     reference_is_pdf,
     reference_is_video,
@@ -80,9 +79,9 @@ class Media(PyComponent):
     def _init_panel_objects(self):
         """Initialize empty panel objects"""
         self.content = pn.Column()
-        self.image_pane = pn.pane.Image(sizing_mode="scale_width", max_width=1200)
-        self.pdf_pane = pn.pane.PDF(sizing_mode="scale_width", max_width=1200, height=1000)
-        self.video_pane = pn.pane.Video(sizing_mode="scale_width", max_width=1200)
+        self.image_pane = pn.pane.Image(sizing_mode="scale_width")
+        self.pdf_pane = pn.pane.PDF(sizing_mode="scale_width")
+        self.video_pane = pn.pane.Video(sizing_mode="scale_width")
 
     def _determine_media_type(self, reference: str):
         """Determine the media type from the reference without loading the full media object"""
@@ -120,9 +119,13 @@ class Media(PyComponent):
         self.loaded = True
         self.content.clear()
         self.content.loading = True
-        self.parse_reference(self.reference)
-        self.content.loading = False
-        self._start_refresh_callback()
+        try:
+            self.parse_reference(self.reference)
+            self._start_refresh_callback()
+        except Exception as e:
+            self._show_error(e)
+        finally:
+            self.content.loading = False
 
     def _get_media_data(self, reference: str, force_refresh: bool = False):
         """Parse a reference string and convert to a data object"""
@@ -170,7 +173,6 @@ class Media(PyComponent):
             ("rrd" in reference, self._handle_rerun),
             ("sortingview" in reference, self._handle_sortingview),
             ("neuroglancer" in reference, self._handle_neuroglancer),
-            ("ephys.allenneuraldynamics.org" in reference, self._handle_ephys_gui),
             ("http" in reference, self._handle_link),
         ]
 
@@ -233,13 +235,6 @@ class Media(PyComponent):
         iframe_html = f'<iframe src="{reference}" style="height:100%; width:100%" frameborder="0"></iframe>'
         return pn.pane.HTML(iframe_html, sizing_mode="stretch_width", height=1000)
 
-    def _handle_ephys_gui(self, reference: str, reference_data: Any):
-        """Handle Ephys GUI media type"""
-        self.media_type = "Ephys GUI"
-        return parse_ephys_gui_app(
-            reference, reference_data, self.raw_s3_loc, f"{self.s3_bucket}/{self.s3_prefix}", self
-        )
-
     def _handle_link(self, reference: str, reference_data: Any):
         """Handle HTTP link media type"""
         self.media_type = "Link"
@@ -249,6 +244,17 @@ class Media(PyComponent):
         """Handle text media type (default fallback)"""
         self.media_type = "Text"
         return pn.widgets.StaticText(value=reference_data)
+
+    def _show_error(self, exception: Exception):
+        """Display an error message in the content area
+        
+        Parameters
+        ----------
+        exception : Exception
+            The exception that was raised
+        """
+        error_message = f"**Failed to load media**\n\n```\n{type(exception).__name__}: {str(exception)}\n```"
+        self.content.append(pn.pane.Alert(error_message, alert_type="danger"))
 
     def parse_reference(self, reference: Optional[str] = None):
         """Parse the reference string and build the media object
@@ -350,4 +356,4 @@ class Media(PyComponent):
         """Return the media object as a Panel object"""
         if self.lazy_load and not self.loaded:
             return pn.Column(pn.pane.Markdown("*Loading...*"), sizing_mode="stretch_width")
-        return Fullscreen(self.content, sizing_mode="stretch_width", max_height=1200)
+        return Fullscreen(self.content, sizing_mode="stretch_width")

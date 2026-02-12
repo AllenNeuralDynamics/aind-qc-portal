@@ -1,6 +1,6 @@
 """Generic curation panel for displaying curation data with media references"""
 
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 import pandas as pd
 import panel as pn
@@ -9,6 +9,7 @@ from panel.custom import PyComponent
 from panel.reactive import ReactiveHTML
 
 from aind_qc_portal.view_contents.panels.media.media import Media
+from aind_qc_portal.view_contents.panels.media.utils import Fullscreen
 
 
 class GenericCuration(PyComponent):
@@ -45,9 +46,7 @@ class GenericCuration(PyComponent):
         self.table = pn.pane.DataFrame()
 
         if self.has_references:
-            self.media = pn.Column(
-                sizing_mode="stretch_width",
-            )
+            self.media = pn.Column()
             self.content = pn.Row(
                 pn.Column(
                     self.dropdown,
@@ -115,10 +114,12 @@ class EphysIframe(ReactiveHTML):
     curation_message = param.Dict(default={})
 
     _template = """
-    <iframe id="ephys_iframe"
-            src="${iframe_src}"
-            style="width: 100%; height: 100%; border: none;">
-    </iframe>
+    <div style="width: 100%; height: 100%;">
+        <iframe id="ephys_iframe"
+                src="${iframe_src}"
+                style="width: 100%; height: 100%; border: none;">
+        </iframe>
+    </div>
     """
 
     _scripts = {
@@ -210,7 +211,6 @@ class EphysCuration(PyComponent):
         self.iframe_component = None
 
         self._init_panel_objects()
-        self._send_curation_to_iframe()
 
     def _init_panel_objects(self):
         """Initialize panel objects"""
@@ -227,28 +227,28 @@ class EphysCuration(PyComponent):
         self.metadata_pane = pn.pane.Markdown("", sizing_mode="stretch_width")
         self._update_metadata_display()
 
-        if self.reference:
-            processed_url = self._process_ephys_url(self.reference)
-            print(f"EphysCuration: Processed ephys GUI URL: {processed_url}")
-            self.iframe_component = EphysIframe(
-                iframe_src=processed_url,
-                sizing_mode="stretch_both",
-            )
+        processed_url = self._process_ephys_url(self.reference)
+        print(f"EphysCuration: Processed ephys GUI URL: {processed_url}")
+        self.iframe_component = EphysIframe(
+            iframe_src=processed_url,
+            width=1200,
+            height=900,
+            sizing_mode="fixed",
+        )
+        fullscreen_iframe = Fullscreen(self.iframe_component)
 
-            self.content = pn.Row(
-                pn.Column(
-                    self.curation_dropdown,
-                    self.metadata_pane,
-                    self.json_editor,
-                ),
-                self.iframe_component,
-            )
-        else:
-            self.content = pn.Column(
+        self.content = pn.Row(
+            pn.Column(
                 self.curation_dropdown,
                 self.metadata_pane,
                 self.json_editor,
-            )
+                max_width=350,
+            ),
+            pn.Column(
+                fullscreen_iframe,
+                width=1200,
+            ),
+        )
 
     def _build_curation_options(self):
         """Build dropdown options from curation history"""
@@ -292,11 +292,8 @@ class EphysCuration(PyComponent):
         if not reference:
             return ""
 
-        print(reference)
-
         processed = unquote(reference)
 
-        print(processed)
         if "{derived_asset_location}" in processed:
             derived_loc = f"s3://{self.bucket}/{self.prefix}"
             processed = processed.replace("{derived_asset_location}", derived_loc)
@@ -304,7 +301,7 @@ class EphysCuration(PyComponent):
             raw_loc = f"s3://{self.raw_s3_loc.lstrip('s3://')}"
             processed = processed.replace("{raw_asset_location}", raw_loc)
 
-        print(processed)
+        processed = quote(processed, safe=":/?&=")
 
         return processed
 

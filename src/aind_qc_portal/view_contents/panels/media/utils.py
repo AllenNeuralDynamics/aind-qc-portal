@@ -96,8 +96,37 @@ FULLSCREEN_CSS = """
     background-color: black;
 }
 .pn-container, .object-container {
-        height: 100%;
         width: 100%;
+        height: 100%;
+}
+:fullscreen {
+    overflow-y: scroll !important;
+}
+:fullscreen .pn-container {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 100vh !important;
+}
+:fullscreen .object-container {
+    width: 100%;
+    min-height: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow: visible;
+}
+:fullscreen .object-container img,
+:fullscreen .object-container video {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+}
+:fullscreen .object-container > div,
+:fullscreen .object-container iframe {
+    width: 100% !important;
+    height: 100% !important;
 }
 """
 
@@ -316,41 +345,6 @@ def _parse_sortingview(reference, data, media_obj):
         ),
         curation_data,
     )
-
-
-def parse_ephys_gui_app(reference, data, raw_asset_s3, derived_asset_s3, media_obj):
-    """Parse an ephys GUI URL and return the appropriate object with callback support"""
-    data = data.replace("{derived_asset_location}", f"s3://{derived_asset_s3.lstrip('s3://')}")
-    data = data.replace("{raw_asset_location}", f"s3://{raw_asset_s3.lstrip('s3://')}")
-    data = quote(data, safe=":/?&=")
-    iframe_html = f'<iframe src="{data}" style="height:100%; width:100%" frameborder="0"></iframe>'
-
-    if media_obj.value_callback and media_obj.parent:
-        curation_data = EphysGUICurationData()
-
-        def on_msg(event):
-            """Handle messages from the ephys GUI iframe"""
-            print(f"Received message from Ephys GUI: {event.data}")
-            media_obj.value_callback(event.data)
-            media_obj.parent.set_submit_dirty()
-
-        curation_data.on_msg(on_msg)
-        return pn.Column(
-            pn.pane.HTML(
-                iframe_html,
-                sizing_mode="stretch_width",
-                height=1000,
-            ),
-            curation_data,
-        )
-    else:
-        return pn.Column(
-            pn.pane.HTML(
-                iframe_html,
-                sizing_mode="stretch_width",
-                height=1000,
-            ),
-        )
 
 
 class CurationData(JSComponent):

@@ -248,7 +248,6 @@ class MetricTab(PyComponent):
         tab_content = pn.Row(
             value_col,
             self.tab_media,
-            sizing_mode="stretch_width",
             name=self.tab_name,
         )
         return tab_content
@@ -267,7 +266,6 @@ class CurationTab(PyComponent):
         """Create and return the CurationTab panel"""
         return pn.Column(
             self.curation_panel,
-            sizing_mode="stretch_both",
             name=self.tab_name,
         )
 
@@ -463,8 +461,8 @@ class Metrics(PyComponent):
 
         self.content_panel = pn.Column(
             pn.pane.Markdown("*Select a metric from the tree*"),
-            sizing_mode="stretch_both",
             styles=OUTER_STYLE,
+            sizing_mode="stretch_width",
         )
 
         self.tree.param.watch(self._on_tree_selection, "active")
@@ -730,7 +728,7 @@ class Metrics(PyComponent):
                 header = pn.pane.Markdown(f"## {tabs[0][0]}")
                 self.content_panel.objects = [header, tabs[0][1]]
             else:
-                accordion = pn.Accordion(*tabs, sizing_mode="stretch_both", active=[0])
+                accordion = pn.Accordion(*tabs, active=[0], width_policy="max", height_policy="auto")
                 self.content_panel.objects = [accordion]
         else:
             self.content_panel.objects = [pn.pane.Markdown("*No metrics found*")]
@@ -884,7 +882,6 @@ class Metrics(PyComponent):
             pn.Row(
                 self.tree,
                 self.content_panel,
-                sizing_mode="stretch_both",
             ),
             script_pane,
         )
