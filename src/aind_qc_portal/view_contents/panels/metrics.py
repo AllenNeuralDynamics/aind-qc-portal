@@ -664,13 +664,24 @@ class Metrics(PyComponent):
 
                 def update_curation_value(new_data):
                     """Callback to update the curation metric value when changes are made in the curation panel"""
-                    print(f"Updating curation metric '{name}' with new data: {new_data}")
+                    print(f"[Metrics] update_curation_value called for metric '{name}'")
+                    print(f"[Metrics] New curation data received: {new_data}")
+                    print(f"[Metrics] Type of new_data: {type(new_data)}")
+                    print(f"[Metrics] Calling self.callback with metric_name='{name}', column_name='value'")
                     # Just pass the new data - get_submission_data will handle list appending and curation_history
-                    self.callback(metric_name=name, column_name="value", value=new_data)
+                    try:
+                        self.callback(metric_name=name, column_name="value", value=new_data)
+                        print(f"[Metrics] self.callback completed successfully for '{name}'")
+                    except Exception as e:
+                        print(f"[Metrics] Error in self.callback for '{name}': {e}")
+                        import traceback
+                        traceback.print_exc()
 
                 return update_curation_value
 
             if curation_type == "Spike sorting curation":
+                print(f"[Metrics] Creating EphysCuration panel for metric: {metric_name}")
+                print(f"[Metrics] Passing value_callback: {make_value_callback(metric_name)}")
                 curation_panel = EphysCuration(
                     data=curation_data,
                     bucket=self.data.s3_bucket,
@@ -681,6 +692,7 @@ class Metrics(PyComponent):
                     curation_values=curation_values,
                     curation_history=curation_history,
                 )
+                print(f"[Metrics] EphysCuration panel created for: {metric_name}")
             else:
                 curation_panel = GenericCuration(
                     data=curation_data,

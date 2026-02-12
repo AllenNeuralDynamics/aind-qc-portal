@@ -1,5 +1,7 @@
 """Generic curation panel for displaying curation data with media references"""
 
+import json
+import uuid
 from urllib.parse import quote, unquote
 
 import pandas as pd
@@ -10,6 +12,8 @@ from panel.reactive import ReactiveHTML
 
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.media.utils import Fullscreen
+
+_EPHYS_CURATION_REGISTRY: dict[str, "EphysCuration"] = {}
 
 
 class GenericCuration(PyComponent):
@@ -107,63 +111,140 @@ class GenericCuration(PyComponent):
         return self.content
 
 
-class EphysIframe(ReactiveHTML):
-    """ReactiveHTML iframe component with message posting"""
-
-    iframe_src = param.String(default="")
-    curation_message = param.Dict(default={})
-
+class MessageReceiver(ReactiveHTML):
+    """ReactiveHTML component that receives postMessage events and forwards to Python"""
+    
+    received_message = param.Dict(default={})
+    
     _template = """
+    <div id="receiver" style="display: none;"></div>
+    """
+    
+    _scripts = {
+        "render": """
+            console.log('[MessageReceiver] Initializing...');
+            
+            const handler = (event) => {
+                console.log('=== [MessageReceiver] MESSAGE RECEIVED ===');
+                console.log('[MessageReceiver] Origin:', event.origin);
+                console.log('[MessageReceiver] Data:', event.data);
+                
+                // Store for inspection
+                if (!window.receivedMessages) {
+                    window.receivedMessages = [];
+                }
+                window.receivedMessages.push({
+                    timestamp: new Date().toISOString(),
+                    origin: event.origin,
+                    data: event.data
+                });
+                
+                // Forward to Python via parameter update
+                if (event.data && typeof event.data === 'object') {
+                    const message = {
+                        timestamp: new Date().toISOString(),
+                        origin: event.origin,
+                        data: event.data
+                    };
+                    data.received_message = message;
+                    console.log('[MessageReceiver] Forwarded to Python:', message);
+                }
+            };
+            
+            window.addEventListener('message', handler);
+            console.log('[MessageReceiver] Listener attached');
+        """
+    }
+
+
+def _create_ephys_iframe_html(iframe_id: str, src: str) -> pn.pane.HTML:
+    """Create an iframe HTML pane with a unique ID.
+
+    Parameters
+    ----------
+    iframe_id : str
+        Unique identifier for this iframe
+    src : str
+        The URL to load in the iframe
+    """
+    html_content = f"""
     <div style="width: 100%; height: 100%;">
-        <iframe id="ephys_iframe"
-                src="${iframe_src}"
+        <iframe id="{iframe_id}"
+                src="{src}"
                 style="width: 100%; height: 100%; border: none;">
         </iframe>
     </div>
     """
+    return pn.pane.HTML(html_content, sizing_mode="fixed", width=1200, height=900)
 
-    _scripts = {
-        "curation_message": """
-            const msg_len = Object.keys(data.curation_message).length;
-            if (msg_len > 0 && ephys_iframe) {
-                console.log('[EphysIframe] Sending curation data');
-                console.log('[EphysIframe] Message:', data.curation_message);
 
-                const message = {
-                    payload: {
-                        type: 'curation-data',
-                        data: data.curation_message
-                    }
-                };
-
-                try {
-                    ephys_iframe.contentWindow.postMessage(message, '*');
-                    console.log('[EphysIframe] Message sent');
-                } catch (e) {
-                    console.error('[EphysIframe] Error:', e);
-                }
+def _create_message_sender() -> pn.pane.HTML:
+    """Create a component that can send messages to iframes"""
+    
+    html_content = """
+    <div id="message_sender"></div>
+    <script>
+    // Function to find iframe in regular DOM and shadow DOM
+    function findIframe(iframeId, root = document) {
+        // Try regular DOM first
+        let iframe = root.getElementById(iframeId);
+        if (iframe) return iframe;
+        
+        // Search through shadow roots
+        const allElements = root.querySelectorAll('*');
+        for (let el of allElements) {
+            if (el.shadowRoot) {
+                iframe = findIframe(iframeId, el.shadowRoot);
+                if (iframe) return iframe;
             }
-        """,
-        "after_layout": """
-            console.log('[EphysIframe] Component rendered');
-        """,
+        }
+        
+        return null;
     }
-
-    _dom_events = {"ephys_iframe": ["load"]}
-
-    def _ephys_iframe_load(self, event):
-        """Resend curation data when iframe loads"""
-        print("[EphysIframe] Iframe loaded, resending curation data")
-        if self.curation_message:
-            temp = self.curation_message
-            self.curation_message = {}
-            self.curation_message = temp
+    
+    window.sendMessageToIframe = function(iframeId, message) {
+        console.log('[MessageSender] Sending to', iframeId, ':', message);
+        console.log('[MessageSender] Searching DOM and shadow roots...');
+        
+        const iframe = findIframe(iframeId);
+        if (iframe) {
+            console.log('[MessageSender] Found iframe:', iframe);
+            
+            if (iframe.contentWindow) {
+                const fullMessage = {
+                    source: 'parent',
+                    timestamp: new Date().toISOString(),
+                    payload: message
+                };
+                
+                iframe.contentWindow.postMessage(fullMessage, '*');
+                console.log('[MessageSender] Message sent successfully');
+                return true;
+            } else {
+                console.error('[MessageSender] Iframe has no contentWindow');
+                return false;
+            }
+        } else {
+            console.error('[MessageSender] Could not find iframe:', iframeId);
+            console.log('[MessageSender] Available iframes in document:');
+            document.querySelectorAll('iframe').forEach(f => console.log('  -', f.id || '(no id)', f));
+            return false;
+        }
+    };
+    
+    console.log('[MessageSender] Ready. Use window.sendMessageToIframe(iframeId, message)');
+    </script>
+    """
+    
+    return pn.pane.HTML(html_content, sizing_mode="fixed", width=0, height=0)
 
 
 class EphysCuration(PyComponent):
     """Ephys/Spike sorting curation panel"""
 
     selected_curation_index = param.Integer(default=0)
+
+    _message_receiver = None  # shared across all instances
 
     def __init__(
         self,
@@ -208,9 +289,96 @@ class EphysCuration(PyComponent):
         self.curation_values = curation_values or [data]
         self.curation_history = curation_history or {}
         self.data = self.curation_values[-1] if self.curation_values else data
-        self.iframe_component = None
+
+        self.iframe_id = f"ephys_iframe_{uuid.uuid4().hex[:12]}"
+        _EPHYS_CURATION_REGISTRY[self.iframe_id] = self
+
+        if EphysCuration._message_receiver is None:
+            print("[EphysCuration.__init__] Creating shared MessageReceiver")
+            EphysCuration._message_receiver = MessageReceiver()
+            EphysCuration._message_receiver.param.watch(
+                EphysCuration._dispatch_message, "received_message"
+            )
+            print("[EphysCuration.__init__] MessageReceiver created and watcher attached")
+        else:
+            print("[EphysCuration.__init__] Using existing shared MessageReceiver")
 
         self._init_panel_objects()
+
+    @staticmethod
+    def _dispatch_message(event):
+        """Route an incoming message to the correct EphysCuration instance"""
+        print("[EphysCuration._dispatch_message] Called!")
+        print(f"[EphysCuration._dispatch_message] event.new type: {type(event.new)}")
+        print(f"[EphysCuration._dispatch_message] event.new: {event.new}")
+        
+        message_data = event.new
+        if not message_data:
+            print("[EphysCuration._dispatch_message] No message_data, returning")
+            return
+            
+        if not message_data.get('data'):
+            print(f"[EphysCuration._dispatch_message] No 'data' key in message_data. Keys: {list(message_data.keys())}")
+            return
+        
+        data = message_data['data']
+        print(f"[EphysCuration._dispatch_message] Extracted data: {data}")
+        print(f"[EphysCuration._dispatch_message] Data type: {type(data)}")
+        
+        source = data.get('source', 'unknown')
+        print(f"[EphysCuration._dispatch_message] Message source: {source}")
+        print(f"[EphysCuration._dispatch_message] Registry keys: {list(_EPHYS_CURATION_REGISTRY.keys())}")
+        
+        # Look up the instance by iframe_id
+        instance = _EPHYS_CURATION_REGISTRY.get(source)
+        
+        # Fallback: if source is unknown/parent and there's only one instance, use it
+        if not instance and source in ('unknown', 'parent') and len(_EPHYS_CURATION_REGISTRY) == 1:
+            instance = list(_EPHYS_CURATION_REGISTRY.values())[0]
+            print(f"[EphysCuration._dispatch_message] Using fallback - single instance: {instance.iframe_id}")
+        
+        if instance:
+            print(f"[EphysCuration._dispatch_message] Found instance for source={source}")
+            # Extract curation data from the payload
+            if data.get('payload') and isinstance(data['payload'], dict):
+                print("[EphysCuration._dispatch_message] Found payload in data")
+                if data['payload'].get('type') == 'curation-data':
+                    curation_data = data['payload'].get('data')
+                    print(f"[EphysCuration._dispatch_message] Extracted curation-data: {curation_data}")
+                else:
+                    curation_data = data['payload']
+                    print(f"[EphysCuration._dispatch_message] Using full payload: {curation_data}")
+            else:
+                curation_data = data
+                print(f"[EphysCuration._dispatch_message] Using raw data: {curation_data}")
+            
+            if curation_data:
+                print(f"[EphysCuration._dispatch_message] Calling _on_message_received with: {curation_data}")
+                instance._on_message_received(curation_data)
+            else:
+                print("[EphysCuration._dispatch_message] curation_data is empty/None!")
+        else:
+            print(f"[EphysCuration._dispatch_message] No instance registered for source={source}")
+            print(f"[EphysCuration._dispatch_message] Available instances: {list(_EPHYS_CURATION_REGISTRY.keys())}")
+
+    def _on_message_received(self, curation_data: dict):
+        """Handle curation data received from the iframe"""
+        print("=" * 80)
+        print(f"[EphysCuration._on_message_received] IFRAME {self.iframe_id} RECEIVED DATA")
+        print(f"[EphysCuration._on_message_received] Curation data type: {type(curation_data)}")
+        print(f"[EphysCuration._on_message_received] Curation data: {curation_data}")
+        
+        self.data = curation_data
+        self.json_editor.object = self.data
+        print(f"[EphysCuration._on_message_received] Updated JSON editor")
+        
+        if self.value_callback:
+            print(f"[EphysCuration._on_message_received] Calling value_callback")
+            self.value_callback(curation_data)
+            print(f"[EphysCuration._on_message_received] value_callback completed")
+        else:
+            print(f"[EphysCuration._on_message_received] No value_callback set!")
+        print("=" * 80)
 
     def _init_panel_objects(self):
         """Initialize panel objects"""
@@ -228,14 +396,22 @@ class EphysCuration(PyComponent):
         self._update_metadata_display()
 
         processed_url = self._process_ephys_url(self.reference)
-        print(f"EphysCuration: Processed ephys GUI URL: {processed_url}")
-        self.iframe_component = EphysIframe(
-            iframe_src=processed_url,
-            width=1200,
-            height=900,
-            sizing_mode="fixed",
-        )
-        fullscreen_iframe = Fullscreen(self.iframe_component)
+
+        self.iframe_pane = _create_ephys_iframe_html(self.iframe_id, processed_url)
+        fullscreen_iframe = Fullscreen(self.iframe_pane)
+
+        self._sender_column = pn.Column(sizing_mode="fixed", width=0, height=0)
+
+        # Only add the shared components to the first instance's layout
+        right_column_items = [fullscreen_iframe, self._sender_column]
+        if len(_EPHYS_CURATION_REGISTRY) == 1:
+            print(f"[EphysCuration._init_panel_objects] First instance - adding shared components")
+            print(f"[EphysCuration._init_panel_objects] Adding message sender and receiver to layout")
+            right_column_items.append(_create_message_sender())
+            right_column_items.append(EphysCuration._message_receiver)
+        else:
+            print(f"[EphysCuration._init_panel_objects] Not first instance - using shared components from first instance")
+            print(f"[EphysCuration._init_panel_objects] Registry has {len(_EPHYS_CURATION_REGISTRY)} instances")
 
         self.content = pn.Row(
             pn.Column(
@@ -245,7 +421,7 @@ class EphysCuration(PyComponent):
                 max_width=350,
             ),
             pn.Column(
-                fullscreen_iframe,
+                *right_column_items,
                 width=1200,
             ),
         )
@@ -306,13 +482,33 @@ class EphysCuration(PyComponent):
         return processed
 
     def _send_curation_to_iframe(self):
-        """Send curation data to iframe by updating the reactive parameter"""
-        if self.iframe_component:
-            self.iframe_component.curation_message = self.data
-
-    def set_submit_dirty(self):
-        """Mark that there are pending changes to submit"""
-        print("EphysCuration: Changes detected from interactive media")
+        """Send curation data to the iframe via window.sendMessageToIframe"""
+        print(f"[EphysCuration._send_curation_to_iframe] Sending to iframe {self.iframe_id}")
+        print(f"[EphysCuration._send_curation_to_iframe] Data: {self.data}")
+        
+        data_json = json.dumps(self.data)
+        js_code = f"""
+        <script>
+        (function() {{
+            console.log('[_send_curation_to_iframe] Script executing');
+            const message = {data_json};
+            console.log('[_send_curation_to_iframe] Message to send:', message);
+            console.log('[_send_curation_to_iframe] Target iframe:', '{self.iframe_id}');
+            if (window.sendMessageToIframe) {{
+                console.log('[_send_curation_to_iframe] Calling window.sendMessageToIframe');
+                window.sendMessageToIframe('{self.iframe_id}', message);
+            }} else {{
+                console.error('[_send_curation_to_iframe] sendMessageToIframe not available!');
+                console.log('[_send_curation_to_iframe] window keys:', Object.keys(window));
+            }}
+        }})();
+        </script>
+        """
+        
+        temp_sender = pn.pane.HTML(js_code, sizing_mode="fixed", width=0, height=0)
+        self._sender_column.clear()
+        self._sender_column.append(temp_sender)
+        print(f"[EphysCuration._send_curation_to_iframe] Temp sender appended to column")
 
     def __panel__(self):
         """Return the panel representation of this component"""
