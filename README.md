@@ -358,7 +358,7 @@ panel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py \
   --dev \
   --show \
   --port 5007 \
-  --plugins aind_qc_portal.plugin \
+  --plugins aind_qc_portal.plugin,aind_qc_portal.status_plugin \
   --static-dirs images=./src/aind_qc_portal/images \
   --oauth-redirect-uri="http://localhost:5007" \
   --oauth-optional \
