@@ -357,9 +357,10 @@ class EphysCuration(PyComponent):
 
         processed = unescape(unquote(reference))
         if DEBUG_EPHYS:
-            print(f"EphysCuration: Decoded ephys GUI URL: {processed}")
             processed = processed.replace("https://ephys.allenneuraldynamics.org", f"http://localhost:{EPHYS_LOCALPORT}")
-            processed += f"&identifier={self.identifier}&fast_mode=true"
+        processed += f"&identifier={self.identifier}&fast_mode=true"
+        print(f"EphysCuration: Decoded ephys GUI URL: {processed}")
+        
 
         if "{derived_asset_location}" in processed:
             derived_loc = f"s3://{self.bucket}/{self.prefix}"
