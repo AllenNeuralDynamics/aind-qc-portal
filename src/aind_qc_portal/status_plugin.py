@@ -8,8 +8,7 @@ class StatusHandler(RequestHandler):
     """Request handler for /status health check endpoint"""
     def get(self):
         try:
-            asset_name = self.get_argument("asset_name", default="test_asset")
-            results = run_all_status_checks(asset_name=asset_name)
+            results = run_all_status_checks()
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(results))
         except Exception as e:
