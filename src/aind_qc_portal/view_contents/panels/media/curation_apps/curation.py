@@ -13,7 +13,7 @@ from panel.reactive import ReactiveHTML
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.media.utils import Fullscreen
 
-DEBUG_EPHYS = False
+DEBUG_EPHYS = True
 EPHYS_LOCALPORT = 5010
 
 class GenericCuration(PyComponent):
@@ -257,8 +257,7 @@ class EphysCuration(PyComponent):
         self.curation_dropdown = pn.widgets.Select.from_param(
             self.param.selected_curation_index, name="Select Curation", options=curation_options
         )
-        # self.param.watch(self._on_curation_selection_change, "selected_curation_index")
-        self.send_button = pn.widgets.Button(name="Send curation", button_type="primary")
+        self.send_button = pn.widgets.Button(name="Send curation", button_type="primary", sizing_mode="stretch_width")
         self.send_button.on_click(self._send_curation_to_iframe)
 
         self.metadata_pane = pn.pane.Markdown("", sizing_mode="stretch_width")
@@ -387,6 +386,7 @@ class EphysCuration(PyComponent):
             "identifier": identifier,
             "data": curation_data,
         }
+        print(f"EphysCuration: Sending curation data to iframe (identifier: {identifier})")
 
         # Append a unique counter so the param change always fires
         self.ephys_sender.message_json = json.dumps(envelope)
