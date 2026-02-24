@@ -13,7 +13,7 @@ from panel.reactive import ReactiveHTML
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.media.utils import Fullscreen
 
-DEBUG_EPHYS = True
+DEBUG_EPHYS = False
 EPHYS_LOCALPORT = 5010
 
 class GenericCuration(PyComponent):
