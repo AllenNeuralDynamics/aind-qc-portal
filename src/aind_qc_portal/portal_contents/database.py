@@ -39,17 +39,6 @@ TTL_HOUR = 60 * 60
 
 class Database:
     """Database for the Portal app"""
-    def __init__(self):
-        try:
-            asset_basics()  # Preload asset basics to populate cache
-        except Exception as e:
-            print(f"Error preloading asset basics. Forcing download.")
-            asset_basics(force_update=True)  # Force download if preload fails
-        try:
-            unique_project_names()  # Preload unique project names to populate cache
-        except Exception as e:
-            print(f"Error preloading unique project names. Forcing download.")
-            unique_project_names(force_update=True)  # Force download if preload fails
 
     def build_query(
         self,
