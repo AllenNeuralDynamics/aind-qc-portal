@@ -12,7 +12,7 @@ from panel.custom import PyComponent, ReactComponent
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.media.utils import Fullscreen
 
-DEBUG_EPHYS = False
+DEBUG_EPHYS = True
 EPHYS_LOCALPORT = 5010
 
 
@@ -360,7 +360,7 @@ class EphysCuration(PyComponent):
             processed = processed.replace(
                 "https://ephys.allenneuraldynamics.org", f"http://localhost:{EPHYS_LOCALPORT}"
             )
-        processed += f"&identifier={self.identifier}&fast_mode=true"
+        processed += f"&identifier={self.identifier}"
         print(f"EphysCuration: Decoded ephys GUI URL: {processed}")
 
         if "{derived_asset_location}" in processed:
