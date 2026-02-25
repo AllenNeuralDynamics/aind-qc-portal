@@ -1,20 +1,20 @@
 """Generic curation panel for displaying curation data with media references"""
-from html import unescape
-from urllib.parse import quote, unquote
 
 import json
+from urllib.parse import quote, unquote
 from uuid import uuid4
+
 import pandas as pd
 import panel as pn
 import param
 from panel.custom import PyComponent, ReactComponent
-from panel.reactive import ReactiveHTML
 
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.media.utils import Fullscreen
 
 DEBUG_EPHYS = False
 EPHYS_LOCALPORT = 5010
+
 
 class GenericCuration(PyComponent):
     """Generic curation panel
@@ -194,6 +194,7 @@ class EphysPostMessageSender(ReactComponent):
     }
     """
 
+
 class EphysCuration(PyComponent):
     """Ephys/Spike sorting curation panel"""
 
@@ -354,12 +355,13 @@ class EphysCuration(PyComponent):
         if not reference:
             return ""
 
-        processed = unescape(unquote(reference))
+        processed = unquote(reference)
         if DEBUG_EPHYS:
-            processed = processed.replace("https://ephys.allenneuraldynamics.org", f"http://localhost:{EPHYS_LOCALPORT}")
+            processed = processed.replace(
+                "https://ephys.allenneuraldynamics.org", f"http://localhost:{EPHYS_LOCALPORT}"
+            )
         processed += f"&identifier={self.identifier}&fast_mode=true"
         print(f"EphysCuration: Decoded ephys GUI URL: {processed}")
-        
 
         if "{derived_asset_location}" in processed:
             derived_loc = f"s3://{self.bucket}/{self.prefix}"
