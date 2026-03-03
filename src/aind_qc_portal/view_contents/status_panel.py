@@ -20,6 +20,7 @@ CHECK_LABELS = {
     "zombie_squirrel": "Zombie Squirrel Access",
 }
 
+
 class StatusPanel:
     """Panel UI for displaying system status checks."""
 
@@ -41,7 +42,9 @@ class StatusPanel:
 
         results = run_all_status_checks()
         if "status" in results and results["status"] == "error":
-            self.status.object = f"<h2 style='color:red;'>❌ Error loading status: {results.get('error', 'Unknown error')}</h2>"
+            self.status.object = (
+                f"<h2 style='color:red;'>❌ Error loading status: {results.get('error', 'Unknown error')}</h2>"
+            )
             return
 
         # Determine overall status
@@ -66,14 +69,19 @@ class StatusPanel:
                 if "record" in check:
                     debug_info += f"<br><pre style='color:#b00;font-size:0.9em;'>Record: {check['record']}</pre>"
                 if "traceback" in check:
-                    debug_info += f"<br><pre style='color:#b00;font-size:0.8em;overflow-x:auto;'>{check['traceback']}</pre>"
-            lines.append(f"<div style='font-size:1.2em;'>{icon} {label} {extra} <span style='color:gray;font-size:0.9em;'>{msg}</span>{debug_info}</div>")
+                    debug_info += (
+                        f"<br><pre style='color:#b00;font-size:0.8em;overflow-x:auto;'>{check['traceback']}</pre>"
+                    )
+            lines.append(
+                f"<div style='font-size:1.2em;'>{icon} {label} {extra} <span style='color:gray;font-size:0.9em;'>{msg}</span>{debug_info}</div>"
+            )
 
         self.status.object = summary + "<br>" + "".join(lines)
 
     def __panel__(self):
         """Return the panel object for display."""
         return self.panel
+
 
 status_panel = StatusPanel()
 
