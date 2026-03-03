@@ -33,7 +33,7 @@ dependencies = [
     'aind-metadata-utils>=0.1.2,<2',
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     'ruff',
     'coverage',
