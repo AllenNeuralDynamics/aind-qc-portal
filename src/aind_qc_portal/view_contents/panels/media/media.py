@@ -247,7 +247,7 @@ class Media(PyComponent):
 
     def _show_error(self, exception: Exception):
         """Display an error message in the content area
-        
+
         Parameters
         ----------
         exception : Exception

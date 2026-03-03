@@ -4,6 +4,7 @@ Organized to match repo architecture: status logic in status.py, UI in status_pa
 """
 
 import panel as pn
+
 from aind_qc_portal.status import run_all_status_checks
 
 # Icons and labels for checks
@@ -17,11 +18,13 @@ CHECK_LABELS = {
     "docdb_load": "Load QC from DocDB",
     "s3_media_access": "S3 Media Access",
     "zombie_squirrel": "Zombie Squirrel Access",
-    # Add more as implemented
 }
 
 class StatusPanel:
+    """Panel UI for displaying system status checks."""
+
     def __init__(self):
+        """Initialize the status panel UI."""
         self.status = pn.pane.HTML("Loading status checks...", sizing_mode="stretch_width")
         self.refresh_button = pn.widgets.Button(name="Refresh", button_type="primary")
         self.refresh_button.on_click(self.update_status)
@@ -34,6 +37,8 @@ class StatusPanel:
         self.update_status()
 
     def update_status(self, *_):
+        """Update the status display with current check results."""
+
         results = run_all_status_checks()
         if "status" in results and results["status"] == "error":
             self.status.object = f"<h2 style='color:red;'>❌ Error loading status: {results.get('error', 'Unknown error')}</h2>"
@@ -67,6 +72,7 @@ class StatusPanel:
         self.status.object = summary + "<br>" + "".join(lines)
 
     def __panel__(self):
+        """Return the panel object for display."""
         return self.panel
 
 status_panel = StatusPanel()

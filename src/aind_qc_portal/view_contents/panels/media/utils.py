@@ -3,7 +3,7 @@
 import os
 import tempfile
 import urllib
-from urllib.parse import quote, unquote
+from urllib.parse import unquote
 
 import boto3
 import httpx
