@@ -347,6 +347,11 @@ class EphysCuration(PyComponent):
         identifier = payload.get("identifier", "???")
         print(f"EphysCuration: Received message from iframe (identifier: {identifier})")
 
+        self.curation_values.append(data)
+        new_options = self._build_curation_options()
+        self.curation_dropdown.options = new_options
+        self.selected_curation_index = len(self.curation_values) - 1
+
         if self.value_callback:
             self.value_callback(data)
 
