@@ -2,8 +2,7 @@
 
 import os
 import tempfile
-import urllib
-from urllib.parse import unquote
+from urllib.parse import quote, unquote
 
 import boto3
 import httpx
@@ -302,7 +301,7 @@ def _get_s3_file(url, ext):
 def encode_url(url):
     """Encode a URL"""
     base_url, query_string = url.split("?")
-    encoded_query_string = urllib.parse.quote(query_string, safe="")
+    encoded_query_string = quote(query_string, safe="")
 
     return f"{base_url}?{encoded_query_string}"
 
