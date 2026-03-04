@@ -24,7 +24,7 @@ jobs:
       uses: astral-sh/setup-uv@v4
     - name: Install dependencies
       run: | 
-        uv pip install --system -e . --group dev
+        uv pip install --system -e .[dev]
     - name: Get Python version and Update README.md
       run: |
         python_version=$(grep "requires-python" pyproject.toml | grep -o ">=[^\"]*")

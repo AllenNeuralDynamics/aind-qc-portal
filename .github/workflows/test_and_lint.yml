@@ -22,7 +22,7 @@ jobs:
       uses: astral-sh/setup-uv@v4
     - name: Install dependencies
       run: | 
-        uv pip install --system -e . --group dev
+        uv pip install --system -e .[dev]
     - name: Run linter checks
       run: ruff check . && ruff format --check . && interrogate -vv .
     - name: Run tests and coverage
