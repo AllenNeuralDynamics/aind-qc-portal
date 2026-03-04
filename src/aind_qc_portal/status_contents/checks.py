@@ -8,7 +8,7 @@ from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panels.media.utils import get_s3_client
 
 
-def check_load_qc_from_docdb(asset_names):
+def check_load_qc_from_docdb(asset_names: list[str]) -> dict[str, dict]:
     """
     Try loading QC data from DocDB for a list of assets.
     Returns: dict with status and error info for each asset.
@@ -35,7 +35,7 @@ def check_load_qc_from_docdb(asset_names):
     return results
 
 
-def check_s3_media_access(asset_names):
+def check_s3_media_access(asset_names: list[str]) -> dict[str, dict]:
     """
     Try reading a media file from S3 for a list of assets.
     Returns: dict with status and error info for each asset.
@@ -80,7 +80,7 @@ def check_s3_media_access(asset_names):
     return results
 
 
-def check_zombie_squirrel_access():
+def check_zombie_squirrel_access() -> dict[str, dict]:
     """
     Test access to zombie-squirrel service/endpoint.
     Returns: dict with status and error info.
@@ -97,7 +97,7 @@ def check_zombie_squirrel_access():
         return {"status": "error", "error": str(e)}
 
 
-def run_all_status_checks():
+def run_all_status_checks() -> dict[str, dict]:
     """
     Run all status checks and return a summary.
     Returns: dict with results for each check.

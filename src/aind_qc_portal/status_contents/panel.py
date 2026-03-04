@@ -54,7 +54,7 @@ class StatusPanel:
             sizing_mode="stretch_width",
         )
 
-    def update_status(self, *_):
+    def update_status(self, *_: list):
         """Update the status display with current check results."""
 
         self.overall_status.object = "⏳ Checking system status..."
