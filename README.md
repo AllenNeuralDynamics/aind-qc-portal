@@ -354,7 +354,7 @@ export AWS_PROFILE="<your-profile>"
 
 **Launch:**
 ```bash
-panel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py \
+panel serve src/aind_qc_portal/view.py src/aind_qc_portal/portal.py src/aind_qc_portal/status.py \
   --dev \
   --show \
   --port 5007 \

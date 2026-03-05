@@ -118,7 +118,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "s3fs" },
     { name = "watchfiles", marker = "extra == 'dev'" },
-    { name = "zombie-squirrel", specifier = ">=0.9.2" },
+    { name = "zombie-squirrel", specifier = "==0.12.0" },
 ]
 provides-extras = ["dev"]
 
@@ -1990,7 +1990,7 @@ wheels = [
 
 [[package]]
 name = "zombie-squirrel"
-version = "0.9.2"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aind-data-access-api", extra = ["docdb"] },
@@ -1999,7 +1999,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pyarrow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0c/c0/3ba32a9d2ed1fefa9efb913a66c551798a56e13839831f9b155b679efc2a/zombie_squirrel-0.9.2.tar.gz", hash = "sha256:97db5963a61c560f10751ca0016a17d700dbcd284d43ccb4c263e7f2e5ba1b60", size = 14265, upload-time = "2026-02-09T21:05:42.175Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/79/b81356b8a1f60988b7aff5de596f1c5fbf9cb55f3ef111aa05b2b525eb52/zombie_squirrel-0.12.0.tar.gz", hash = "sha256:cc0085c0b9c1153bca0aed82320fd21b2a5ff8eb56ba0c1f192c39a03d0f7b13", size = 19108, upload-time = "2026-03-03T17:43:22.575Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/10/327b88fc1162f3d8760a613660abcdbe89b81dbeb7b6f97c38a0ae96bd0f/zombie_squirrel-0.9.2-py3-none-any.whl", hash = "sha256:c72e614814b66bd1bf91212b3198fcfbde4caf95b7099ff3d94c3794dfc90ad1", size = 15535, upload-time = "2026-02-09T21:05:40.494Z" },
+    { url = "https://files.pythonhosted.org/packages/52/45/788eb968fab9f2073bbca6c38038b4609b2c6f9ba61706548c5ad989cfdc/zombie_squirrel-0.12.0-py3-none-any.whl", hash = "sha256:e8af42e5c167e461f4119a3f7a0ad4b7ccc330f6f8c0653165a92ac0dc298102", size = 17921, upload-time = "2026-03-03T17:43:21.737Z" },
 ]
