@@ -2,7 +2,6 @@
 Status panel UI for AIND QC Portal health checks.
 """
 
-
 import panel as pn
 
 from aind_qc_portal.layout import OUTER_STYLE
@@ -24,7 +23,9 @@ class StatusMessages:
     UNCHECKED = "Not checked"
 
     # Overall status messages with styling
-    ALL_SYSTEMS_OPERATIONAL = f"<h2 style='color: #28a745; margin: 10px 0;'>{OPERATIONAL_ICON} All Systems Operational</h2>"
+    ALL_SYSTEMS_OPERATIONAL = (
+        f"<h2 style='color: #28a745; margin: 10px 0;'>{OPERATIONAL_ICON} All Systems Operational</h2>"
+    )
     SOME_SYSTEMS_ISSUES = f"<h2 style='color: #dc3545; margin: 10px 0;'>{FAILED_ICON} Some Systems Have Issues</h2>"
     ERROR_DURING_CHECK = f"{FAILED_ICON} Error during check"
     FAILED_TO_CHECK = f"{FAILED_ICON} Failed to check"
@@ -64,18 +65,9 @@ class StatusMessages:
 
 # Service configurations (like GitHub's service list)
 SERVICE_CONFIG = {
-    "docdb": {
-        "name": "DocDB",
-        "description": "Document database connectivity"
-    },
-    "s3": {
-        "name": "S3 Media",
-        "description": "S3 storage access"
-    },
-    "zombie_squirrel": {
-        "name": "Zombie Squirrel",
-        "description": "Project metadata service"
-    }
+    "docdb": {"name": "DocDB", "description": "Document database connectivity"},
+    "s3": {"name": "S3 Media", "description": "S3 storage access"},
+    "zombie_squirrel": {"name": "Zombie Squirrel", "description": "Project metadata service"},
 }
 
 
@@ -98,7 +90,9 @@ class StatusPanel:
 
         self.docdb_status = pn.widgets.StaticText(name=SERVICE_CONFIG["docdb"]["name"], value=StatusMessages.UNCHECKED)
         self.s3_status = pn.widgets.StaticText(name=SERVICE_CONFIG["s3"]["name"], value=StatusMessages.UNCHECKED)
-        self.zombie_status = pn.widgets.StaticText(name=SERVICE_CONFIG["zombie_squirrel"]["name"], value=StatusMessages.UNCHECKED)
+        self.zombie_status = pn.widgets.StaticText(
+            name=SERVICE_CONFIG["zombie_squirrel"]["name"], value=StatusMessages.UNCHECKED
+        )
 
         self.refresh_button = pn.widgets.Button(name="Refresh", button_type="primary")
         self.refresh_button.on_click(self.update_status)
@@ -177,9 +171,9 @@ class StatusPanel:
 
             # Update overall status (GitHub style)
             all_good = (
-                StatusMessages.OPERATIONAL_ICON in self.docdb_status.value and
-                StatusMessages.OPERATIONAL_ICON in self.s3_status.value and
-                StatusMessages.OPERATIONAL_ICON in self.zombie_status.value
+                StatusMessages.OPERATIONAL_ICON in self.docdb_status.value
+                and StatusMessages.OPERATIONAL_ICON in self.s3_status.value
+                and StatusMessages.OPERATIONAL_ICON in self.zombie_status.value
             )
 
             if all_good:
