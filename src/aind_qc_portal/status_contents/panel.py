@@ -2,8 +2,8 @@
 Status panel UI for AIND QC Portal health checks.
 """
 
+
 import panel as pn
-from enum import Enum
 
 from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.status_contents.checks import run_all_status_checks
@@ -11,15 +11,15 @@ from aind_qc_portal.status_contents.checks import run_all_status_checks
 
 class StatusMessages:
     """Centralized status messages similar to GitHub Status page."""
-    
+
     # Icons
     OPERATIONAL_ICON = "✅"
     FAILED_ICON = "❌"
     CHECKING_ICON = "⏳"
-    
+
     OPERATIONAL = "Operational"
     DEGRADED = "Degraded"
-    FAILED = "Failed" 
+    FAILED = "Failed"
     CHECKING = "Checking"
     UNCHECKED = "Not checked"
 
@@ -28,34 +28,34 @@ class StatusMessages:
     SOME_SYSTEMS_ISSUES = f"<h2 style='color: #dc3545; margin: 10px 0;'>{FAILED_ICON} Some Systems Have Issues</h2>"
     ERROR_DURING_CHECK = f"{FAILED_ICON} Error during check"
     FAILED_TO_CHECK = f"{FAILED_ICON} Failed to check"
-    
+
     @staticmethod
     def checking_status():
         """Return checking status message."""
         return f"{StatusMessages.CHECKING_ICON} {StatusMessages.CHECKING}"
-    
+
     @staticmethod
     def operational_with_count(service_name: str, count: int, item_type: str = "assets"):
         """Return operational status with count (GitHub style)."""
         return f"{StatusMessages.OPERATIONAL_ICON} {StatusMessages.OPERATIONAL} ({count} {item_type})"
-    
+
     @staticmethod
     def degraded_with_count(success: int, total: int, item_type: str = "assets"):
         """Return degraded status with partial success count."""
         return f"{StatusMessages.FAILED_ICON} {StatusMessages.DEGRADED} ({success}/{total} {item_type})"
-    
+
     @staticmethod
     def failed_with_reason(reason: str = ""):
         """Return failed status with optional reason."""
         if reason:
             return f"{StatusMessages.FAILED_ICON} {StatusMessages.FAILED}: {reason}"
         return f"{StatusMessages.FAILED_ICON} {StatusMessages.FAILED}"
-    
+
     @staticmethod
     def checking_system_status():
         """Return system-wide checking message."""
         return f"{StatusMessages.CHECKING_ICON} Checking system status..."
-    
+
     @staticmethod
     def error_checking_status(error: str):
         """Return error message for status check."""
@@ -69,7 +69,7 @@ SERVICE_CONFIG = {
         "description": "Document database connectivity"
     },
     "s3": {
-        "name": "S3 Media", 
+        "name": "S3 Media",
         "description": "S3 storage access"
     },
     "zombie_squirrel": {
@@ -82,7 +82,7 @@ SERVICE_CONFIG = {
 # Labels for checks
 CHECK_LABELS = {
     "docdb_load": "Load QC from DocDB",
-    "s3_media_access": "S3 Media Access", 
+    "s3_media_access": "S3 Media Access",
     "zombie_squirrel": "Zombie Squirrel Access",
 }
 
@@ -177,8 +177,8 @@ class StatusPanel:
 
             # Update overall status (GitHub style)
             all_good = (
-                StatusMessages.OPERATIONAL_ICON in self.docdb_status.value and 
-                StatusMessages.OPERATIONAL_ICON in self.s3_status.value and 
+                StatusMessages.OPERATIONAL_ICON in self.docdb_status.value and
+                StatusMessages.OPERATIONAL_ICON in self.s3_status.value and
                 StatusMessages.OPERATIONAL_ICON in self.zombie_status.value
             )
 
