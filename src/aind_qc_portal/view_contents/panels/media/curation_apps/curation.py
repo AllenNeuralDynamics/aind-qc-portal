@@ -258,6 +258,7 @@ class EphysCuration(PyComponent):
         self.curation_dropdown = pn.widgets.Select.from_param(
             self.param.selected_curation_index, name="Select Curation", options=curation_options
         )
+        self.param.watch(self._on_curation_selection_change, "selected_curation_index")
         self.send_button = pn.widgets.Button(name="Send curation", button_type="primary", sizing_mode="stretch_width")
         self.send_button.on_click(self._send_curation_to_iframe)
 
@@ -317,7 +318,6 @@ class EphysCuration(PyComponent):
         self.data = self.curation_values[self.selected_curation_index]
         self.json_editor.object = self.data
         self._update_metadata_display()
-        self._send_curation_to_iframe()
 
     def _update_metadata_display(self):
         """Update metadata display for the selected curation"""
@@ -392,8 +392,11 @@ class EphysCuration(PyComponent):
             "type": "curation-data",
             "identifier": identifier,
             "data": curation_data,
+            "_nonce": str(uuid4()),  # ensures the JSON is always unique
         }
-        print(f"EphysCuration: Sending curation data to iframe (identifier: {identifier})")
+        options = list(self.curation_dropdown.options)
+        curation_entry = options[self.selected_curation_index]
+        print(f"EphysCuration: Sending curation data {curation_entry} to iframe (identifier: {identifier})")
 
         # Append a unique counter so the param change always fires
         self.ephys_sender.message_json = json.dumps(envelope)
