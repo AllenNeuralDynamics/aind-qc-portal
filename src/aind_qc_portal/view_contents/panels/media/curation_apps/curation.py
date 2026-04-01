@@ -271,9 +271,8 @@ class EphysCuration(PyComponent):
             f'<iframe id="iframe-0000" src="{processed_url}" '
             f'style="width:100%;height:100%;border: none;" '
             f'allow="cross-origin-isolated"></iframe>',
-            width=1200,
-            height=900,
-            sizing_mode="fixed",
+            sizing_mode="stretch_both",
+            stylesheets=["iframe { min-width: 60vw; min-height: 50vh; }"],
         )
         fullscreen_iframe = Fullscreen(self.iframe_component)
 
@@ -289,11 +288,10 @@ class EphysCuration(PyComponent):
                 self.send_button,
                 self.ephys_sender,
                 self.ephys_listener,
-                max_width=350,
+                max_width=300,
             ),
             pn.Column(
                 fullscreen_iframe,
-                width=1200,
             ),
         )
 
@@ -394,9 +392,12 @@ class EphysCuration(PyComponent):
             "data": curation_data,
             "_nonce": str(uuid4()),  # ensures the JSON is always unique
         }
-        options = list(self.curation_dropdown.options)
-        curation_entry = options[self.selected_curation_index]
-        print(f"EphysCuration: Sending curation data {curation_entry} to iframe (identifier: {identifier})")
+        if len(curation_data) == 0:
+            print(f"EphysCuration: Sending empty curation data to iframe (identifier: {identifier})")
+        else:
+            options = list(self.curation_dropdown.options)
+            curation_entry = options[self.selected_curation_index]
+            print(f"EphysCuration: Sending curation data {curation_entry} to iframe (identifier: {identifier})")
 
         # Append a unique counter so the param change always fires
         self.ephys_sender.message_json = json.dumps(envelope)
