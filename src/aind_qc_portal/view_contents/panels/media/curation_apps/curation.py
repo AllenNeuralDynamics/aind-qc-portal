@@ -12,7 +12,7 @@ from panel.custom import PyComponent, ReactComponent
 from aind_qc_portal.view_contents.panels.media.media import Media
 from aind_qc_portal.view_contents.panels.media.utils import Fullscreen
 
-DEBUG_EPHYS = False
+DEBUG_EPHYS = True
 EPHYS_LOCALPORT = 5010
 
 
@@ -392,12 +392,9 @@ class EphysCuration(PyComponent):
             "data": curation_data,
             "_nonce": str(uuid4()),  # ensures the JSON is always unique
         }
-        if len(curation_data) == 0:
-            print(f"EphysCuration: Sending empty curation data to iframe (identifier: {identifier})")
-        else:
-            options = list(self.curation_dropdown.options)
-            curation_entry = options[self.selected_curation_index]
-            print(f"EphysCuration: Sending curation data {curation_entry} to iframe (identifier: {identifier})")
+        options = list(self.curation_dropdown.options)
+        curation_entry = options[self.selected_curation_index]
+        print(f"EphysCuration: Sending curation data {curation_entry} to iframe (identifier: {identifier})")
 
         # Append a unique counter so the param change always fires
         self.ephys_sender.message_json = json.dumps(envelope)
