@@ -184,10 +184,104 @@ function requestFullScreen(element) {
     }
 }
 
+function findIframesDeep(root) {
+    const results = [];
+    root.querySelectorAll('iframe').forEach(function(el) { results.push(el); });
+    root.querySelectorAll('*').forEach(function(el) {
+        if (el.shadowRoot) {
+            findIframesDeep(el.shadowRoot).forEach(function(f) { results.push(f); });
+        }
+    });
+    return results;
+}
+
+function applyToAllDeep(root, w, h) {
+    root.querySelectorAll('*').forEach(function(el) {
+        if (el.tagName === 'IMG' || el.tagName === 'VIDEO' || el.tagName === 'SVG') return;
+        if (el.tagName !== 'IFRAME') {
+            el.style.setProperty('width',      w + 'px', 'important');
+            el.style.setProperty('height',     h + 'px', 'important');
+            el.style.setProperty('min-width',  '0',      'important');
+            el.style.setProperty('min-height', '0',      'important');
+            el.style.setProperty('overflow',   'hidden',  'important');
+        }
+        if (el.shadowRoot) {
+            applyToAllDeep(el.shadowRoot, w, h);
+        }
+    });
+}
+
+function clearAllDeep(root) {
+    root.querySelectorAll('*').forEach(function(el) {
+        el.style.removeProperty('width');
+        el.style.removeProperty('height');
+        el.style.removeProperty('min-width');
+        el.style.removeProperty('min-height');
+        el.style.removeProperty('overflow');
+        if (el.shadowRoot) { clearAllDeep(el.shadowRoot); }
+    });
+}
+
+function applyFullscreenSizes(container) {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    container.style.setProperty('width',  w + 'px', 'important');
+    container.style.setProperty('height', h + 'px', 'important');
+    const objectContainer = container.querySelector('.object-container');
+    if (!objectContainer) return;
+    objectContainer.style.setProperty('width',  w + 'px', 'important');
+    objectContainer.style.setProperty('height', h + 'px', 'important');
+    applyToAllDeep(objectContainer, w, h);
+    findIframesDeep(objectContainer).forEach(function(iframe) {
+        iframe.style.setProperty('width',      w + 'px', 'important');
+        iframe.style.setProperty('height',     h + 'px', 'important');
+        iframe.style.setProperty('min-width',  '0',      'important');
+        iframe.style.setProperty('min-height', '0',      'important');
+    });
+    setTimeout(function() {
+        const iframes = findIframesDeep(container);
+        console.log('[Fullscreen] sending fullscreen-resize to', iframes.length, 'iframe(s)');
+        iframes.forEach(function(iframe) {
+            if (iframe.contentWindow) {
+                console.log('[Fullscreen] postMessage → ', iframe.src);
+                iframe.contentWindow.postMessage({ type: 'fullscreen-resize' }, '*');
+            }
+        });
+    }, 200);
+}
+
+function clearFullscreenSizes(container) {
+    container.style.removeProperty('width');
+    container.style.removeProperty('height');
+    const objectContainer = container.querySelector('.object-container');
+    if (objectContainer) {
+        objectContainer.style.removeProperty('width');
+        objectContainer.style.removeProperty('height');
+        clearAllDeep(objectContainer);
+    }
+    setTimeout(function() {
+        findIframesDeep(container).forEach(function(iframe) {
+            if (iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: 'fullscreen-resize' }, '*');
+            }
+        });
+    }, 200);
+}
+
+function onFullscreenChange() {
+    if (document.fullscreenElement) {
+        applyFullscreenSizes(button.parentElement);
+    } else {
+        clearFullscreenSizes(button.parentElement);
+        document.removeEventListener('fullscreenchange', onFullscreenChange);
+    }
+}
+
 function toggleFullScreen() {
     if (isFullScreen()) {
         exitFullScreen()
     } else {
+        document.addEventListener('fullscreenchange', onFullscreenChange);
         requestFullScreen(button.parentElement)
     }
 }
