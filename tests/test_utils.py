@@ -1,228 +1,236 @@
-""" Tests for the aind_qc_portal.utils module """
+"""Unit tests for utils.py"""
 
 import unittest
-from datetime import datetime
 from unittest.mock import patch
-import pandas as pd
-import numpy as np
+
 from aind_data_schema.core.quality_control import Status
 
 from aind_qc_portal.utils import (
-    AIND_COLORS,
-    FIVE_YEARS,
-    ONE_MONTH,
-    ONE_WEEK,
-    ONE_YEAR,
-    _get_scale_and_indices,
-    format_link,
+    _qc_status_color,
+    df_scalar_to_list,
     format_css_background,
-    qc_status_color,
-    qc_status_html,
-    df_timestamp_range,
-    range_unit_format,
-    replace_markdown_with_html,
-    qc_status_color_css,
-    bincount2D,
+    format_link,
     get_user_name,
-    timestamp_range,
+    qc_status_color,
+    qc_status_color_css,
+    qc_status_html,
+    qc_status_link_html,
+    raw_name_from_derived,
+    replace_markdown_with_html,
 )
 
 
-class TestUtils(unittest.TestCase):
-    """Test the utility functions"""
+class TestRawNameFromDerived(unittest.TestCase):
+    """Tests for raw_name_from_derived function"""
 
-    def test_format_link(self):
-        """Test the format_link function"""
-        self.assertEqual(
-            format_link("http://example.com"),
-            '<a href="http://example.com" target="_blank">link</a>',
-        )
-        self.assertEqual(
-            format_link("http://example.com", "Example"),
-            '<a href="http://example.com" target="_blank">Example</a>',
-        )
+    def test_newer_pattern(self):
+        """Test newer derived asset name pattern without platform"""
+        result = raw_name_from_derived("subj_20231201_120000_proc_20231202_130000")
+        self.assertEqual(result, "subj_20231201_120000")
 
-    def test_status_html(self):
-        """Test the qc_status_html function"""
-        self.assertEqual(
-            qc_status_html(Status.PASS),
-            '<span style="color:#1D8649;">Pass</span>',
-        )
-        self.assertEqual(
-            qc_status_html(Status.PENDING),
-            '<span style="color:#2A7DE1;">Pending</span>',
-        )
-        self.assertEqual(
-            qc_status_html(Status.FAIL),
-            '<span style="color:#FF5733;">Fail</span>',
-        )
+    def test_older_pattern(self):
+        """Test older derived asset name pattern with platform"""
+        result = raw_name_from_derived("plat_subj_20231201_120000_proc_20231202_130000")
+        self.assertEqual(result, "plat_subj_20231201_120000")
 
-    def test_df_timestamp_range(self):
-        """Test the df_timestamp_range function"""
-        data = {
-            "timestamp": [
-                datetime(2023, 1, 1),
-                datetime(2023, 1, 2),
-                datetime(2023, 1, 3),
-            ]
-        }
-        df = pd.DataFrame(data)
-        min_range, max_range, unit, fmt = df_timestamp_range(df)
-        self.assertEqual(unit, "day")
-        self.assertEqual(fmt, "%b %d")
+    def test_empty_string(self):
+        """Test empty derived asset name"""
+        with self.assertRaises(ValueError):
+            raw_name_from_derived("")
 
-    def test_md_style(self):
-        """Test the replace_markdown_with_html function"""
-        self.assertEqual(
-            replace_markdown_with_html(12, "test"),
-            '<span style="font-size:12pt">test</span>',
-        )
+    def test_invalid_format(self):
+        """Test derived asset name with invalid format"""
+        with self.assertRaises(ValueError):
+            raw_name_from_derived("invalid_format")
 
-    def test_qc_color(self):
-        """Test the qc_status_color function"""
-        self.assertEqual(qc_status_color(Status.PASS), AIND_COLORS["green"])
 
-        self.assertEqual(qc_status_color_css("No QC"), "background-color: #FFB71B")
-        self.assertEqual(qc_status_color_css("Pass"), "background-color: #1D8649")
-        self.assertEqual(qc_status_color_css("Fail"), "background-color: #FF5733")
-        self.assertEqual(qc_status_color_css("Pending"), "background-color: #2A7DE1")
-        self.assertEqual(qc_status_color_css("Other"), "background-color: #7C7C7F")
+class TestFormatLink(unittest.TestCase):
+    """Tests for format_link function"""
 
-    def test_bincount2D(self):
-        """Test the bincount2D function"""
-        x = np.array([1, 2, 2, 3])
-        y = np.array([4, 5, 5, 6])
-        r, xscale, yscale = bincount2D(x, y)
-        self.assertEqual(r.shape, (3, 3))
-        self.assertTrue(np.array_equal(xscale, np.array([1, 2, 3])))
-        self.assertTrue(np.array_equal(yscale, np.array([4, 5, 6])))
+    def test_default_text(self):
+        """Test link formatting with default text"""
+        result = format_link("http://example.com")
+        self.assertEqual(result, '<a href="http://example.com" target="_blank">link</a>')
 
-    @patch("aind_qc_portal.utils.pn")
-    def test_set_background(self, mock_pn):
-        """Test the format_css_background function"""
-        mock_pn.config.raw_css = []  # Mock raw_css to ensure a clean state
-        mock_pn.state.location.query_params = {}  # Mock query_params to ensure no background param
+    def test_custom_text(self):
+        """Test link formatting with custom text"""
+        result = format_link("http://example.com", "click here")
+        self.assertEqual(result, '<a href="http://example.com" target="_blank">click here</a>')
+
+
+class TestGetUserName(unittest.TestCase):
+    """Tests for get_user_name function"""
+
+    @patch("aind_qc_portal.utils.pn.state")
+    def test_with_user(self, mock_state):
+        """Test when a user is logged in"""
+        mock_state.user = "testuser"
+        result = get_user_name()
+        self.assertEqual(result, "testuser")
+
+    @patch("aind_qc_portal.utils.pn.state")
+    def test_guest(self, mock_state):
+        """Test when no user is logged in (guest)"""
+        mock_state.user = None
+        result = get_user_name()
+        self.assertEqual(result, "guest")
+
+
+class TestFormatCssBackground(unittest.TestCase):
+    """Tests for format_css_background function"""
+
+    @patch("aind_qc_portal.utils.pn.state")
+    @patch("aind_qc_portal.utils.pn.config")
+    def test_default_background(self, mock_config, mock_state):
+        """Test default background color when no query param is set"""
+        mock_state.location.query_params = {}
+        mock_config.raw_css = []
         format_css_background()
-        self.assertIn("background-color: #003057", mock_pn.config.raw_css[0])  # Default dark_blue color
+        self.assertEqual(len(mock_config.raw_css), 1)
+        self.assertIn("#003057", mock_config.raw_css[0])
 
-        mock_pn.config.raw_css = []  # Reset mock raw_css
-        mock_pn.state.location.query_params = {"background": "light_blue"}  # Mock query_params with light_blue
+    @patch("aind_qc_portal.utils.pn.state")
+    @patch("aind_qc_portal.utils.pn.config")
+    def test_custom_background(self, mock_config, mock_state):
+        """Test custom background color from query param"""
+        mock_state.location.query_params = {"background": "green"}
+        mock_config.raw_css = []
         format_css_background()
-        self.assertIn("background-color: #2A7DE1", mock_pn.config.raw_css[0])  # light_blue color
+        self.assertEqual(len(mock_config.raw_css), 1)
+        self.assertIn("#1D8649", mock_config.raw_css[0])
 
-    def test_qc_status_link_html(self):
-        """Test the qc_status_link_html function"""
-        from aind_qc_portal.utils import qc_status_link_html
 
-        result = qc_status_link_html("Pass", "http://example.com", "Example")
-        expected = (
-            '<span style="background-color:#1D8649;"><a href="http://example.com" target="_blank">Example</a></span>'
+class TestQcStatusColorHelper(unittest.TestCase):
+    """Tests for _qc_status_color helper function"""
+
+    def test_no_qc(self):
+        """Test No QC status color"""
+        result = _qc_status_color("No QC")
+        self.assertEqual(result, "#FFB71B")
+
+    def test_unknown_status(self):
+        """Test unknown status color"""
+        result = _qc_status_color("Unknown")
+        self.assertEqual(result, "#7C7C7F")
+
+
+class TestQcStatusColor(unittest.TestCase):
+    """Tests for qc_status_color function"""
+
+    def test_pass_status(self):
+        """Test Pass status color"""
+        result = qc_status_color(Status.PASS)
+        self.assertEqual(result, "#1D8649")
+
+    def test_fail_status(self):
+        """Test Fail status color"""
+        result = qc_status_color(Status.FAIL)
+        self.assertEqual(result, "#FF5733")
+
+    def test_pending_status(self):
+        """Test Pending status color"""
+        result = qc_status_color(Status.PENDING)
+        self.assertEqual(result, "#2A7DE1")
+
+
+class TestQcStatusColorCss(unittest.TestCase):
+    """Tests for qc_status_color_css function"""
+
+    def test_pass_status(self):
+        """Test Pass status CSS"""
+        result = qc_status_color_css("Pass")
+        self.assertEqual(result, "background-color: #1D8649; color: white;")
+
+    def test_fail_status(self):
+        """Test Fail status CSS"""
+        result = qc_status_color_css("Fail")
+        self.assertEqual(result, "background-color: #FF5733; color: white;")
+
+
+class TestQcStatusHtml(unittest.TestCase):
+    """Tests for qc_status_html function"""
+
+    def test_status_enum(self):
+        """Test with Status enum"""
+        result = qc_status_html(Status.PASS)
+        self.assertEqual(result, '<span style="color:#1D8649;">Pass</span>')
+
+    def test_status_string(self):
+        """Test with status string"""
+        result = qc_status_html("Pass")
+        self.assertEqual(result, '<span style="color:#1D8649;">Pass</span>')
+
+    def test_custom_text(self):
+        """Test with custom text"""
+        result = qc_status_html(Status.PASS, "Success")
+        self.assertEqual(result, '<span style="color:#1D8649;">Success</span>')
+
+    def test_empty_text_uses_status(self):
+        """Test that empty text uses status value"""
+        result = qc_status_html("Fail", "")
+        self.assertEqual(result, '<span style="color:#FF5733;">Fail</span>')
+
+
+class TestQcStatusLinkHtml(unittest.TestCase):
+    """Tests for qc_status_link_html function"""
+
+    def test_basic(self):
+        """Test basic QC status link HTML"""
+        result = qc_status_link_html("Pass", "http://example.com", "view")
+        self.assertEqual(
+            result,
+            '<span style="background-color:#1D8649;"><a href="http://example.com" target="_blank">view</a></span>',
         )
-        self.assertEqual(result, expected)
-
-    def test_range_unit_format(self):
-        """Test the range_unit_format function for different time ranges"""
-
-        # Test different time ranges
-        test_cases = [
-            (ONE_WEEK / 2, ("day", "%b %d")),  # Less than a week
-            (ONE_MONTH / 2, ("week", "%b %d")),  # Less than a month
-            (ONE_MONTH * 2, ("week", "%b %d")),  # Less than 3 months
-            (ONE_YEAR / 2, ("month", "%b")),  # Less than a year
-            (ONE_YEAR * 1.5, ("year", "%b")),  # Less than 2 years
-            (ONE_YEAR * 3, ("year", "%Y")),  # Less than 5 years
-            (ONE_YEAR * 7, ("year", "%Y")),  # More than 5 years
-            (FIVE_YEARS * 3, ("year", "%Y")),  # More than 10 years
-        ]
-
-        for time_range, expected in test_cases:
-            unit, format = range_unit_format(time_range)
-            self.assertEqual((unit, format), expected)
-
-    def test_timestamp_range(self):
-        """Test the timestamp_range function"""
-
-        test_cases = [
-            (datetime(2023, 1, 1), datetime(2023, 1, 3), "day", "%b %d"),
-            (datetime(2023, 1, 1), datetime(2023, 1, 15), "week", "%b %d"),
-            (datetime(2023, 1, 1), datetime(2023, 2, 15), "week", "%b %d"),
-            (datetime(2023, 1, 1), datetime(2023, 6, 1), "month", "%b"),
-            (datetime(2023, 1, 1), datetime(2024, 1, 1), "year", "%b"),
-            (datetime(2023, 1, 1), datetime(2026, 1, 1), "year", "%Y"),
-            (datetime(2023, 1, 1), datetime(2030, 1, 1), "year", "%Y"),
-            (datetime(2023, 1, 1), datetime(2050, 1, 1), "year", "%Y"),
-        ]
-
-        for min_date, max_date, _, _ in test_cases:
-            min_range, max_range, _, _ = timestamp_range(min_date, max_date)
-            self.assertTrue(min_range < min_date)  # Should pad before start
-            self.assertTrue(max_range > max_date)  # Should pad after end
-
-    def test_qc_status_html_with_custom_text(self):
-        """Test qc_status_html with custom display text"""
-        result = qc_status_html(Status.PASS, "Custom Text")
-        self.assertEqual(result, '<span style="color:#1D8649;">Custom Text</span>')
-
-    def test_replace_markdown_with_html_with_links(self):
-        """Test replace_markdown_with_html with actual markdown links"""
-        markdown = "Check out [this link](http://example.com) and [another](http://test.com)"
-        expected = '<span style="font-size:12pt">Check out <a href="http://example.com" target="_blank">this link</a> and <a href="http://test.com" target="_blank">another</a></span>'  # noqa
-        result = replace_markdown_with_html(12, markdown)
-        self.assertEqual(result, expected)
-
-    def test_bincount2D_with_weights(self):
-        """Test bincount2D with weights and different bin parameters"""
-        x = np.array([1, 2, 2, 3])
-        y = np.array([4, 5, 5, 6])
-        weights = np.array([1, 2, 2, 3])
-
-        # Test with weights
-        r, xscale, yscale = bincount2D(x, y, weights=weights)
-        self.assertEqual(r.shape, (3, 3))
-        self.assertEqual(r[1, 1], 4)  # Sum of weights for x=2, y=5
-
-        # Test with specific bin values
-        xbin = np.array([1, 2, 3, 4])
-        ybin = np.array([4, 5, 6, 7])
-        r, xscale, yscale = bincount2D(x, y, xbin=xbin, ybin=ybin)
-        self.assertEqual(r.shape, (4, 4))
-        self.assertTrue(np.array_equal(xscale, xbin))
-        self.assertTrue(np.array_equal(yscale, ybin))
-
-    @patch("aind_qc_portal.utils.pn")
-    def test_get_user_name(self, mock_pn):
-        """Test the get_user_name function"""
-        # Test when pn.state.user is set
-        mock_pn.state.user = "test_user"
-        self.assertEqual(get_user_name(), "test_user")
-
-        # Test when pn.state.user is not set
-        mock_pn.state.user = None
-        self.assertEqual(get_user_name(), "guest")
-
-    def test_get_scale_and_indices_with_scalar_bin(self):
-        """Test the _get_scale_and_indices function"""
-        v = np.array([1, 2, 3, 4, 5])
-        bin_size = 1
-        lim = [1, 5]
-        scale, ind = _get_scale_and_indices(v, bin_size, lim)
-        expected_scale = np.array([1, 2, 3, 4, 5])
-        expected_ind = np.array([0, 1, 2, 3, 4])
-        np.testing.assert_array_equal(scale, expected_scale)
-        np.testing.assert_array_equal(ind, expected_ind)
-
-    def test_get_scale_and_indices_with_nonzero_scalar_bin(self):
-        """Test the _get_scale_and_indices function"""
-        v = np.array([1, 2, 3, 4, 5])
-        bin_size = 2
-        lim = [1, 5]
-        scale, ind = _get_scale_and_indices(v, bin_size, lim)
-        expected_scale = np.array([1, 3, 5])
-        expected_ind = np.array([0, 0, 1, 1, 2])
-        np.testing.assert_array_equal(scale, expected_scale)
-        np.testing.assert_array_equal(ind, expected_ind)
 
 
-if __name__ == "__main__":  # pragma: no cover
-    """Run the tests"""
+class TestReplaceMarkdownWithHtml(unittest.TestCase):
+    """Tests for replace_markdown_with_html function"""
+
+    def test_single_link(self):
+        """Test replacing a single markdown link"""
+        result = replace_markdown_with_html(12, "[text](http://example.com)")
+        self.assertEqual(
+            result,
+            '<span style="font-size:12pt"><a href="http://example.com" target="_blank">text</a></span>',
+        )
+
+    def test_multiple_links(self):
+        """Test replacing multiple markdown links"""
+        result = replace_markdown_with_html(14, "[first](http://one.com) and [second](http://two.com)")
+        self.assertIn('<a href="http://one.com" target="_blank">first</a>', result)
+        self.assertIn('<a href="http://two.com" target="_blank">second</a>', result)
+        self.assertIn("font-size:14pt", result)
+
+    def test_no_links(self):
+        """Test string with no markdown links"""
+        result = replace_markdown_with_html(12, "plain text")
+        self.assertEqual(result, '<span style="font-size:12pt">plain text</span>')
+
+
+class TestDfScalarToList(unittest.TestCase):
+    """Tests for df_scalar_to_list function"""
+
+    def test_scalars(self):
+        """Test converting scalars to lists"""
+        result = df_scalar_to_list({"a": 1, "b": "text"})
+        self.assertEqual(result, {"a": [1], "b": ["text"]})
+
+    def test_existing_list(self):
+        """Test that existing lists remain unchanged"""
+        result = df_scalar_to_list({"a": [1, 2], "b": "text"})
+        self.assertEqual(result, {"a": [1, 2], "b": ["text"]})
+
+    def test_empty_dict(self):
+        """Test empty dictionary"""
+        result = df_scalar_to_list({})
+        self.assertEqual(result, {})
+
+    def test_with_index_key(self):
+        """Test that index key is included in conversion (filtering happens in calling code)"""
+        result = df_scalar_to_list({"index": ["a", "b"], "value1": [1, 2], "value2": [3, 4]})
+        self.assertEqual(result, {"index": ["a", "b"], "value1": [1, 2], "value2": [3, 4]})
+
+
+if __name__ == "__main__":
+    """Run the unit tests"""
     unittest.main()
