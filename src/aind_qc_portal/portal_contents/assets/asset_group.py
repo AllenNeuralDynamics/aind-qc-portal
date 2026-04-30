@@ -230,7 +230,9 @@ class AssetGroup(PyComponent):
         self.records = self.database.get_records(self.query) if self.query else []
 
         # Convert to dataframe and store derived data map
-        self.df, self.derived_data_map = self._records_to_dataframe(self.records)
+        # Use param.update so both params are set before _update_table fires
+        df, derived_data_map = self._records_to_dataframe(self.records)
+        self.param.update(df=df, derived_data_map=derived_data_map)
 
     def _create_derived_table(self, row):
         """Create a tabulator for all assets (raw + derived)"""
