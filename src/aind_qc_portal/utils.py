@@ -176,6 +176,7 @@ def qc_status_link_html(status: str, link: str, text: str = ""):
 
 def replace_markdown_with_html(font_size: int = 12, inner_str: str = ""):
     """Replace markdown links with HTML anchor tags and set a font size"""
+    inner_str = str(inner_str) if inner_str is not None else ""
     if not inner_str:
         return ""
     # Find all links in the inner string

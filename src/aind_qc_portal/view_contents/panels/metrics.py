@@ -695,6 +695,17 @@ class Metrics(PyComponent):
 
         return tabs
 
+    def _get_node_by_path(self, path_tuple):
+        """Navigate tree items using a tuple path to find the target node"""
+        nodes = self.tree.items
+        node = None
+        for idx in path_tuple:
+            if not nodes or idx >= len(nodes):
+                return None
+            node = nodes[idx]
+            nodes = node.get("items", [])
+        return node
+
     def _on_tree_selection(self, event):
         """Handle tree selection changes"""
         self._update_active_path_from_tree()
@@ -702,7 +713,7 @@ class Metrics(PyComponent):
         if not event.new or len(event.new) == 0:
             return
 
-        selected_item = self.tree.value[0] if self.tree.value else None
+        selected_item = self._get_node_by_path(event.new[0])
         if not selected_item:
             return
 
