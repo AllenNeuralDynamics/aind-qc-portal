@@ -30,12 +30,12 @@ def get_s3_client(reference=None):
     """
     use_codeocean = reference and "codeocean" in reference
 
-    if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
-        return boto3.client(
-            "s3",
-            region_name="us-west-2",
-            config=boto3.session.Config(signature_version="s3v4"),
-        )
+    # if os.getenv("BYPASS_CODEOCEAN_S3", "0") == "1":
+    return boto3.client(
+        "s3",
+        region_name="us-west-2",
+        config=boto3.session.Config(signature_version="s3v4"),
+    )
 
     if use_codeocean:
         sts_client = boto3.client("sts")
