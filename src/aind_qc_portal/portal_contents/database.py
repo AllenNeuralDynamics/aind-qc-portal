@@ -44,6 +44,7 @@ class Database:
         self,
         project_name: Optional[list[str]] = None,
         subject_id: Optional[list[str]] = None,
+        modalities: Optional[list[str]] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
     ):
@@ -54,6 +55,8 @@ class Database:
             query["data_description.project_name"] = {"$in": project_name}
         if subject_id:
             query["subject.subject_id"] = {"$in": subject_id}
+        if modalities:
+            query["data_description.modalities.abbreviation"] = {"$all": modalities}
         if query and (start_date or end_date):
             time_query = {}
             if start_date:
@@ -68,6 +71,7 @@ class Database:
         self,
         project_name: Optional[list[str]] = None,
         subject_id: Optional[list[str]] = None,
+        modalities: Optional[list[str]] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
     ) -> int:
@@ -80,6 +84,9 @@ class Database:
             df = df[df["project_name"].isin(project_name)]
         if subject_id:
             df = df[df["subject_id"].isin(subject_id)]
+        if modalities:
+            for modality in modalities:
+                df = df[df["modalities"].str.contains(modality, na=False)]
         if start_date:
             df = df[df["acquisition_start_time"] >= start_date.isoformat()]
         if end_date:
@@ -117,6 +124,17 @@ class Database:
         """Get unique project names from the database"""
 
         return unique_project_names()
+
+    @pn.cache(ttl=TTL_DAY)
+    def get_unique_modalities(self):
+        """Get unique modalities from the database"""
+
+        df = asset_basics()
+        # Modalites are stored as comma-separated strings
+        modalities_series = df["modalities"].dropna().str.split(", ")
+        unique_modalities = sorted(list(set(m for sublist in modalities_series for m in sublist)))
+
+        return unique_modalities
 
     @pn.cache(ttl=TTL_DAY)
     def get_subject_ids(self, project_names: Optional[list[str]] = None):

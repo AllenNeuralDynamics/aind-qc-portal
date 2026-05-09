@@ -59,6 +59,10 @@ class Portal(PyComponent):
             name="subject.subject_id",
             options=self.database.get_subject_ids(),
         )
+        self.modality_selector = pn.widgets.MultiChoice(
+            name="data_description.modalities",
+            options=self.database.get_unique_modalities(),
+        )
         self.start_date_selector = pn.widgets.DatetimePicker(
             name="Min: acquisition.acquisition_start_time",
             value=AIND_LAUNCH_DATETIME,
@@ -84,6 +88,7 @@ class Portal(PyComponent):
         # Sync selectors to URL parameters
         pn.state.location.sync(self.project_selector, {"value": "projects"})
         pn.state.location.sync(self.subject_selector, {"value": "subjects"})
+        pn.state.location.sync(self.modality_selector, {"value": "modalities"})
         pn.state.location.sync(self.start_date_selector, {"value": "start_date"})
         pn.state.location.sync(self.end_date_selector, {"value": "end_date"})
 
@@ -93,6 +98,7 @@ class Portal(PyComponent):
         self.selectors_col = pn.Column(
             self.project_selector,
             self.subject_selector,
+            self.modality_selector,
             self.start_date_selector,
             self.end_date_selector,
         )
@@ -140,6 +146,7 @@ class Portal(PyComponent):
         # Watch for changes in selectors and update query count
         self.project_selector.param.watch(self.update_query_count, "value")
         self.subject_selector.param.watch(self.update_query_count, "value")
+        self.modality_selector.param.watch(self.update_query_count, "value")
         self.start_date_selector.param.watch(self.update_query_count, "value")
         self.end_date_selector.param.watch(self.update_query_count, "value")
 
@@ -175,6 +182,7 @@ class Portal(PyComponent):
         query = self.database.build_query(
             project_name=self.project_selector.value if self.project_selector.value else None,
             subject_id=self.subject_selector.value if self.subject_selector.value else None,
+            modalities=self.modality_selector.value if self.modality_selector.value else None,
             start_date=self.start_date_selector.value if self.start_date_selector.value else None,
             end_date=self.end_date_selector.value if self.end_date_selector.value else None,
         )
@@ -195,6 +203,7 @@ class Portal(PyComponent):
         N = self.database.get_query_count(
             project_name=self.project_selector.value if self.project_selector.value else None,
             subject_id=self.subject_selector.value if self.subject_selector.value else None,
+            modalities=self.modality_selector.value if self.modality_selector.value else None,
             start_date=self.start_date_selector.value if self.start_date_selector.value else None,
             end_date=self.end_date_selector.value if self.end_date_selector.value else None,
         )
