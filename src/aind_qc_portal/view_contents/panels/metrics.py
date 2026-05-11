@@ -738,8 +738,12 @@ class Metrics(PyComponent):
             if len(tabs) == 1:
                 header = pn.pane.Markdown(f"## {tabs[0][0]}")
                 self.content_panel.objects = [header, tabs[0][1]]
+                panel = getattr(tabs[0][1], "curation_panel", None)
+                if isinstance(panel, EphysCuration):
+                    panel.load_iframe()
             else:
                 accordion = pn.Accordion(*tabs, active=[0], width_policy="max", height_policy="auto")
+                EphysCuration.bind_lazy_to_accordion(accordion, tabs)
                 self.content_panel.objects = [accordion]
         else:
             self.content_panel.objects = [pn.pane.Markdown("*No metrics found*")]
