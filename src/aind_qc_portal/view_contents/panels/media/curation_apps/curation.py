@@ -245,6 +245,7 @@ class EphysCuration(PyComponent):
         self.curation_values = curation_values or [data]
         self.curation_history = curation_history or {}
         self.data = self.curation_values[-1] if self.curation_values else data
+        self._clear_flag = False  # flag used for clearing curation data
         self.iframe_component = None
         self._init_panel_objects()
 
@@ -261,6 +262,8 @@ class EphysCuration(PyComponent):
         self.param.watch(self._on_curation_selection_change, "selected_curation_index")
         self.send_button = pn.widgets.Button(name="Send curation", button_type="primary", sizing_mode="stretch_width")
         self.send_button.on_click(self._send_curation_to_iframe)
+        self.clear_button = pn.widgets.Button(name="Clear curation", button_type="primary", sizing_mode="stretch_width")
+        self.clear_button.on_click(self._clear_curation)
 
         self.metadata_pane = pn.pane.Markdown("", sizing_mode="stretch_width")
         self._update_metadata_display()
@@ -286,6 +289,7 @@ class EphysCuration(PyComponent):
                 self.metadata_pane,
                 self.json_editor,
                 self.send_button,
+                self.clear_button,
                 self.ephys_sender,
                 self.ephys_listener,
                 max_width=300,
@@ -381,7 +385,7 @@ class EphysCuration(PyComponent):
         """Build a curation-data postMessage payload and push it into the sender."""
         identifier = self.identifier
 
-        if len(self.data) == 0:
+        if len(self.data) == 0 or self._clear_flag:
             curation_data = {}
         else:
             curation_data = self.data
@@ -392,12 +396,21 @@ class EphysCuration(PyComponent):
             "data": curation_data,
             "_nonce": str(uuid4()),  # ensures the JSON is always unique
         }
-        options = list(self.curation_dropdown.options)
-        curation_entry = options[self.selected_curation_index]
-        print(f"EphysCuration: Sending curation data {curation_entry} to iframe (identifier: {identifier})")
+        if len(curation_data) == 0:
+            print(f"EphysCuration: Sending empty curation data to iframe (identifier: {identifier})")
+        else:
+            options = list(self.curation_dropdown.options)
+            curation_entry = options[self.selected_curation_index]
+            print(f"EphysCuration: Sending curation data {curation_entry} to iframe (identifier: {identifier})")
 
         # Append a unique counter so the param change always fires
         self.ephys_sender.message_json = json.dumps(envelope)
+
+    def _clear_curation(self, event):
+        """Clear the current curation data."""
+        self._clear_flag = True
+        self._send_curation_to_iframe(event)
+        self._clear_flag = False
 
     def __panel__(self):
         """Return the panel representation of this component"""
