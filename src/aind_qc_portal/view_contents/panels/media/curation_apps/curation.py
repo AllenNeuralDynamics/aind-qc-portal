@@ -263,6 +263,13 @@ class EphysCuration(PyComponent):
         self.send_button = pn.widgets.Button(name="Send curation", button_type="primary", sizing_mode="stretch_width")
         self.send_button.on_click(self._send_curation_to_iframe)
 
+        self.transient_warning = pn.pane.Alert(
+            "**Warning:** the ephys GUI pane is transient — it will be reset if you change to a different metric. "
+            "Save any changes to the curation before moving on.",
+            alert_type="warning",
+            sizing_mode="stretch_width",
+        )
+
         self.metadata_pane = pn.pane.Markdown("", sizing_mode="stretch_width")
         self._update_metadata_display()
 
@@ -281,6 +288,7 @@ class EphysCuration(PyComponent):
                 self.metadata_pane,
                 self.json_editor,
                 self.send_button,
+                self.transient_warning,
                 self.ephys_sender,
                 self.ephys_listener,
                 max_width=300,
