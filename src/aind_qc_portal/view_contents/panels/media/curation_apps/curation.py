@@ -246,6 +246,7 @@ class EphysCuration(PyComponent):
         self.curation_history = curation_history or {}
         self.data = self.curation_values[-1] if self.curation_values else data
         self.iframe_component = None
+        self._iframe_loaded = False
         self._init_panel_objects()
 
     def _init_panel_objects(self):
@@ -265,16 +266,10 @@ class EphysCuration(PyComponent):
         self.metadata_pane = pn.pane.Markdown("", sizing_mode="stretch_width")
         self._update_metadata_display()
 
-        processed_url = self._process_ephys_url(self.reference)
-        print(f"EphysCuration: Processed ephys GUI URL: {processed_url}")
-        self.iframe_component = pn.pane.HTML(
-            f'<iframe id="iframe-0000" src="{processed_url}" '
-            f'style="width:100%;height:100%;border: none;" '
-            f'allow="cross-origin-isolated"></iframe>',
+        self.iframe_container = pn.Column(
+            self._iframe_placeholder(),
             sizing_mode="stretch_both",
-            stylesheets=["iframe { min-width: 60vw; min-height: 50vh; }"],
         )
-        fullscreen_iframe = Fullscreen(self.iframe_component)
 
         self.ephys_sender = EphysPostMessageSender()
         self.ephys_listener = EphysCurationListener(identifier=self.identifier)
@@ -290,10 +285,81 @@ class EphysCuration(PyComponent):
                 self.ephys_listener,
                 max_width=300,
             ),
-            pn.Column(
-                fullscreen_iframe,
-            ),
+            self.iframe_container,
         )
+
+    @staticmethod
+    def _iframe_placeholder():
+        """Lightweight stand-in shown when the iframe is not mounted."""
+        return pn.pane.Markdown(
+            "*Ephys GUI not loaded — expand this panel to load it.*",
+            sizing_mode="stretch_width",
+        )
+
+    def load_iframe(self):
+        """Construct and mount the iframe. No-op if already loaded."""
+        if self._iframe_loaded:
+            return
+        processed_url = self._process_ephys_url(self.reference)
+        print(f"EphysCuration: Loading iframe (identifier: {self.identifier})")
+        self.iframe_component = pn.pane.HTML(
+            f'<iframe id="iframe-{self.identifier}" src="{processed_url}" '
+            f'style="width:100%;height:100%;border: none;" '
+            f'allow="cross-origin-isolated"></iframe>',
+            sizing_mode="stretch_both",
+            stylesheets=["iframe { min-width: 60vw; min-height: 50vh; }"],
+        )
+        self.iframe_container.objects = [Fullscreen(self.iframe_component)]
+        self._iframe_loaded = True
+
+    def unload_iframe(self):
+        """Remove the iframe from the DOM to free browser memory."""
+        if not self._iframe_loaded:
+            return
+        print(f"EphysCuration: Unloading iframe (identifier: {self.identifier})")
+        self.iframe_component = None
+        self.iframe_container.objects = [self._iframe_placeholder()]
+        self._iframe_loaded = False
+
+    @classmethod
+    def bind_lazy_to_accordion(cls, accordion, tabs):
+        """Wire an accordion's active state to load/unload iframes on demand.
+
+        Why: each iframe boots a full ephys GUI app; rendering them all at once
+        can OOM the browser when an asset has many probes.
+
+        Parameters
+        ----------
+        accordion : pn.Accordion
+            The accordion whose ``active`` param will be watched.
+        tabs : list of (name, panel) tuples
+            The accordion's children, in order. Panels exposing a
+            ``curation_panel`` attribute of type ``EphysCuration`` are managed;
+            others are ignored.
+        """
+        ephys_by_index = {
+            idx: tab.curation_panel
+            for idx, (_, tab) in enumerate(tabs)
+            if isinstance(getattr(tab, "curation_panel", None), cls)
+        }
+        if not ephys_by_index:
+            return
+
+        def _on_active_change(event):
+            new_active = set(event.new or [])
+            old_active = set(event.old or [])
+            for idx in new_active - old_active:
+                if idx in ephys_by_index:
+                    ephys_by_index[idx].load_iframe()
+            for idx in old_active - new_active:
+                if idx in ephys_by_index:
+                    ephys_by_index[idx].unload_iframe()
+
+        accordion.param.watch(_on_active_change, "active")
+
+        for idx in accordion.active or []:
+            if idx in ephys_by_index:
+                ephys_by_index[idx].load_iframe()
 
     def _build_curation_options(self):
         """Build dropdown options from curation history"""
@@ -363,7 +429,7 @@ class EphysCuration(PyComponent):
             processed = processed.replace(
                 "https://ephys.allenneuraldynamics.org", f"http://localhost:{EPHYS_LOCALPORT}"
             )
-        processed += f"&identifier={self.identifier}"
+        processed += f"&identifier={self.identifier}&session={self.prefix}"
         print(f"EphysCuration: Decoded ephys GUI URL: {processed}")
 
         if "{derived_asset_location}" in processed:
