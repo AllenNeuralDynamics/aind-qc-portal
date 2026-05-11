@@ -346,6 +346,7 @@ class EphysCuration(PyComponent):
             return
 
         def _on_active_change(event):
+            """Inline callback to load/unload iframes based on accordion active state changes."""
             new_active = set(event.new or [])
             old_active = set(event.old or [])
             for idx in new_active - old_active:
