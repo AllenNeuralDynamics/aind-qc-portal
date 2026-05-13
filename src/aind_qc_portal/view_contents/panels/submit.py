@@ -49,10 +49,17 @@ class SubmitPanel(PyComponent):
         # Button row
         button_row = pn.Row(self.upload_button, self.clear_button)
 
-        # Create modal with all content
-        self.modal = pn.layout.Modal(
+        # Scrollable content area (header + tabulator)
+        self.scrollable_content = pn.Column(
             self.modal_header,
             self.modal_tabulator,
+            scroll=True,
+            max_height=500,
+        )
+
+        # Create modal with all content
+        self.modal = pn.layout.Modal(
+            self.scrollable_content,
             self.status_pane,
             button_row,
             name="Review Changes",
@@ -116,7 +123,7 @@ class SubmitPanel(PyComponent):
             preview_df,
             disabled=True,
             show_index=False,
-            height=800,
+            height=400,
             min_width=1000,
             hidden_columns=["has_changes"],
             titles={
