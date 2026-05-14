@@ -43,6 +43,17 @@ class UploadMetadataHandler(RequestHandler):
 class GetSignedReferenceHandler(RequestHandler):
     """Request handler for returning a pre-signed S3 URL for a validated metric reference"""
 
+    def set_default_headers(self):
+        """Set permissive CORS headers for public access."""
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+    def options(self, asset_name):
+        """Handle CORS preflight requests."""
+        self.set_status(204)
+        self.finish()
+
     def get(self, asset_name):
         """Handle GET requests to validate and sign a metric reference"""
         reference = self.get_argument("reference", None)
