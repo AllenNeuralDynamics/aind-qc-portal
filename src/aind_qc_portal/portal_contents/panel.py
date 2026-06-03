@@ -132,7 +132,7 @@ class Portal(PyComponent):
             pn.pane.Alert(
                 "This page is deprecated, it will redirect to data.allenneuraldynamics.org in the near future.",
                 alert_type="warning",
-            )
+            ),
             pn.Row(
                 pn.Spacer(),
                 self.gear_button,
