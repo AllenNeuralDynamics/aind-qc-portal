@@ -15,8 +15,6 @@ from aind_qc_portal.view_contents.panel import QCPanel
 alt.data_transformers.disable_max_rows()
 pn.extension("vega", "ace", "jsoneditor", "mathjax", "modal", "tabulator")
 
-format_css_background()
-
 
 # State sync
 class Settings(param.Parameterized):
