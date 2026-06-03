@@ -129,6 +129,10 @@ class Portal(PyComponent):
 
         # Overlay gear button in top right
         self.panel = pn.Column(
+            pn.pane.Alert(
+                "This page is deprecated, it will redirect to data.allenneuraldynamics.org in the near future.",
+                alert_type="warning",
+            )
             pn.Row(
                 pn.Spacer(),
                 self.gear_button,
