@@ -174,7 +174,8 @@ class SubmitPanel(PyComponent):
     def _redirect_to_login(self):
         """Redirect users to the login page"""
         print("Redirecting to login page...")
-        self.hidden_html.object = f"<script>window.location.href = '/login?next={pn.state.location.href}';</script>"
+        path = pn.state.location.pathname + pn.state.location.search
+        self.hidden_html.object = f"<script>window.location.href = '/login?next={path}';</script>"
 
     def _submit_changes(self, *event):
         """Login or submit changes to the QC data"""
