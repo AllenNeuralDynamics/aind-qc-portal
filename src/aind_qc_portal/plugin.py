@@ -29,10 +29,12 @@ ALLOWED_HOST_SUFFIXES = (
     ".allenneuraldynamics.org",
     ".allenneuraldynamics-test.org",
 )
-ALLOWED_CORS_SUFFIXES = ALLOWED_HOST_SUFFIXES
+ALLOWED_CORS_SUFFIXES = (".allenneuraldynamics.org",)
+CORS_MAX_AGE_SECONDS = 3600
 
 _ISSUED_TOKENS: dict[str, dict] = {}
 _PENDING_UPSERTS: dict[tuple[str, str, str], dict] = {}
+_PROCESS_STARTED_AT: float = time.time()
 
 
 def _now() -> float:
@@ -209,19 +211,38 @@ class GetSignedReferenceHandler(RequestHandler):
         self.write({"url": url})
 
 
+def _origin_is_allowed(origin: str) -> bool:
+    """Return True if `origin` is a scheme://host[:port] on an allowed AIND host."""
+    if not origin:
+        return False
+    parsed = urlparse(origin)
+    if parsed.scheme != "https":
+        return False
+    host = (parsed.hostname or "").lower()
+    if not host:
+        return False
+    return any(host == suffix.lstrip(".") or host.endswith(suffix) for suffix in ALLOWED_CORS_SUFFIXES)
+
+
 class _CrossOriginMixin:
-    """Mixin that applies permissive CORS for trusted AIND subdomains."""
+    """Mixin that applies CORS headers for trusted AIND subdomains."""
 
     def set_default_headers(self):
         origin = self.request.headers.get("Origin", "")
-        if origin and any(origin.endswith(suffix) for suffix in ALLOWED_CORS_SUFFIXES):
+        if _origin_is_allowed(origin):
             self.set_header("Access-Control-Allow-Origin", origin)
             self.set_header("Access-Control-Allow-Credentials", "true")
+            self.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+            self.set_header("Access-Control-Max-Age", str(CORS_MAX_AGE_SECONDS))
         self.set_header("Vary", "Origin")
-        self.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        self.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
     def options(self, *args, **kwargs):
+        origin = self.request.headers.get("Origin", "")
+        if not _origin_is_allowed(origin):
+            self.set_status(403)
+            self.finish()
+            return
         self.set_status(204)
         self.finish()
 
@@ -298,7 +319,8 @@ class _UpsertMetadataHandler(_CrossOriginMixin, RequestHandler):
 
         token_info = _ISSUED_TOKENS.get(token)
         if not token_info:
-            raise HTTPError(401, "Invalid or expired auth-token.")
+            self._write_token_invalid()
+            return
 
         body_hash, parsed_body = _canonical_body(self.request.body)
 
@@ -325,15 +347,22 @@ class _UpsertMetadataHandler(_CrossOriginMixin, RequestHandler):
             earliest_expiry = min(
                 _ISSUED_TOKENS[t]["issued_at"] for t in pending["submissions"].values()
             ) + AUTH_TOKEN_TTL_SECONDS
+            other_pending_hashes = [
+                h
+                for (v, rid, h) in _PENDING_UPSERTS
+                if v == self.VERSION and rid == str(record_id) and h != body_hash
+            ]
             self.set_header("Content-Type", "application/json")
-            self.write(
-                {
-                    "status": "pending",
-                    "submissions": len(pending["submissions"]),
-                    "required": REQUIRED_DISTINCT_USERS,
-                    "expires_at": int(earliest_expiry),
-                }
-            )
+            response = {
+                "status": "pending",
+                "submissions": len(pending["submissions"]),
+                "required": REQUIRED_DISTINCT_USERS,
+                "expires_at": int(earliest_expiry),
+                "body_hash": body_hash,
+            }
+            if other_pending_hashes:
+                response["other_pending_hashes"] = other_pending_hashes
+            self.write(response)
             return
 
         client = MetadataDbClient(host=DOCDB_HOST, version=self.VERSION)
@@ -367,6 +396,28 @@ class _UpsertMetadataHandler(_CrossOriginMixin, RequestHandler):
         )
 
 
+    def _write_token_invalid(self):
+        """Send a structured 401 distinguishing \"likely restart\" from natural expiry."""
+        likely_restart = (_now() - _PROCESS_STARTED_AT) < AUTH_TOKEN_TTL_SECONDS
+        detail = "The auth-token is unknown or has expired."
+        if likely_restart:
+            detail += (
+                " The portal may have been restarted, which invalidates all"
+                " outstanding tokens. Please re-validate."
+            )
+        self.set_status(401)
+        self.set_header("Content-Type", "application/json")
+        self.set_header("WWW-Authenticate", 'Bearer error="invalid_token"')
+        self.write(
+            {
+                "status": "error",
+                "error": "invalid_token",
+                "likely_restart": likely_restart,
+                "detail": detail,
+            }
+        )
+
+
 class UpsertMetadataV1Handler(_UpsertMetadataHandler):
     """POST /metadata/v1?auth-token=<token>"""
 
@@ -379,12 +430,87 @@ class UpsertMetadataV2Handler(_UpsertMetadataHandler):
     VERSION = "v2"
 
 
+def _pending_entry(version: str, record_id: str, body_hash: str, entry: dict) -> dict:
+    """Public-facing representation of a pending upsert."""
+    return {
+        "version": version,
+        "id": record_id,
+        "body_hash": body_hash,
+        "submissions": len(entry["submissions"]),
+        "required": REQUIRED_DISTINCT_USERS,
+        "body": entry["body"],
+    }
+
+
+class _PendingMetadataHandler(_CrossOriginMixin, RequestHandler):
+    """GET /metadata/v{1,2}/pending?id=<_id>
+
+    Returns the body hashes, submission counts, and full payloads of any
+    in-flight pending upserts for `(VERSION, _id)`. The full body is exposed
+    publicly so reviewers can inspect proposed migrations before approving.
+    """
+
+    VERSION: str = ""
+
+    def get(self):
+        record_id = self.get_argument("id", None)
+        if not record_id:
+            raise HTTPError(400, "Missing required query parameter: id")
+        _prune_expired_tokens()
+        pending = [
+            _pending_entry(version, _id, body_hash, entry)
+            for (version, _id, body_hash), entry in _PENDING_UPSERTS.items()
+            if version == self.VERSION and _id == str(record_id)
+        ]
+        self.set_header("Content-Type", "application/json")
+        self.write(
+            {
+                "id": str(record_id),
+                "version": self.VERSION,
+                "pending": pending,
+            }
+        )
+
+
+class PendingMetadataV1Handler(_PendingMetadataHandler):
+    """GET /metadata/v1/pending?id=<_id>"""
+
+    VERSION = "v1"
+
+
+class PendingMetadataV2Handler(_PendingMetadataHandler):
+    """GET /metadata/v2/pending?id=<_id>"""
+
+    VERSION = "v2"
+
+
+class PendingMetadataAllHandler(_CrossOriginMixin, RequestHandler):
+    """GET /metadata/pending
+
+    Lists every in-flight pending upsert across both DocDB versions. Each
+    entry includes the full proposed body so a reviewer page can render the
+    diff before approving. Public — no auth-token required.
+    """
+
+    def get(self):
+        _prune_expired_tokens()
+        pending = [
+            _pending_entry(version, _id, body_hash, entry)
+            for (version, _id, body_hash), entry in _PENDING_UPSERTS.items()
+        ]
+        self.set_header("Content-Type", "application/json")
+        self.write({"pending": pending})
+
+
 ROUTES = [
     ("/upload_metadata", UploadMetadataHandler, {}),
     (r"/get-signed-reference/([^/]+)", GetSignedReferenceHandler, {}),
     ("/metadata/token", IssueMetadataTokenHandler, {}),
     ("/metadata/v1", UpsertMetadataV1Handler, {}),
     ("/metadata/v2", UpsertMetadataV2Handler, {}),
+    ("/metadata/v1/pending", PendingMetadataV1Handler, {}),
+    ("/metadata/v2/pending", PendingMetadataV2Handler, {}),
+    ("/metadata/pending", PendingMetadataAllHandler, {}),
 ]
 
 # Export ROUTES for Panel server to discover

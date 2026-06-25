@@ -230,6 +230,8 @@ class TestUpsertMetadataHandler(AsyncHTTPTestCase):
         self.assertEqual(payload["status"], "pending")
         self.assertEqual(payload["submissions"], 1)
         self.assertEqual(payload["required"], plugin.REQUIRED_DISTINCT_USERS)
+        self.assertIn("body_hash", payload)
+        self.assertNotIn("other_pending_hashes", payload)
         info = plugin._ISSUED_TOKENS[token]
         self.assertEqual(payload["expires_at"], int(info["issued_at"] + plugin.AUTH_TOKEN_TTL_SECONDS))
         self.assertEqual(len(plugin._PENDING_UPSERTS), 1)
@@ -402,6 +404,262 @@ class TestUpsertMetadataHandler(AsyncHTTPTestCase):
         response = self._post("/metadata/v2", {"_id": "abc"}, token)
         self.assertEqual(response.code, 401)
         self.assertNotIn(token, plugin._ISSUED_TOKENS)
+
+    def test_invalid_token_body_indicates_likely_restart(self):
+        original = plugin._PROCESS_STARTED_AT
+        plugin._PROCESS_STARTED_AT = plugin._now()
+        try:
+            response = self._post("/metadata/v2", {"_id": "abc"}, "bogus-token")
+        finally:
+            plugin._PROCESS_STARTED_AT = original
+        self.assertEqual(response.code, 401)
+        self.assertIn("invalid_token", response.headers.get("WWW-Authenticate", ""))
+        body = json.loads(response.body)
+        self.assertEqual(body["error"], "invalid_token")
+        self.assertTrue(body["likely_restart"])
+        self.assertIn("restart", body["detail"].lower())
+
+    def test_invalid_token_body_no_restart_after_full_ttl(self):
+        original = plugin._PROCESS_STARTED_AT
+        plugin._PROCESS_STARTED_AT = plugin._now() - plugin.AUTH_TOKEN_TTL_SECONDS - 1
+        try:
+            response = self._post("/metadata/v2", {"_id": "abc"}, "bogus-token")
+        finally:
+            plugin._PROCESS_STARTED_AT = original
+        self.assertEqual(response.code, 401)
+        body = json.loads(response.body)
+        self.assertFalse(body["likely_restart"])
+
+    def test_pending_response_includes_other_pending_hashes(self):
+        t1 = self._issue("alice", "abc")
+        t2 = self._issue("bob", "abc")
+        r1 = self._post("/metadata/v2", {"_id": "abc", "name": "x"}, t1)
+        first_hash = json.loads(r1.body)["body_hash"]
+        r2 = self._post("/metadata/v2", {"_id": "abc", "name": "y"}, t2)
+        self.assertEqual(r2.code, 200)
+        payload = json.loads(r2.body)
+        self.assertEqual(payload["status"], "pending")
+        self.assertIn("other_pending_hashes", payload)
+        self.assertIn(first_hash, payload["other_pending_hashes"])
+        self.assertNotIn(payload["body_hash"], payload["other_pending_hashes"])
+
+
+class TestPendingMetadataHandler(AsyncHTTPTestCase):
+    """Tests for GET /metadata/v{1,2}/pending"""
+
+    def get_app(self) -> Application:
+        return _make_app()
+
+    def setUp(self):
+        super().setUp()
+        _reset_state()
+
+    def _issue(self, user: str, record_id: str) -> str:
+        token = "tok-" + user + "-" + record_id
+        plugin._ISSUED_TOKENS[token] = {
+            "user": user,
+            "id": record_id,
+            "issued_at": plugin._now(),
+        }
+        return token
+
+    def test_missing_id(self):
+        response = self.fetch("/metadata/v2/pending")
+        self.assertEqual(response.code, 400)
+
+    def test_no_pending_returns_empty_list(self):
+        response = self.fetch("/metadata/v2/pending?id=abc")
+        self.assertEqual(response.code, 200)
+        body = json.loads(response.body)
+        self.assertEqual(body["id"], "abc")
+        self.assertEqual(body["version"], "v2")
+        self.assertEqual(body["pending"], [])
+
+    def test_lists_pending_for_matching_version_and_id(self):
+        t1 = self._issue("alice", "abc")
+        t2 = self._issue("bob", "abc")
+        self.fetch(
+            "/metadata/v2?" + urlencode({"auth-token": t1}),
+            method="POST",
+            body=json.dumps({"_id": "abc", "name": "x"}),
+            headers={"Content-Type": "application/json"},
+        )
+        self.fetch(
+            "/metadata/v2?" + urlencode({"auth-token": t2}),
+            method="POST",
+            body=json.dumps({"_id": "abc", "name": "y"}),
+            headers={"Content-Type": "application/json"},
+        )
+        response = self.fetch("/metadata/v2/pending?id=abc")
+        self.assertEqual(response.code, 200)
+        body = json.loads(response.body)
+        self.assertEqual(len(body["pending"]), 2)
+        for entry in body["pending"]:
+            self.assertIn("body_hash", entry)
+            self.assertEqual(entry["submissions"], 1)
+            self.assertEqual(entry["version"], "v2")
+            self.assertEqual(entry["id"], "abc")
+            self.assertEqual(entry["required"], plugin.REQUIRED_DISTINCT_USERS)
+            self.assertEqual(entry["body"]["_id"], "abc")
+            self.assertIn(entry["body"]["name"], {"x", "y"})
+
+    def test_does_not_leak_other_version_or_other_id(self):
+        t = self._issue("alice", "abc")
+        self.fetch(
+            "/metadata/v1?" + urlencode({"auth-token": t}),
+            method="POST",
+            body=json.dumps({"_id": "abc"}),
+            headers={"Content-Type": "application/json"},
+        )
+        response = self.fetch("/metadata/v2/pending?id=abc")
+        self.assertEqual(json.loads(response.body)["pending"], [])
+        response = self.fetch("/metadata/v1/pending?id=other")
+        self.assertEqual(json.loads(response.body)["pending"], [])
+
+
+class TestPendingMetadataAllHandler(AsyncHTTPTestCase):
+    """Tests for GET /metadata/pending (combined across both versions)."""
+
+    def get_app(self) -> Application:
+        return _make_app()
+
+    def setUp(self):
+        super().setUp()
+        _reset_state()
+
+    def _issue(self, user: str, record_id: str) -> str:
+        token = "tok-" + user + "-" + record_id
+        plugin._ISSUED_TOKENS[token] = {
+            "user": user,
+            "id": record_id,
+            "issued_at": plugin._now(),
+        }
+        return token
+
+    def test_no_pending_returns_empty_list(self):
+        response = self.fetch("/metadata/pending")
+        self.assertEqual(response.code, 200)
+        body = json.loads(response.body)
+        self.assertEqual(body, {"pending": []})
+
+    def test_lists_pending_across_versions_with_bodies(self):
+        t1 = self._issue("alice", "abc")
+        t2 = self._issue("bob", "xyz")
+        self.fetch(
+            "/metadata/v1?" + urlencode({"auth-token": t1}),
+            method="POST",
+            body=json.dumps({"_id": "abc", "name": "v1-record"}),
+            headers={"Content-Type": "application/json"},
+        )
+        self.fetch(
+            "/metadata/v2?" + urlencode({"auth-token": t2}),
+            method="POST",
+            body=json.dumps({"_id": "xyz", "name": "v2-record"}),
+            headers={"Content-Type": "application/json"},
+        )
+        response = self.fetch("/metadata/pending")
+        self.assertEqual(response.code, 200)
+        body = json.loads(response.body)
+        self.assertEqual(len(body["pending"]), 2)
+        by_id = {entry["id"]: entry for entry in body["pending"]}
+        self.assertEqual(by_id["abc"]["version"], "v1")
+        self.assertEqual(by_id["abc"]["body"]["name"], "v1-record")
+        self.assertEqual(by_id["abc"]["submissions"], 1)
+        self.assertEqual(by_id["xyz"]["version"], "v2")
+        self.assertEqual(by_id["xyz"]["body"]["name"], "v2-record")
+
+    def test_excludes_completed_upserts(self):
+        t1 = self._issue("alice", "abc")
+        t2 = self._issue("bob", "abc")
+        body = {"_id": "abc", "name": "x"}
+        self.fetch(
+            "/metadata/v2?" + urlencode({"auth-token": t1}),
+            method="POST",
+            body=json.dumps(body),
+            headers={"Content-Type": "application/json"},
+        )
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"ok": True}
+        mock_client.upsert_one_docdb_record.return_value = mock_response
+        with patch.object(plugin, "MetadataDbClient", return_value=mock_client):
+            self.fetch(
+                "/metadata/v2?" + urlencode({"auth-token": t2}),
+                method="POST",
+                body=json.dumps(body),
+                headers={"Content-Type": "application/json"},
+            )
+        response = self.fetch("/metadata/pending")
+        self.assertEqual(json.loads(response.body)["pending"], [])
+
+
+class TestCorsHeaders(AsyncHTTPTestCase):
+    """Tests for CORS handling on /metadata/* endpoints."""
+
+    def get_app(self) -> Application:
+        return _make_app()
+
+    def setUp(self):
+        super().setUp()
+        _reset_state()
+
+    def test_allowed_origin_gets_cors_headers(self):
+        origin = "https://data.allenneuraldynamics.org"
+        response = self.fetch(
+            "/metadata/v2",
+            method="OPTIONS",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+            allow_nonstandard_methods=True,
+        )
+        self.assertEqual(response.code, 204)
+        self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), origin)
+        self.assertEqual(response.headers.get("Access-Control-Allow-Credentials"), "true")
+        self.assertIn("POST", response.headers.get("Access-Control-Allow-Methods", ""))
+        self.assertIn("Content-Type", response.headers.get("Access-Control-Allow-Headers", ""))
+
+    def test_test_domain_origin_is_rejected_for_cors(self):
+        response = self.fetch(
+            "/metadata/v2",
+            method="OPTIONS",
+            headers={
+                "Origin": "https://data.allenneuraldynamics-test.org",
+                "Access-Control-Request-Method": "POST",
+            },
+            allow_nonstandard_methods=True,
+        )
+        self.assertEqual(response.code, 403)
+        self.assertNotIn("Access-Control-Allow-Origin", response.headers)
+
+    def test_disallowed_origin_no_cors_header(self):
+        response = self.fetch(
+            "/metadata/v2",
+            method="OPTIONS",
+            headers={
+                "Origin": "https://evil.example",
+                "Access-Control-Request-Method": "POST",
+            },
+            allow_nonstandard_methods=True,
+        )
+        self.assertEqual(response.code, 403)
+        self.assertNotIn("Access-Control-Allow-Origin", response.headers)
+
+    def test_http_origin_is_rejected(self):
+        response = self.fetch(
+            "/metadata/v2",
+            method="OPTIONS",
+            headers={
+                "Origin": "http://qc.allenneuraldynamics.org",
+                "Access-Control-Request-Method": "POST",
+            },
+            allow_nonstandard_methods=True,
+        )
+        self.assertEqual(response.code, 403)
+        self.assertNotIn("Access-Control-Allow-Origin", response.headers)
 
 
 class TestCanonicalBody(unittest.TestCase):
