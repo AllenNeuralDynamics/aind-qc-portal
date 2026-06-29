@@ -2,9 +2,9 @@
 
 The [QC Portal](https://qc.allenneuraldynamics.org/) is a browser application to view and interact with the AIND QC metadata and to annotate ``PENDING`` metrics with qualitative evaluations. The portal is currently maintained by Dan Birman in scientific computing, reach out with any questions or concerns.
 
-The portal works by pulling the metadata from the Document Database (DocDB) and pulling reference figures from Code Ocean (CO) data assets, or from storage in Kachery Cloud.
+The portal works by pulling the metadata from the Document Database (DocDB) and pulling reference figures from Code Ocean (CO) data assets.
 
-The portal allows users to annotate `PENDING` metrics. Logged in users can modify the value, state, and notes on metrics. When you make changes the **submit** button will be enabled. Submitting pushes your updates to DocDB along with a timestamp and your name.
+The portal allows users to annotate `PENDING` metrics. Logged in users can modify the value, state, and notes on metrics. When you make changes the **review** button will be enabled. Reviewing and submitting pushes your updates to DocDB along with a timestamp and your name.
 
 [General documentation about the QC metadata](https://aind-data-schema.readthedocs.io/en/latest/quality_control.html).
 
@@ -148,143 +148,9 @@ Make sure to follow the standard instructions for [creating derived assets](http
 
 Done! In the preferred workflow no additional permissions are required. Your QC data will appear in the portal once they are picked up by the indexer.
 
-### Alternate workflow
-
-Use the alternate workflow only if you are **not generating a data asset** and therefore need to push your QC metadata back to an already existing data asset. You will push your `QCEvaluation` objects directly to DocDB and you will need to push your figures to `kachery-cloud`, an external repository that generates permanent links to uploaded files. Before using the alternate workflow, please consult with the Scientific Computing team.
-
-Two things need to be setup in your capsule:
-
-1. You'll need to run `pip install kachery-cloud` and `pip install aind-data-access-api[docdb]` as part of your environment setup.
-2. In your capsule settings attach the `aind-codeocean-power-user` role. If you don't have access to this role, ask someone in Scientific Computing to attach it for you.
-
-#### (1) Acquire your DocDB _id using your data asset's name
-
-To upload directly to DocDB you'll need to know your asset's `_id`. You can get it by adding this code to your capsule and calling `query_docdb_id(asset_name)`. Note that this *is not the data asset id in Code Ocean*!
-
-```{python}
-from aind_data_access_api.document_db import MetadataDbClient
-
-def query_docdb_id(asset_name: str):
-    """
-    Returns docdb_id for asset_name.
-    Returns empty string if asset is not found.
-    """
-
-    # Resolve DocDB id of data asset
-    API_GATEWAY_HOST = "api.allenneuraldynamics.org"
-    DATABASE = "metadata_index"
-    COLLECTION = "data_assets"
-
-    docdb_api_client = MetadataDbClient(
-    host=API_GATEWAY_HOST,
-    database=DATABASE,
-    collection=COLLECTION,
-    )
-
-    response = docdb_api_client.retrieve_docdb_records(
-    filter_query={"name": asset_name},
-    projection={"_id": 1},
-    )
-
-    if len(response) == 0:
-        return ""
-    docdb_id = response[0]["_id"]
-    return docdb_id
-```
-
-#### (2) Generate your QC data
-
-Generate your metrics and reference figures. Put your figures in folders in the results, e.g. `results/figures/` and store the filepaths.
-
-#### (3) Push figures to `kachery-cloud`
-
-Your figures should already exist in folders in your `results/`. Then, in your capsule code, pull the Kachery Cloud credentials using this function:
-
-```
-import boto3
-
-def get_kachery_secrets():
-    """Obtains the three kachery-cloud environment keys/secrets```
-    secret_name = "/aind/prod/kachery/credentials"
-    region_name = "us-west-2"
-
-    # Create a Secrets Manager client
-    session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=region_name
-    )
-
-    try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
-    except ClientError as e:
-        # For a list of exceptions thrown, see
-        # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
-        raise e
-
-    secret = get_secret_value_response['SecretString']
-    
-    kachery_secrets = json.loads(secret)
-
-    os.environ['KACHERY_ZONE'] = kachery_secrets['KACHERY_ZONE']
-    os.environ['KACHERY_CLOUD_CLIENT_ID'] = kachery_secrets['KACHERY_CLOUD_CLIENT_ID']
-    os.environ['KACHERY_CLOUD_PRIVATE_KEY'] = kachery_secrets['KACHERY_CLOUD_PRIVATE_KEY']
-
-get_kachery_secrets()
-```
-
-The credentials are now stored as enviroment keys.
-
-Each of your figures should then be uploaded using the `store_file` function:
-
-```
-import kachery_cloud as kcl
-
-file_path = "your_file_path.ext"
-uri = kcl.store_file(file_path, label=file_path)
-```
-
-#### (4) Generate your QCEvaluation objects
-
-Generate your `QCEvaluation` objects now. Make sure to set the `QCMetric.reference` field of each metric to the returned uri `QCMetric.reference = uri` for that figure. Each URI is a unique hashed string that will allow the portal to recover your file. Make sure to include the `label` parameter or we won't be able to identify your filetype in the portal.
-
-Store all your `QCEvaluation` objects in a list.
-
-#### (5) Push metadata to DocDB
-
-Run the following code snippet. You can pass all your evaluations as a list or pass them one at a time:
-
-```{python}
-session = boto3.Session()
-credentials = session.get_credentials()
-host = "api.allenneuraldynamics.org"
-
-auth = AWSRequestsAuth(
-aws_access_key=credentials.access_key,
-aws_secret_access_key=credentials.secret_key,
-aws_token=credentials.token,
-aws_host="api.allenneuraldynamics.org",
-aws_region='us-west-2',
-aws_service='execute-api'
-)
-url = f"https://{host}/v1/add_qc_evaluation"
-post_request_content = {"data_asset_id": docdb_id,
-                        "qc_evaluation": qc_eval.model_dump(mode='json')}
-response = requests.post(url=url, auth=auth, 
-                        json=post_request_content)
-
-if response.status_code != 200:
-    print(response.status_code)
-    print(response.text)
-```
-
-If you get errors, contact Dan for help debugging.
-
 ## Development
 
-Panel launches two apps `view` and `portal`. The entrypoints for each app `view.py` and `portal.py` are minimal startup files, the actual contents of each app are stored in the *_contents folders. Each app follows the same organization for content files:
+Panel launches the `view` app. The entrypoints for `view.py` are minimal startup files, the actual contents of each app are stored in the *_contents folders.
 
 `panel.py` - the actual QCPanel and Portal classes that aggregate all the different Panels into a user interface
 `data/database.py` - a class to handle interacting with DocDB 
@@ -302,7 +168,6 @@ The following environment variables are used by the QC Portal:
 |----------|-------------|---------------|-------|
 | `BYPASS_CODEOCEAN_S3` | Bypasses Code Ocean cross-account S3 access | `1` | **Required for local dev** unless you have the `AindCodeOceanBucketCrossAccountAccess` IAM role. Set to `1` to skip role assumption. |
 | `AWS_PROFILE` | AWS credentials profile to use | `dev` or `prod` | Required for accessing S3 media files in aind-open-data and the private codeocean buckets. AIND dev credentials will not work on the development branch for testing assets that have media in private buckets. |
-| `FOREST_TYPE` | zombie-squirrel back-end | `s3` | **Required** this is what allows the QC portal to quickly pull metadata about all assets on the `/portal` endpoint |
 
 #### Required for Panel Server (Docker & Production)
 
