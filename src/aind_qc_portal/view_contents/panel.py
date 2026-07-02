@@ -12,6 +12,7 @@ from aind_qc_portal.layout import OUTER_STYLE
 from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panels.header import Header
 from aind_qc_portal.view_contents.panels.metrics import Metrics
+from aind_qc_portal.view_contents.panels.notes import NotesPanel
 from aind_qc_portal.view_contents.panels.settings import Settings
 from aind_qc_portal.view_contents.panels.submit import SubmitPanel
 
@@ -45,6 +46,7 @@ class QCPanel(PyComponent):
             modalities=modalities, default_grouping=default_grouping, grouping_options=grouping_options
         )
         self.submit_panel = SubmitPanel(data=self._data)
+        self.notes_panel = NotesPanel(data=self._data)
 
         # Other panels have a dependency on settings
         self.header = Header(record=self._data.record, settings=self.settings)
@@ -57,7 +59,7 @@ class QCPanel(PyComponent):
         if self._data.dataframe.empty:
             return pn.Row(pn.HSpacer(), self.no_content, pn.HSpacer(), sizing_mode="stretch_width")
 
-        header_submit_row = pn.Row(self.header, self.submit_panel, sizing_mode="stretch_width", height=135)
+        header_submit_row = pn.Row(self.header, self.notes_panel, self.submit_panel, sizing_mode="stretch_width", height=135)
         content_row = pn.Row(
             self.metrics,
         )

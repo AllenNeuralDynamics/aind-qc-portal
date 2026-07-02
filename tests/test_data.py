@@ -18,6 +18,7 @@ from aind_data_schema.core.quality_control import (
 
 from aind_qc_portal.view_contents.data_utils import (
     apply_curation_metric_change,
+    apply_notes_change,
     apply_qc_metric_change,
     apply_status_change,
     create_curation_history_entry,
@@ -672,6 +673,42 @@ class TestSubmitFunctionality(unittest.TestCase):
         self.assertNotEqual(
             qc_dict["default_grouping"], [["modality"], ["tag_1"]], "default_grouping should NOT trigger validator fix"
         )
+
+
+class TestApplyNotesChange(unittest.TestCase):
+    """Test the apply_notes_change helper that writes notes into a record's quality_control section"""
+
+    def test_apply_notes_change_sets_notes(self):
+        """Test that apply_notes_change writes the value to quality_control.notes"""
+        record = {"quality_control": {"metrics": []}}
+        apply_notes_change(record, "These are some notes")
+        self.assertEqual(record["quality_control"]["notes"], "These are some notes")
+
+    def test_apply_notes_change_overwrites_existing(self):
+        """Test that apply_notes_change replaces any pre-existing notes value"""
+        record = {"quality_control": {"notes": "old notes", "metrics": []}}
+        apply_notes_change(record, "new notes")
+        self.assertEqual(record["quality_control"]["notes"], "new notes")
+
+    def test_apply_notes_change_creates_qc_section_if_missing(self):
+        """Test that apply_notes_change initialises quality_control if the key is absent"""
+        record = {}
+        apply_notes_change(record, "notes")
+        self.assertIn("quality_control", record)
+        self.assertEqual(record["quality_control"]["notes"], "notes")
+
+    def test_apply_notes_change_empty_string(self):
+        """Test that apply_notes_change can set notes to an empty string"""
+        record = {"quality_control": {"notes": "existing"}}
+        apply_notes_change(record, "")
+        self.assertEqual(record["quality_control"]["notes"], "")
+
+    def test_apply_notes_change_does_not_touch_other_fields(self):
+        """Test that apply_notes_change leaves other quality_control fields intact"""
+        record = {"quality_control": {"metrics": ["m1"], "status": "Pass"}}
+        apply_notes_change(record, "hello")
+        self.assertEqual(record["quality_control"]["metrics"], ["m1"])
+        self.assertEqual(record["quality_control"]["status"], "Pass")
 
 
 if __name__ == "__main__":

@@ -43,15 +43,19 @@ class SubmitPanel(PyComponent):
         # Tabulator placeholder
         self.modal_tabulator = pn.Column()
 
+        # Notes change section (only shown when notes have been edited)
+        self.notes_section_pane = pn.pane.Markdown("")
+
         # Header
         self.modal_header = pn.pane.Markdown("")
 
         # Button row
         button_row = pn.Row(self.upload_button, self.clear_button)
 
-        # Scrollable content area (header + tabulator)
+        # Scrollable content area (header + notes + tabulator)
         self.scrollable_content = pn.Column(
             self.modal_header,
+            self.notes_section_pane,
             self.modal_tabulator,
             scroll=True,
             max_height=500,
@@ -101,6 +105,21 @@ class SubmitPanel(PyComponent):
         self.upload_button.button_type = "danger"
 
         preview_df, self.final_record = self.data.get_submission_data()
+
+        # Handle notes section
+        if self.data.notes_change is not None:
+            original_notes = self.data.current_notes
+            new_notes = self.data.notes_change
+            self.notes_section_pane.object = (
+                f"### Notes Change\n\n"
+                f"**Original:** {original_notes or '*(empty)*'}\n\n"
+                f"**New:** {new_notes or '*(empty)*'}\n\n"
+                f"---"
+            )
+            self.upload_button.disabled = False
+            self.upload_button.button_type = "success"
+        else:
+            self.notes_section_pane.object = ""
 
         if preview_df.empty:
             self.modal_header.object = "## No changes to preview"
@@ -166,9 +185,10 @@ class SubmitPanel(PyComponent):
         self.modal_tabulator.clear()
         self.modal_tabulator.append(tabulator)
 
-    def _get_change_info(self, dirty: pd.DataFrame):
+    def _get_change_info(self, dirty: pd.DataFrame, notes_change=None):
         """Wrap the change count in a static text widget"""
-        self._change_info.value = f"Pending changes: {len(dirty)}"
+        notes_count = 1 if notes_change is not None else 0
+        self._change_info.value = f"Pending changes: {len(dirty) + notes_count}"
         return self._change_info
 
     def _redirect_to_login(self):
@@ -201,7 +221,7 @@ class SubmitPanel(PyComponent):
             on_click=self._submit_changes,
         )
         self._change_info = pn.widgets.StaticText(value="")
-        self.change_info = pn.bind(self._get_change_info, self.data.param.changes)
+        self.change_info = pn.bind(self._get_change_info, self.data.param.changes, self.data.param.notes_change)
 
     def __panel__(self):
         """Create and return the SubmitPanel layout"""
