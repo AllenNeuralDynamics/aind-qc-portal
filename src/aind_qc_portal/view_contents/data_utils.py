@@ -107,3 +107,15 @@ def apply_status_change(metric_obj: dict, status_change: str, evaluator: str) ->
         metric_obj["status_history"] = []
 
     metric_obj["status_history"].append(create_status_history_entry(status_change, evaluator))
+
+
+def apply_notes_change(record: dict, notes_value: str) -> None:
+    """Apply a notes change to the quality_control section of a record in-place.
+
+    Args:
+        record: The full record dict containing quality_control
+        notes_value: The new notes string
+    """
+    if "quality_control" not in record:
+        record["quality_control"] = {}
+    record["quality_control"]["notes"] = notes_value

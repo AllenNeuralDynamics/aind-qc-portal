@@ -8,6 +8,7 @@ from aind_data_schema.core.quality_control import QualityControl
 
 from aind_qc_portal.view_contents.data_utils import (
     apply_curation_metric_change,
+    apply_notes_change,
     apply_qc_metric_change,
     apply_status_change,
     decode_dict_value,
@@ -35,6 +36,7 @@ class ViewData(param.Parameterized):
     changes = param.DataFrame(
         default=pd.DataFrame(columns=["metric_name", "column_name", "value"]),
     )
+    notes_change = param.Parameter(default=None, allow_None=True)
 
     def __init__(self, asset_name: str, client: MetadataDbClient = client):
         """Initialize ViewData with asset name and metadata client"""
@@ -45,6 +47,21 @@ class ViewData(param.Parameterized):
         self._load_record()
         self._parse_record()
         self.load_changes_from_cache()
+
+    @property
+    def current_notes(self) -> str:
+        """Get the current notes from the record"""
+        if not self.record:
+            return ""
+        return self.record.get("quality_control", {}).get("notes") or ""
+
+    def submit_notes_change(self, value: str):
+        """Submit a notes change (stores in pending changes, does not modify original data)"""
+        if value == self.current_notes:
+            self.notes_change = None
+        else:
+            self.notes_change = value
+        self.save_changes_to_cache()
 
     @property
     def s3_bucket(self) -> str:
@@ -303,7 +320,10 @@ class ViewData(param.Parameterized):
         if username not in pn.state.cache:
             pn.state.cache[username] = {}
 
-        pn.state.cache[username][asset_name] = self.changes.to_dict(orient="records")
+        pn.state.cache[username][asset_name] = {
+            "changes": self.changes.to_dict(orient="records"),
+            "notes_change": self.notes_change,
+        }
 
     def load_changes_from_cache(self):
         """Load pending changes from pn.state.cache if available."""
@@ -315,7 +335,15 @@ class ViewData(param.Parameterized):
             return
 
         if username in pn.state.cache and asset_name in pn.state.cache[username]:
-            cached_changes = pn.state.cache[username][asset_name]
+            cached = pn.state.cache[username][asset_name]
+            # Handle both old format (list) and new format (dict)
+            if isinstance(cached, list):
+                cached_changes = cached
+                cached_notes = None
+            else:
+                cached_changes = cached.get("changes", [])
+                cached_notes = cached.get("notes_change", None)
+
             if cached_changes:
                 # Convert back to DataFrame and apply changes using submit_change
                 for change in cached_changes:
@@ -325,12 +353,16 @@ class ViewData(param.Parameterized):
                         decode_dict_value(change["value"]),
                     )
 
+            if cached_notes is not None:
+                self.notes_change = cached_notes
+
     def clear_changes_cache(self):
         """Clear pending changes from both DataFrame and cache."""
         username, asset_name = self._cache_key
 
-        # Clear the changes DataFrame
+        # Clear the changes DataFrame and notes
         self.changes = pd.DataFrame(columns=["metric_name", "column_name", "value"])
+        self.notes_change = None
 
         # Clear from cache if exists
         if username and hasattr(pn.state, "cache"):
@@ -438,6 +470,10 @@ class ViewData(param.Parameterized):
         preview_df = pd.DataFrame(preview_data)
         # Sort so changed rows appear first
         preview_df = preview_df.sort_values(by="has_changes", ascending=False)
+
+        # Apply notes change if any
+        if self.notes_change is not None:
+            apply_notes_change(record, self.notes_change)
 
         return preview_df, record
 
