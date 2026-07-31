@@ -131,7 +131,7 @@ class Database:
 
         df = asset_basics()
         # Modalites are stored as comma-separated strings
-        modalities_series = df["modalities"].dropna().str.split(", ")
+        modalities_series = df["modalities"].dropna().str.split(", ").dropna()
         unique_modalities = sorted(list(set(m for sublist in modalities_series for m in sublist)))
 
         return unique_modalities
