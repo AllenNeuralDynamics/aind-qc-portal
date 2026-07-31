@@ -11,7 +11,7 @@ from typing import Optional
 
 import panel as pn
 from aind_data_access_api.document_db import MetadataDbClient
-from zombie_squirrel import asset_basics, unique_project_names
+from biodata_cache import asset_basics, unique_project_names
 
 client = MetadataDbClient(
     host="api.allenneuraldynamics.org",

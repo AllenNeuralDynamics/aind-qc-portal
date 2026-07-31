@@ -2,7 +2,7 @@
 
 import traceback
 
-from zombie_squirrel import asset_basics, unique_project_names
+from biodata_cache import asset_basics, unique_project_names
 
 from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panels.media.utils import get_s3_client

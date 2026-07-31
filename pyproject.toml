@@ -29,7 +29,7 @@ dependencies = [
     'httpx',
     'altair',
     'h5py',
-    'zombie-squirrel==0.27.2',
+    'biodata-cache==0.40.4',
     'aind-metadata-utils>=0.1.2,<2',
 ]
 
