@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-ENV FOREST_TYPE="s3"
+ENV BIODATA_CACHE_BACKEND="s3"
 ENV PYTHONPATH="/app/src"
 
 ADD src ./src
