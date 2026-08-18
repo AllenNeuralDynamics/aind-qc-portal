@@ -1,18 +1,32 @@
 """Plugin file for custom Panel server endpoints"""
 
-import hashlib
 import json
-import secrets
-import time
+import logging
+from datetime import datetime, timezone
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 
 from aind_data_access_api.document_db import MetadataDbClient
 from panel.config import config as panel_config
 from tornado.web import HTTPError, RequestHandler
 
+from aind_qc_portal.metadata_proposals import (
+    canonical_hash,
+    get_proposal,
+    list_proposals,
+    new_proposal,
+    put_proposal,
+)
 from aind_qc_portal.view_contents.data_utils import upload_temporary_metadata
 from aind_qc_portal.view_contents.panels.media.utils import clean_reference_prefix, get_s3_url
+
+_logger = logging.getLogger(__name__)
+
+
+def _now_iso() -> str:
+    """Return the current UTC time as an ISO-8601 string."""
+    return datetime.now(timezone.utc).isoformat()
+
 
 _docdb_client = MetadataDbClient(
     host="api.allenneuraldynamics.org",
@@ -20,33 +34,26 @@ _docdb_client = MetadataDbClient(
 )
 
 DOCDB_HOST = "api.allenneuraldynamics.org"
-AUTH_COOKIE_NAME = "qc_auth_token"
-AUTH_EXPIRY_COOKIE_NAME = "qc_auth_token_expires_at"
-AUTH_COOKIE_DOMAIN = ".allenneuraldynamics.org"
-AUTH_TOKEN_TTL_SECONDS = 60 * 60 * 72
-REQUIRED_DISTINCT_USERS = 2
+DOCDB_VERSIONS = ("v1", "v2")
+
+# Cross-subdomain session issued by /metadata/login. HttpOnly is possible —
+# and correct — because no JavaScript ever needs to read it: SameSite=None
+# means the browser attaches it to credentialed fetches from data.* and the
+# portal reads it server-side. Signed with Panel's cookie secret, so it is
+# stateless and survives a portal restart.
+SESSION_COOKIE_NAME = "aind_metadata_session"
+SESSION_COOKIE_DOMAIN = ".allenneuraldynamics.org"
+SESSION_TTL_DAYS = 3
+
+# Where an unauthenticated caller is sent to establish a Panel OAuth session.
+PANEL_LOGIN_PATH = "/login"
+
 ALLOWED_HOST_SUFFIXES = (
     ".allenneuraldynamics.org",
     ".allenneuraldynamics-test.org",
 )
 ALLOWED_CORS_SUFFIXES = (".allenneuraldynamics.org",)
 CORS_MAX_AGE_SECONDS = 3600
-
-_ISSUED_TOKENS: dict[str, dict] = {}
-_PENDING_UPSERTS: dict[tuple[str, str, str], dict] = {}
-_PROCESS_STARTED_AT: float = time.time()
-
-
-def _now() -> float:
-    """Return the current epoch time in seconds."""
-    return time.time()
-
-
-def _prune_expired_tokens() -> None:
-    """Drop tokens older than AUTH_TOKEN_TTL_SECONDS."""
-    cutoff = _now() - AUTH_TOKEN_TTL_SECONDS
-    for token in [t for t, info in _ISSUED_TOKENS.items() if info["issued_at"] < cutoff]:
-        _ISSUED_TOKENS.pop(token, None)
 
 
 def _panel_user_from_handler(handler: RequestHandler) -> str | None:
@@ -63,16 +70,16 @@ def _panel_user_from_handler(handler: RequestHandler) -> str | None:
     return user
 
 
-def _canonical_body(body: bytes) -> tuple[str, dict]:
-    """Parse JSON and return (sha256-of-canonical-form, parsed-dict)."""
+def _session_user(handler: RequestHandler) -> str | None:
+    """Return the user carried by our cross-subdomain session cookie, if any."""
+    raw = handler.get_secure_cookie(SESSION_COOKIE_NAME, max_age_days=SESSION_TTL_DAYS)
+    if not raw:
+        return None
     try:
-        parsed = json.loads(body)
-    except json.JSONDecodeError:
-        raise HTTPError(400, "Invalid JSON body.")
-    if not isinstance(parsed, dict):
-        raise HTTPError(400, "Request body must be a JSON object.")
-    canonical = json.dumps(parsed, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(canonical).hexdigest(), parsed
+        user = raw.decode("utf-8")
+    except Exception:
+        return None
+    return user or None
 
 
 def _host_allowed(host: str | None) -> bool:
@@ -98,15 +105,15 @@ def _validate_redirect(url: str | None) -> str:
 def _enforce_same_site_request(handler: RequestHandler) -> None:
     """Reject the request unless it clearly originates from an allowed AIND host.
 
-    Defends against CSRF on the token-issuing GET endpoint. Accepts the request
-    when either:
-      * `Sec-Fetch-Site` is `same-origin` or `same-site`, OR
+    Defends against CSRF. Accepts the request when either:
+      * `Sec-Fetch-Site` is `same-origin`, `same-site`, or `none` (a user-typed
+        URL or bookmark, which an attacker page cannot forge), OR
       * `Origin` or `Referer` host is on the allowlist.
     Rejects when no trustworthy signal is present (e.g. attacker-controlled page
     with `Referrer-Policy: no-referrer`).
     """
     sec_fetch_site = handler.request.headers.get("Sec-Fetch-Site")
-    if sec_fetch_site in ("same-origin", "same-site"):
+    if sec_fetch_site in ("same-origin", "same-site", "none"):
         return
     if sec_fetch_site == "cross-site":
         raise HTTPError(403, "Cross-site requests are not permitted on this endpoint.")
@@ -224,20 +231,27 @@ def _origin_is_allowed(origin: str) -> bool:
     return any(host == suffix.lstrip(".") or host.endswith(suffix) for suffix in ALLOWED_CORS_SUFFIXES)
 
 
-class _CrossOriginMixin:
-    """Mixin that applies CORS headers for trusted AIND subdomains."""
+class _MetadataApiHandler(RequestHandler):
+    """Base for every `/metadata/*` API handler.
+
+    Provides CORS for trusted AIND subdomains, JSON error bodies (Tornado's
+    default error page is HTML, which browser clients cannot act on), and the
+    session/CSRF helpers the proposal endpoints share.
+    """
 
     def set_default_headers(self):
+        """Apply CORS headers when the caller is a trusted AIND subdomain."""
         origin = self.request.headers.get("Origin", "")
         if _origin_is_allowed(origin):
             self.set_header("Access-Control-Allow-Origin", origin)
             self.set_header("Access-Control-Allow-Credentials", "true")
-            self.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+            self.set_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
             self.set_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
             self.set_header("Access-Control-Max-Age", str(CORS_MAX_AGE_SECONDS))
         self.set_header("Vary", "Origin")
 
     def options(self, *args, **kwargs):
+        """Answer CORS preflights: 204 for allowed origins, 403 otherwise."""
         origin = self.request.headers.get("Origin", "")
         if not _origin_is_allowed(origin):
             self.set_status(403)
@@ -246,271 +260,510 @@ class _CrossOriginMixin:
         self.set_status(204)
         self.finish()
 
+    def write_error(self, status_code: int, **kwargs):
+        """Emit errors as JSON so clients never have to parse an HTML page."""
+        reason = self._reason
+        exc_info = kwargs.get("exc_info")
+        if exc_info and isinstance(exc_info[1], HTTPError) and exc_info[1].log_message:
+            reason = exc_info[1].log_message
+        self.set_header("Content-Type", "application/json")
+        self.finish({"status": "error", "error": reason})
 
-class IssueMetadataTokenHandler(_CrossOriginMixin, RequestHandler):
-    """GET /metadata/token?redirect=<url>&id=<_id>
+    def fail(self, status_code: int, error: str, **extra):
+        """Write a structured JSON error and finish the request."""
+        self.set_status(status_code)
+        self.set_header("Content-Type", "application/json")
+        self.finish({"status": "error", "error": error, **extra})
 
-    Requires the caller to be authenticated against the QC portal. Issues a
-    one-time token bound to (user, _id), stores it server-side, sets a
-    cross-subdomain cookie, then 302-redirects to <redirect>.
+    def write_json(self, payload: dict, status_code: int = 200):
+        """Write `payload` as JSON with `status_code`."""
+        self.set_status(status_code)
+        self.set_header("Content-Type", "application/json")
+        self.write(payload)
+
+    def require_user(self) -> str | None:
+        """Return the session user, or write a 401 and return None."""
+        user = _session_user(self)
+        if not user:
+            self.fail(401, "not_authenticated", detail="Log in via GET /metadata/login first.")
+            return None
+        return user
+
+    def require_write_origin(self) -> bool:
+        """Reject state-changing requests that did not come from an AIND page.
+
+        The session cookie is `SameSite=None`, so the browser would attach it
+        to a cross-site request too. A JSON POST triggers a CORS preflight that
+        we already reject, but a simple request (`text/plain` form post) does
+        not — so the origin is checked on the request itself as well.
+        """
+        origin = self.request.headers.get("Origin")
+        if origin:
+            if _origin_is_allowed(origin):
+                return True
+            self.fail(403, "origin_not_allowed")
+            return False
+        if self.request.headers.get("Sec-Fetch-Site") in ("same-origin", "none", None):
+            return True
+        self.fail(403, "origin_not_allowed")
+        return False
+
+    def json_body(self) -> dict | None:
+        """Parse the request body as a JSON object, or write a 400 and return None."""
+        if not self.request.body:
+            self.fail(400, "missing_body")
+            return None
+        try:
+            parsed = json.loads(self.request.body)
+        except json.JSONDecodeError:
+            self.fail(400, "invalid_json")
+            return None
+        if not isinstance(parsed, dict):
+            self.fail(400, "invalid_json", detail="Request body must be a JSON object.")
+            return None
+        return parsed
+
+
+class MetadataLoginHandler(_MetadataApiHandler):
+    """GET /metadata/login?redirect=<url>
+
+    Top-level navigation target. Establishes the cross-subdomain session from
+    the caller's Panel OAuth session, then bounces straight back to the page
+    they came from — so a login round trip never strands the user on the QC
+    portal. If they are not logged in to the portal yet, they are sent through
+    Panel's own login first and land back here afterwards.
     """
 
     def get(self):
-        redirect = self.get_argument("redirect", None)
-        record_id = self.get_argument("id", None)
-        if not record_id:
-            raise HTTPError(400, "Missing required query parameter: id")
-        redirect = _validate_redirect(redirect)
+        """Establish the cross-subdomain session, then return to `redirect`."""
+        redirect = _validate_redirect(self.get_argument("redirect", None))
         _enforce_same_site_request(self)
 
         user = _panel_user_from_handler(self)
         if not user:
-            raise HTTPError(401, "User must be logged in to the QC portal to obtain a token.")
+            here = f"{self.request.protocol}://{self.request.host}{self.request.uri}"
+            self.redirect(f"{PANEL_LOGIN_PATH}?{urlencode({'next': here})}")
+            return
 
-        _prune_expired_tokens()
-        token = secrets.token_urlsafe(32)
-        issued_at = _now()
-        expires_at = issued_at + AUTH_TOKEN_TTL_SECONDS
-        _ISSUED_TOKENS[token] = {"user": user, "id": str(record_id), "issued_at": issued_at}
-
-        cookie_expires_days = AUTH_TOKEN_TTL_SECONDS / 86400
-        self.set_cookie(
-            AUTH_COOKIE_NAME,
-            token,
-            domain=AUTH_COOKIE_DOMAIN,
+        self.set_secure_cookie(
+            SESSION_COOKIE_NAME,
+            user,
+            domain=SESSION_COOKIE_DOMAIN,
             path="/",
             secure=True,
             samesite="None",
-            httponly=False,
-            expires_days=cookie_expires_days,
-        )
-        self.set_cookie(
-            AUTH_EXPIRY_COOKIE_NAME,
-            str(int(expires_at)),
-            domain=AUTH_COOKIE_DOMAIN,
-            path="/",
-            secure=True,
-            samesite="None",
-            httponly=False,
-            expires_days=cookie_expires_days,
+            httponly=True,
+            expires_days=SESSION_TTL_DAYS,
         )
         self.redirect(redirect)
 
 
-class _UpsertMetadataHandler(_CrossOriginMixin, RequestHandler):
-    """POST /metadata/v{1,2}?auth-token=<token>
+class MetadataLogoutHandler(_MetadataApiHandler):
+    """POST /metadata/logout — clear the cross-subdomain session cookie.
 
-    Coalesces requests by (version, _id, canonical-body-hash). Once
-    REQUIRED_DISTINCT_USERS distinct users have submitted the same payload
-    with valid tokens bound to the same _id, the metadata is upserted to
-    DocDB and the participating tokens are consumed.
+    Does not touch the Panel OAuth session; the user stays logged in to the QC
+    portal itself.
     """
 
-    VERSION: str = ""
+    def post(self):
+        """Clear the session cookie."""
+        if not self.require_write_origin():
+            return
+        self.clear_cookie(
+            SESSION_COOKIE_NAME,
+            domain=SESSION_COOKIE_DOMAIN,
+            path="/",
+            secure=True,
+            samesite="None",
+        )
+        self.write_json({"authenticated": False})
+
+
+class MetadataMeHandler(_MetadataApiHandler):
+    """GET /metadata/me — who the caller is, for rendering login state."""
+
+    def get(self):
+        """Return the caller's identity, or 401 when there is no session."""
+        user = _session_user(self)
+        if not user:
+            self.fail(401, "not_authenticated")
+            return
+        self.write_json({"authenticated": True, "user": user})
+
+
+def _docdb_client_for(version: str) -> MetadataDbClient:
+    """Return a DocDB client for `version` ('v1' or 'v2')."""
+    return MetadataDbClient(host=DOCDB_HOST, version=version)
+
+
+def _fetch_live_record(version: str, record_id: str) -> dict | None:
+    """Return the current DocDB record for `record_id`, or None if absent."""
+    records = _docdb_client_for(version).retrieve_docdb_records(
+        filter_query={"_id": str(record_id)},
+        limit=1,
+    )
+    return records[0] if records else None
+
+
+class MetadataProposalsHandler(_MetadataApiHandler):
+    """`/metadata/proposals`
+
+    GET — the review queue. Public: proposed bodies are readable by anyone so a
+    change can be inspected before it lands. Query params: `status` (default
+    `open`, accepts a comma-separated list or `all`), `version`, `id`.
+
+    POST — create a proposal. Requires a session. Body::
+
+        {"version": "v1"|"v2", "id": "<_id>", "body": {...},
+         "note": "<optional>", "supersedes": "<optional proposal_id>"}
+
+    The server snapshots the live DocDB record itself and stores it as the
+    proposal's `base`, so review always diffs against a server-observed
+    starting point rather than whatever the client happened to have loaded.
+    """
+
+    def get(self):
+        """Return the review queue."""
+        status = self.get_argument("status", "open")
+        version = self.get_argument("version", None)
+        record_id = self.get_argument("id", None)
+        if version and version not in DOCDB_VERSIONS:
+            self.fail(400, "invalid_version")
+            return
+        try:
+            proposals = list_proposals(status=status, version=version, record_id=record_id)
+        except Exception as e:  # pragma: no cover - S3 failures
+            _logger.exception("Failed to list metadata proposals")
+            self.fail(502, "store_unavailable", detail=str(e))
+            return
+        self.write_json({"proposals": proposals})
 
     def post(self):
-        token = self.get_argument("auth-token", None)
-        if not token:
-            raise HTTPError(401, "Missing auth-token query parameter.")
-        if not self.request.body:
-            raise HTTPError(400, "Missing request body.")
+        """Create a proposal from the caller's suggested record."""
+        if not self.require_write_origin():
+            return
+        user = self.require_user()
+        if not user:
+            return
+        payload = self.json_body()
+        if payload is None:
+            return
+        request = self._validate_create(payload)
+        if request is None:
+            return
+        version, record_id, body = request
 
-        _prune_expired_tokens()
-
-        token_info = _ISSUED_TOKENS.get(token)
-        if not token_info:
-            self._write_token_invalid()
+        supersedes = payload.get("supersedes")
+        previous = self._resolve_supersedes(supersedes)
+        if supersedes and previous is None:
             return
 
-        body_hash, parsed_body = _canonical_body(self.request.body)
+        base = self._snapshot_base(version, record_id, body)
+        if base is None:
+            return
 
-        record_id = parsed_body.get("_id")
-        if not record_id:
-            raise HTTPError(400, "Request body must include an '_id' field.")
-        if str(record_id) != token_info["id"]:
-            raise HTTPError(403, "auth-token is not valid for the supplied _id.")
-
-        key = (self.VERSION, str(record_id), body_hash)
-        pending = _PENDING_UPSERTS.setdefault(
-            key,
-            {"version": self.VERSION, "body": parsed_body, "submissions": {}},
+        proposal = new_proposal(
+            version=version,
+            record_id=record_id,
+            record_name=body.get("name"),
+            body=body,
+            base=base,
+            note=payload.get("note") or "",
+            author=user,
+            supersedes=str(supersedes) if supersedes else None,
         )
-
-        already_submitted = token_info["user"] in pending["submissions"]
-        if already_submitted and len(pending["submissions"]) < REQUIRED_DISTINCT_USERS:
-            raise HTTPError(409, "This user has already submitted this request.")
-
-        if not already_submitted:
-            pending["submissions"][token_info["user"]] = token
-
-        if len(pending["submissions"]) < REQUIRED_DISTINCT_USERS:
-            earliest_expiry = min(
-                _ISSUED_TOKENS[t]["issued_at"] for t in pending["submissions"].values()
-            ) + AUTH_TOKEN_TTL_SECONDS
-            other_pending_hashes = [
-                h
-                for (v, rid, h) in _PENDING_UPSERTS
-                if v == self.VERSION and rid == str(record_id) and h != body_hash
-            ]
-            self.set_header("Content-Type", "application/json")
-            response = {
-                "status": "pending",
-                "submissions": len(pending["submissions"]),
-                "required": REQUIRED_DISTINCT_USERS,
-                "expires_at": int(earliest_expiry),
-                "body_hash": body_hash,
-            }
-            if other_pending_hashes:
-                response["other_pending_hashes"] = other_pending_hashes
-            self.write(response)
+        try:
+            put_proposal(proposal)
+            if previous is not None:
+                previous["status"] = "superseded"
+                previous["superseded_by"] = proposal["proposal_id"]
+                put_proposal(previous)
+        except Exception as e:  # pragma: no cover - S3 failures
+            _logger.exception("Failed to store metadata proposal")
+            self.fail(502, "store_unavailable", detail=str(e))
             return
 
-        client = MetadataDbClient(host=DOCDB_HOST, version=self.VERSION)
+        self.write_json({"proposal": proposal}, status_code=201)
+
+    def _resolve_supersedes(self, supersedes):
+        """Return the open proposal being rebased, or None (writing an error if it is unusable)."""
+        if not supersedes:
+            return None
+        previous = get_proposal(str(supersedes))
+        if previous is None:
+            self.fail(404, "supersedes_not_found")
+            return None
+        if previous.get("status") != "open":
+            self.fail(409, "supersedes_not_open", proposal_status=previous.get("status"))
+            return None
+        return previous
+
+    def _validate_create(self, payload):
+        """Return `(version, record_id, body)`, or write an error and return None."""
+        version = payload.get("version")
+        if version not in DOCDB_VERSIONS:
+            self.fail(400, "invalid_version", detail="version must be 'v1' or 'v2'.")
+            return None
+
+        body = payload.get("body")
+        if not isinstance(body, dict):
+            self.fail(400, "invalid_body", detail="body must be a JSON object.")
+            return None
+
+        record_id = payload.get("id") or body.get("_id")
+        if not record_id:
+            self.fail(400, "missing_id", detail="Supply 'id', or an '_id' field in the body.")
+            return None
+        if str(body.get("_id")) != str(record_id):
+            self.fail(400, "id_mismatch", detail="body._id must match the proposal's id.")
+            return None
+        return version, str(record_id), body
+
+    def _snapshot_base(self, version, record_id, body):
+        """Return the live record to base the proposal on, or write an error and return None.
+
+        Also rejects a proposal that changes nothing, and one that duplicates an
+        open proposal for the same record.
+        """
         try:
-            response = client.upsert_one_docdb_record(pending["body"])
+            base = _fetch_live_record(version, record_id)
         except Exception as e:
-            raise HTTPError(502, f"DocDB upsert error: {str(e)}")
+            _logger.exception("DocDB read failed while creating a proposal")
+            self.fail(502, "docdb_unavailable", detail=str(e))
+            return None
+        if base is None:
+            self.fail(404, "record_not_found", detail=f"No DocDB {version} record with _id {record_id}.")
+            return None
+
+        body_hash = canonical_hash(body)
+        if body_hash == canonical_hash(base):
+            self.fail(400, "no_changes", detail="The proposed body is identical to the live record.")
+            return None
+
+        try:
+            duplicates = [
+                p
+                for p in list_proposals(status="open", version=version, record_id=record_id)
+                if p.get("body_hash") == body_hash
+            ]
+        except Exception as e:  # pragma: no cover - S3 failures
+            _logger.exception("Failed to check for duplicate proposals")
+            self.fail(502, "store_unavailable", detail=str(e))
+            return None
+        if duplicates:
+            self.fail(
+                409,
+                "duplicate_proposal",
+                proposal_id=duplicates[0]["proposal_id"],
+                detail="An identical proposal is already open for this record.",
+            )
+            return None
+        return base
+
+
+class MetadataProposalHandler(_MetadataApiHandler):
+    """`/metadata/proposals/<proposal_id>`
+
+    GET — one proposal, including its base snapshot. Public.
+    DELETE — withdraw an open proposal. Author only.
+    """
+
+    def get(self, proposal_id):
+        """Return one proposal, including the record it was based on."""
+        proposal = self._load(proposal_id)
+        if proposal is None:
+            return
+        self.write_json({"proposal": proposal})
+
+    def delete(self, proposal_id):
+        """Withdraw the caller's own open proposal."""
+        if not self.require_write_origin():
+            return
+        user = self.require_user()
+        if not user:
+            return
+        proposal = self._load(proposal_id)
+        if proposal is None:
+            return
+        if proposal["status"] != "open":
+            self.fail(409, "not_open", proposal_status=proposal["status"])
+            return
+        if proposal["author"] != user:
+            self.fail(403, "not_author", detail="Only the author can withdraw a proposal.")
+            return
+        proposal["status"] = "withdrawn"
+        proposal["reviewer"] = user
+        proposal["reviewed_at"] = _now_iso()
+        put_proposal(proposal)
+        self.write_json({"proposal": proposal})
+
+    def _load(self, proposal_id):
+        """Return the stored proposal, or write an error and return None."""
+        try:
+            proposal = get_proposal(str(proposal_id))
+        except Exception as e:  # pragma: no cover - S3 failures
+            _logger.exception("Failed to read metadata proposal")
+            self.fail(502, "store_unavailable", detail=str(e))
+            return None
+        if proposal is None:
+            self.fail(404, "proposal_not_found")
+            return None
+        return proposal
+
+
+class MetadataProposalActionHandler(_MetadataApiHandler):
+    """POST `/metadata/proposals/<proposal_id>/(approve|reject)`
+
+    Approve is the whole second-actor flow in one call. The reviewer sends the
+    `body_hash` they were shown; the server checks that it still matches the
+    stored proposal (so a reviewer can never approve something other than what
+    they read), that the reviewer is not the author, and that live DocDB still
+    matches the proposal's `base_hash` — then upserts.
+
+    Approving is deliberately open to any authenticated QC-portal user: the
+    rule being enforced is "two distinct people agreed", not membership of an
+    approver list.
+    """
+
+    def post(self, proposal_id, action):
+        """Approve or reject the proposal named in the path."""
+        if not self.require_write_origin():
+            return
+        user = self.require_user()
+        if not user:
+            return
+        payload = self.json_body()
+        if payload is None:
+            return
+
+        try:
+            proposal = get_proposal(str(proposal_id))
+        except Exception as e:  # pragma: no cover - S3 failures
+            _logger.exception("Failed to read metadata proposal")
+            self.fail(502, "store_unavailable", detail=str(e))
+            return
+        if proposal is None:
+            self.fail(404, "proposal_not_found")
+            return
+        if proposal["status"] != "open":
+            self.fail(409, "not_open", proposal_status=proposal["status"])
+            return
+
+        if action == "reject":
+            self._reject(proposal, user, payload)
+            return
+        self._approve(proposal, user, payload)
+
+    def _reject(self, proposal, user, payload):
+        """Close the proposal as rejected, recording who rejected it and why."""
+        proposal["status"] = "rejected"
+        proposal["reviewer"] = user
+        proposal["reviewed_at"] = _now_iso()
+        proposal["reason"] = payload.get("reason") or ""
+        put_proposal(proposal)
+        self.write_json({"proposal": proposal})
+
+    def _approve(self, proposal, user, payload):
+        """Apply the proposal to DocDB once every approval check passes."""
+        if not self._approval_allowed(proposal, user, payload):
+            return
+
+        try:
+            response = _docdb_client_for(proposal["version"]).upsert_one_docdb_record(proposal["body"])
+        except Exception as e:
+            _logger.exception("DocDB upsert failed")
+            self.fail(502, "docdb_error", detail=str(e))
+            return
 
         status_code = getattr(response, "status_code", 200) or 200
         try:
-            payload = response.json() if hasattr(response, "json") else None
+            docdb_response = response.json() if hasattr(response, "json") else None
         except Exception:
-            payload = None
-        text = getattr(response, "text", "")
+            docdb_response = None
+        if docdb_response is None:
+            docdb_response = getattr(response, "text", "")
 
-        succeeded = 200 <= status_code < 300
-
-        if succeeded:
-            for consumed_token in pending["submissions"].values():
-                _ISSUED_TOKENS.pop(consumed_token, None)
-            _PENDING_UPSERTS.pop(key, None)
-
-        self.set_header("Content-Type", "application/json")
-        self.set_status(status_code)
-        self.write(
-            {
-                "status": "submitted" if succeeded else "failed",
-                "docdb_status": status_code,
-                "docdb_response": payload if payload is not None else text,
-            }
-        )
-
-
-    def _write_token_invalid(self):
-        """Send a structured 401 distinguishing \"likely restart\" from natural expiry."""
-        likely_restart = (_now() - _PROCESS_STARTED_AT) < AUTH_TOKEN_TTL_SECONDS
-        detail = "The auth-token is unknown or has expired."
-        if likely_restart:
-            detail += (
-                " The portal may have been restarted, which invalidates all"
-                " outstanding tokens. Please re-validate."
+        if not 200 <= status_code < 300:
+            # Leave the proposal open so it can be retried once DocDB recovers.
+            self.write_json(
+                {
+                    "status": "failed",
+                    "docdb_status": status_code,
+                    "docdb_response": docdb_response,
+                    "proposal": proposal,
+                },
+                status_code=502,
             )
-        self.set_status(401)
-        self.set_header("Content-Type", "application/json")
-        self.set_header("WWW-Authenticate", 'Bearer error="invalid_token"')
-        self.write(
-            {
-                "status": "error",
-                "error": "invalid_token",
-                "likely_restart": likely_restart,
-                "detail": detail,
-            }
-        )
+            return
 
+        proposal["status"] = "applied"
+        proposal["reviewer"] = user
+        proposal["reviewed_at"] = _now_iso()
+        proposal["docdb_status"] = status_code
+        proposal["docdb_response"] = docdb_response
+        put_proposal(proposal)
+        self.write_json({"status": "applied", "proposal": proposal})
 
-class UpsertMetadataV1Handler(_UpsertMetadataHandler):
-    """POST /metadata/v1?auth-token=<token>"""
+    def _approval_allowed(self, proposal, user, payload):
+        """Return True if this approval may proceed, else write an error and return False.
 
-    VERSION = "v1"
+        Three separate things have to hold: the reviewer is not the author, the
+        hash they reviewed is still the proposal's, and live DocDB still matches
+        the record the proposal was based on.
+        """
+        if proposal["author"] == user:
+            self.fail(
+                403,
+                "self_approval",
+                detail="A proposal must be approved by someone other than its author.",
+            )
+            return False
 
+        body_hash = payload.get("body_hash")
+        if not body_hash:
+            self.fail(400, "missing_body_hash", detail="Send the body_hash you reviewed.")
+            return False
+        if body_hash != proposal["body_hash"]:
+            self.fail(
+                409,
+                "hash_mismatch",
+                expected=proposal["body_hash"],
+                detail="The proposal changed since you loaded it — reload and review again.",
+            )
+            return False
 
-class UpsertMetadataV2Handler(_UpsertMetadataHandler):
-    """POST /metadata/v2?auth-token=<token>"""
+        try:
+            live = _fetch_live_record(proposal["version"], proposal["record_id"])
+        except Exception as e:
+            _logger.exception("DocDB read failed while approving a proposal")
+            self.fail(502, "docdb_unavailable", detail=str(e))
+            return False
+        if live is None:
+            self.fail(404, "record_not_found")
+            return False
 
-    VERSION = "v2"
-
-
-def _pending_entry(version: str, record_id: str, body_hash: str, entry: dict) -> dict:
-    """Public-facing representation of a pending upsert."""
-    return {
-        "version": version,
-        "id": record_id,
-        "body_hash": body_hash,
-        "submissions": len(entry["submissions"]),
-        "required": REQUIRED_DISTINCT_USERS,
-        "body": entry["body"],
-    }
-
-
-class _PendingMetadataHandler(_CrossOriginMixin, RequestHandler):
-    """GET /metadata/v{1,2}/pending?id=<_id>
-
-    Returns the body hashes, submission counts, and full payloads of any
-    in-flight pending upserts for `(VERSION, _id)`. The full body is exposed
-    publicly so reviewers can inspect proposed migrations before approving.
-    """
-
-    VERSION: str = ""
-
-    def get(self):
-        record_id = self.get_argument("id", None)
-        if not record_id:
-            raise HTTPError(400, "Missing required query parameter: id")
-        _prune_expired_tokens()
-        pending = [
-            _pending_entry(version, _id, body_hash, entry)
-            for (version, _id, body_hash), entry in _PENDING_UPSERTS.items()
-            if version == self.VERSION and _id == str(record_id)
-        ]
-        self.set_header("Content-Type", "application/json")
-        self.write(
-            {
-                "id": str(record_id),
-                "version": self.VERSION,
-                "pending": pending,
-            }
-        )
-
-
-class PendingMetadataV1Handler(_PendingMetadataHandler):
-    """GET /metadata/v1/pending?id=<_id>"""
-
-    VERSION = "v1"
-
-
-class PendingMetadataV2Handler(_PendingMetadataHandler):
-    """GET /metadata/v2/pending?id=<_id>"""
-
-    VERSION = "v2"
-
-
-class PendingMetadataAllHandler(_CrossOriginMixin, RequestHandler):
-    """GET /metadata/pending
-
-    Lists every in-flight pending upsert across both DocDB versions. Each
-    entry includes the full proposed body so a reviewer page can render the
-    diff before approving. Public — no auth-token required.
-    """
-
-    def get(self):
-        _prune_expired_tokens()
-        pending = [
-            _pending_entry(version, _id, body_hash, entry)
-            for (version, _id, body_hash), entry in _PENDING_UPSERTS.items()
-        ]
-        self.set_header("Content-Type", "application/json")
-        self.write({"pending": pending})
+        live_hash = canonical_hash(live)
+        if live_hash != proposal["base_hash"]:
+            self.fail(
+                409,
+                "base_drift",
+                current=live,
+                current_hash=live_hash,
+                detail="The DocDB record changed after this proposal was made. Rebase it and review again.",
+            )
+            return False
+        return True
 
 
 ROUTES = [
     ("/upload_metadata", UploadMetadataHandler, {}),
     (r"/get-signed-reference/([^/]+)", GetSignedReferenceHandler, {}),
-    ("/metadata/token", IssueMetadataTokenHandler, {}),
-    ("/metadata/v1", UpsertMetadataV1Handler, {}),
-    ("/metadata/v2", UpsertMetadataV2Handler, {}),
-    ("/metadata/v1/pending", PendingMetadataV1Handler, {}),
-    ("/metadata/v2/pending", PendingMetadataV2Handler, {}),
-    ("/metadata/pending", PendingMetadataAllHandler, {}),
+    ("/metadata/login", MetadataLoginHandler, {}),
+    ("/metadata/logout", MetadataLogoutHandler, {}),
+    ("/metadata/me", MetadataMeHandler, {}),
+    ("/metadata/proposals", MetadataProposalsHandler, {}),
+    (r"/metadata/proposals/([^/]+)", MetadataProposalHandler, {}),
+    (r"/metadata/proposals/([^/]+)/(approve|reject)", MetadataProposalActionHandler, {}),
 ]
 
 # Export ROUTES for Panel server to discover

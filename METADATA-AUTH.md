@@ -1,211 +1,238 @@
-# Metadata Auth API
+# Metadata Proposals API
 
 Two-party DocDB upsert flow for apps on `*.allenneuraldynamics.org`.
-Each upsert must be approved by **two distinct QC-portal-authenticated users**
-who submit byte-for-byte identical payloads.
+
+A **proposal** is one user's suggested replacement for a DocDB record. It is
+stored server-side the moment it is created and applied when a *second*
+authenticated user approves it. Any QC-portal user may approve any proposal
+except their own — the rule being enforced is "two distinct people agreed", not
+membership of an approver list.
 
 Base URL (prod): `https://qc.allenneuraldynamics.org`
 
 ## Flow
 
-1. Your app redirects the user to `GET /metadata/token` (see below). The QC
-   portal verifies the user is logged in and sets a cross-subdomain cookie
-   `qc_auth_token` (the token) and `qc_auth_token_expires_at` (unix seconds).
-2. Your app reads the cookie via JS, then `POST`s the metadata to
-   `/metadata/v1` or `/metadata/v2` with `?auth-token=<token>`.
-3. First valid POST returns `{"status":"pending","submissions":1,"required":2,"expires_at":<ts>}`.
-4. A second user repeats steps 1–2 with the **same payload**. The second valid
-   POST triggers the DocDB upsert and returns `{"status":"submitted", ...}`.
+1. The app sends the user to `GET /metadata/login?redirect=<current page>` as a
+   top-level navigation. The portal establishes a cross-subdomain session and
+   sends them straight back.
+2. Every later call is a plain credentialed fetch — no tokens, no cookie
+   reading. `GET /metadata/me` says who is logged in.
+3. The author `POST`s a proposal to `/metadata/proposals`.
+4. A different user reviews it in the queue (`GET /metadata/proposals`) and
+   `POST`s to `/metadata/proposals/{id}/approve` with the `body_hash` they were
+   shown. The portal re-checks the hash, that the reviewer is not the author,
+   and that live DocDB still matches the proposal's `base_hash`, then upserts.
 
-## Endpoints
+## Authentication
 
-### `GET /metadata/token`
+### `GET /metadata/login`
 
-Query params:
+Top-level navigation target — not a fetch.
 
 | Param      | Required | Notes                                                          |
 | ---------- | -------- | -------------------------------------------------------------- |
-| `id`       | yes      | The `_id` of the metadata record to be approved.               |
 | `redirect` | yes      | Absolute `https://` URL on `*.allenneuraldynamics.org(-test)`. |
 
-Auth: caller must hold a valid QC-portal OAuth session cookie.
+If the caller has no QC-portal OAuth session, they are redirected to the
+portal's own `/login?next=…` and land back here afterwards — a login round trip
+never strands the user on the portal.
 
-Same-site enforcement: the request must include `Sec-Fetch-Site: same-origin`
-or `same-site`, **or** an `Origin`/`Referer` header on the allowed-host list.
-Top-level navigations from `*.allenneuraldynamics.org` pages satisfy this
-automatically.
-
-`redirect` is sent verbatim in the `Location` response header. **Query strings
-and fragments on the supplied `redirect` URL are preserved as-is** — e.g.
-`redirect=https://data.allenneuraldynamics.org/x?db=foo&id=bar&endpoint=baz`
-will round-trip those query parameters untouched.
+Same-site enforcement: the request must carry `Sec-Fetch-Site` of
+`same-origin`, `same-site` or `none` (a typed URL or bookmark, which an attacker
+page cannot forge), **or** an `Origin`/`Referer` on the allowed-host list.
 
 Responses:
 
-- `302` → `redirect`. Sets two cookies on `.allenneuraldynamics.org`
-  (Secure, SameSite=None, **not** HttpOnly):
-  - `qc_auth_token` — the one-time token
-  - `qc_auth_token_expires_at` — unix epoch seconds when the token expires
-- `400` invalid/missing `id` or `redirect` (must be https + allowed host)
-- `401` user not logged in to the QC portal
+- `302` → `redirect`, setting `aind_metadata_session` on
+  `.allenneuraldynamics.org` (`Secure; SameSite=None; **HttpOnly**`, 3 days).
+  The cookie is signed with the portal's cookie secret and carries no
+  server-side state, so it survives a portal restart. JavaScript never reads it
+  — with `SameSite=None` the browser attaches it to credentialed cross-origin
+  fetches on its own.
+- `400` missing/invalid `redirect`
 - `403` request did not come from an allowed AIND subdomain
 
-### `POST /metadata/v1` and `POST /metadata/v2`
+### `GET /metadata/me`
 
-Routes to DocDB `v1` and `v2` respectively.
+- `200` `{"authenticated": true, "user": "<user>"}`
+- `401` `{"status":"error","error":"not_authenticated"}`
 
-Query params:
+### `POST /metadata/logout`
 
-| Param        | Required | Notes              |
-| ------------ | -------- | ------------------ |
-| `auth-token` | yes      | Token from step 1. |
+Clears the session cookie. Does not touch the QC-portal OAuth session.
 
-Body: JSON object representing the **full** DocDB record (not a partial patch
-or fragment). `_id` and `name` are required by DocDB itself, and `_id` must
-match the `id` the token was issued for.
+## Proposals
 
-Responses:
+Every error response is JSON of the form
+`{"status":"error","error":"<machine-readable code>","detail":"…"}` — the API
+never returns an HTML error page.
 
-- `200` `{"status":"pending","submissions":N,"required":2,"expires_at":<ts>,"body_hash":"<sha256>"}`
-  — fewer than 2 distinct users have submitted this exact payload. When at
-  least one other pending request exists for the same `_id` with a different
-  body, the response additionally includes `"other_pending_hashes":[...]` so
-  the UI can warn the second actor that its payload doesn't match a pending
-  one (see also `GET /metadata/v{1,2}/pending`).
-- `2xx` `{"status":"submitted","docdb_status":<code>,"docdb_response":<body>}`
-  — second distinct user; upsert succeeded. Both tokens are consumed.
-- Upstream status `{"status":"failed","docdb_status":<code>,...}` — upsert
-  failed; tokens are **not** consumed so the second user can retry.
-- `400` missing/invalid body or missing `_id`
-- `401` missing/unknown/expired token. Body is JSON:
-  `{"status":"error","error":"invalid_token","likely_restart":<bool>,"detail":"..."}`
-  and the response carries `WWW-Authenticate: Bearer error="invalid_token"`.
-  `likely_restart` is `true` when the portal process has been running for less
-  than the 72h token TTL — i.e. no token issued by *this* process can have
-  expired naturally yet, so an unknown token is most likely the result of a
-  restart. The UI should prompt the user to re-validate.
-- `403` token's `_id` does not match the body's `_id`
-- `409` same user submitting twice while still waiting for a second approver
-- `502` DocDB client raised an exception
+### `GET /metadata/proposals`
 
-### `GET /metadata/v1/pending` and `GET /metadata/v2/pending`
+The review queue. **Public** — proposed bodies are readable by anyone so a
+change can be inspected before it lands.
 
-Returns the in-flight pending entries for a given `_id` on this DocDB version.
-Useful for a second-actor UI to detect payload-hash drift before submitting.
+| Param     | Default | Notes                                                      |
+| --------- | ------- | ---------------------------------------------------------- |
+| `status`  | `open`  | One status, a comma-separated list, or `all`.               |
+| `version` | —       | `v1` or `v2`.                                               |
+| `id`      | —       | Restrict to one record `_id`.                               |
 
-Query params:
+`200` `{"proposals": [<proposal>, …]}`, newest first.
 
-| Param | Required | Notes                                |
-| ----- | -------- | ------------------------------------ |
-| `id`  | yes      | The `_id` to look up pending requests for. |
+### `POST /metadata/proposals`
 
-Responses:
+Create a proposal. Requires a session.
 
-- `200` `{"id":"<_id>","version":"v1|v2","pending":[<entry>,...]}`
-  where each `<entry>` is
-  `{"version":"v1|v2","id":"<_id>","body_hash":"<sha256>","submissions":<n>,"required":2,"body":<full proposed payload>}`.
-- `400` missing `id`
-
-This endpoint does not require an auth-token. **The full proposed body is
-public** so reviewers can diff a pending request against the live DocDB record
-before approving.
-
-### `GET /metadata/pending`
-
-Returns every in-flight pending entry across both DocDB versions in a single
-call. Powers second-actor reviewer queues.
-
-Responses:
-
-- `200` `{"pending":[<entry>, ...]}` — `<entry>` has the same shape as the
-  per-id endpoint above (full body included).
-
-No query params; no auth-token required. Public read-only.
-
-Key behavior:
-
-- Requests are coalesced by `(version, _id, sha256(canonical_json(body)))`.
-  Key ordering doesn't matter, but any other byte difference produces a
-  separate pending request.
-- Tokens are bound to `(user, _id)` and expire **72 hours** after issuance.
-- Two **distinct** OAuth user identities are required.
-
-## Client snippet
-
-```js
-// 1. Send the user off to get a token.
-const id = "<record _id>";
-const back = location.href;
-location.assign(
-  `https://qc.allenneuraldynamics.org/metadata/token` +
-  `?id=${encodeURIComponent(id)}&redirect=${encodeURIComponent(back)}`
-);
-
-// 2. After redirect, read the cookies.
-function readCookie(name) {
-  return document.cookie.split("; ")
-    .find(c => c.startsWith(name + "="))?.split("=")[1];
+```json
+{
+  "version": "v2",
+  "id": "<_id>",
+  "body": { "_id": "<_id>", "name": "…", "...": "full replacement record" },
+  "note": "optional free text",
+  "supersedes": "optional proposal_id being rebased"
 }
-const token = readCookie("qc_auth_token");
-const expiresAt = Number(readCookie("qc_auth_token_expires_at")) * 1000; // ms
-// Use expiresAt to drive a countdown.
-
-// 3. Submit the metadata.
-const r = await fetch(
-  `https://qc.allenneuraldynamics.org/metadata/v2?auth-token=${token}`,
-  {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(metadata), // must include _id === id
-  }
-);
-const result = await r.json();
-// result.status is "pending" or "submitted" (or "failed")
 ```
+
+The server reads the live record itself and stores it as the proposal's
+`base`, so review always diffs against a server-observed starting point rather
+than whatever the client happened to have loaded.
+
+- `201` `{"proposal": <proposal>}`
+- `400` `invalid_version` · `invalid_body` · `missing_id` · `id_mismatch` ·
+  `no_changes` (the body is identical to the live record)
+- `401` `not_authenticated`
+- `403` `origin_not_allowed`
+- `404` `record_not_found` · `supersedes_not_found`
+- `409` `duplicate_proposal` (an identical open proposal exists; the response
+  carries its `proposal_id`) · `supersedes_not_open`
+- `502` `docdb_unavailable` · `store_unavailable`
+
+### `GET /metadata/proposals/{proposal_id}`
+
+`200` `{"proposal": <proposal>}` · `404` `proposal_not_found`. Public.
+
+### `DELETE /metadata/proposals/{proposal_id}`
+
+Withdraw an open proposal. Author only.
+
+`200` `{"proposal": …}` · `403` `not_author` · `409` `not_open`
+
+### `POST /metadata/proposals/{proposal_id}/approve`
+
+Body: `{"body_hash": "<the hash you reviewed>"}`. Requires a session.
+
+- `200` `{"status":"applied","proposal": <proposal>}`
+- `400` `missing_body_hash`
+- `403` `self_approval` — the author cannot approve their own proposal
+- `409` `not_open` · `hash_mismatch` (the proposal changed since you loaded it)
+- `409` `base_drift` — DocDB moved after the proposal was made. The response
+  carries `current` (the live record) and `current_hash`; rebase and review
+  again rather than clobbering the newer record.
+- `502` `{"status":"failed","docdb_status":…}` — the upsert failed; the
+  proposal stays **open** so it can be retried.
+
+### `POST /metadata/proposals/{proposal_id}/reject`
+
+Body: `{"reason": "…"}`. Requires a session. `200` `{"proposal": …}`.
+
+## Proposal shape
+
+```json
+{
+  "proposal_id":   "<uuid4>",
+  "version":       "v1|v2",
+  "record_id":     "<_id>",
+  "record_name":   "<name>",
+  "body":          { },
+  "body_hash":     "<sha256 of canonical body>",
+  "base":          { },
+  "base_hash":     "<sha256 of canonical base>",
+  "note":          "",
+  "author":        "<user>",
+  "created_at":    "<ISO-8601 UTC>",
+  "status":        "open|applied|rejected|withdrawn|superseded",
+  "reviewer":      null,
+  "reviewed_at":   null,
+  "reason":        null,
+  "supersedes":    null,
+  "superseded_by": null,
+  "docdb_status":  null,
+  "docdb_response": null
+}
+```
+
+Hashes are `sha256` over key-sorted, whitespace-free JSON, so key ordering does
+not matter.
+
+## Storage
+
+Proposals live in S3 (`aind-scratch-data`, prefix `metadata-proposals/`), one
+object per proposal, rewritten in place on each status transition. Override
+with `METADATA_PROPOSALS_BUCKET` / `METADATA_PROPOSALS_PREFIX`. Nothing about a
+proposal is held in process memory, so restarts and redeploys are invisible to
+users, and applied/rejected proposals remain as an audit trail.
 
 ## CORS
 
-The `POST /metadata/v{1,2}`, `GET /metadata/v{1,2}/pending`, and
-`GET /metadata/token` endpoints emit CORS headers for browser callers. Cross-
-origin requests are accepted **only** when the `Origin` header is an `https://`
-URL on `*.allenneuraldynamics.org`; anything else (including the matching
-`-test.org` domain) is treated as a same-origin / server-side caller and gets
-no `Access-Control-Allow-Origin` header (the browser will block the request).
-
-For browsers, the relevant response headers are:
+`/metadata/*` emits CORS headers for browser callers. Cross-origin requests are
+accepted **only** when the `Origin` header is an `https://` URL on
+`*.allenneuraldynamics.org`; anything else (including the matching `-test.org`
+domain) gets no `Access-Control-Allow-Origin` header and the browser blocks the
+request. State-changing methods additionally re-check `Origin` on the request
+itself, so a form-style POST that skips the preflight cannot ride the
+`SameSite=None` session cookie.
 
 ```
 Access-Control-Allow-Origin:  <echoed Origin, when allowed>
 Access-Control-Allow-Credentials: true
-Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS
 Access-Control-Allow-Headers: Content-Type, Authorization
 Access-Control-Max-Age:       3600
 Vary:                         Origin
 ```
 
-`Content-Type: application/json` POSTs trigger a CORS preflight; the handlers
-respond to `OPTIONS` with `204 No Content` when the `Origin` is allowed and
-`403` otherwise.
+## Client snippet
+
+```js
+const QC = "https://qc.allenneuraldynamics.org";
+
+// 1. Who am I? (null when logged out)
+const me = await fetch(`${QC}/metadata/me`, { credentials: "include" })
+  .then((r) => (r.ok ? r.json() : null));
+
+// 2. Log in — a top-level navigation that returns to this page.
+if (!me) {
+  location.assign(
+    `${QC}/metadata/login?redirect=${encodeURIComponent(location.href)}`
+  );
+}
+
+// 3. Propose a change.
+const { proposal } = await fetch(`${QC}/metadata/proposals`, {
+  method: "POST",
+  credentials: "include",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ version: "v2", id: record._id, body: record, note: "" }),
+}).then((r) => r.json());
+
+// 4. A different user approves it.
+await fetch(`${QC}/metadata/proposals/${proposal.proposal_id}/approve`, {
+  method: "POST",
+  credentials: "include",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ body_hash: proposal.body_hash }),
+});
+```
 
 ## Notes for integrators
 
-- Send the **identical** payload from both users. The server hashes the
-  canonical JSON; differing fields produce separate pending requests. Anything
-  non-deterministic upstream (timestamps, list ordering) will cause silent
-  divergence — use `GET /metadata/v{1,2}/pending?id=<_id>` before submitting,
-  or inspect `other_pending_hashes` on the `pending` POST response, to detect
-  this and warn the user.
-- The migrate UI **must be served from `*.allenneuraldynamics.org`** for the
-  token round-trip to work. The cookies are `Secure; SameSite=None; Domain=
-  .allenneuraldynamics.org`, so `http://localhost` (and any non-AIND origin)
-  cannot read them. Local-dev against the prod portal is not possible; deploy
-  to a `*.allenneuraldynamics.org(-test)` host to test end-to-end.
-- `qc_auth_token` is intentionally non-HttpOnly so JS on `data.*` can read it.
-  Any XSS on any `*.allenneuraldynamics.org` page can therefore harvest
-  tokens; treat the cookie accordingly.
-- State is in-memory on the QC portal process. A portal restart invalidates
-  all outstanding tokens and pending requests. After a restart, the next POST
-  with a previously-issued token returns `401` with
-  `{"error":"invalid_token","likely_restart":true,...}` — surface this to the
-  user as a re-validation prompt rather than a generic auth failure.
+- The UI **must be served from `*.allenneuraldynamics.org`**. The session cookie
+  is `Secure; SameSite=None; Domain=.allenneuraldynamics.org`, so
+  `http://localhost` cannot participate; deploy to a
+  `*.allenneuraldynamics.org(-test)` host to test end-to-end.
+- Send the reviewer the `body_hash` you displayed, not one you recomputed from a
+  fresh fetch. That is what makes "approved" mean "approved *this*".
+- A `base_drift` 409 is not an error to retry — it means the record changed. Show
+  the user the returned `current` record and let them rebase (create a new
+  proposal with `supersedes` set to the stale one).
