@@ -2,6 +2,9 @@
 
 import json
 import logging
+import os
+import re
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
@@ -16,6 +19,16 @@ from aind_qc_portal.metadata_proposals import (
     list_proposals,
     new_proposal,
     put_proposal,
+)
+from aind_qc_portal.qc_edit import (
+    MISSING,
+    ConditionalWriteUnavailable,
+    QcEditConflict,
+    QcEditError,
+    apply_qc_changes,
+    conditional_update_qc_record,
+    is_qc_hash,
+    qc_hash,
 )
 from aind_qc_portal.view_contents.data_utils import upload_temporary_metadata
 from aind_qc_portal.view_contents.panels.media.utils import clean_reference_prefix, get_s3_url
@@ -54,6 +67,15 @@ ALLOWED_HOST_SUFFIXES = (
 )
 ALLOWED_CORS_SUFFIXES = (".allenneuraldynamics.org",)
 CORS_MAX_AGE_SECONDS = 3600
+QC_API_DEFAULT_ORIGINS = (
+    "https://data.allenneuraldynamics.org",
+    "http://localhost:5173",
+)
+QC_API_MAX_BODY_BYTES = 256 * 1024
+QC_API_DEFAULT_TENANT_ID = "32669cd6-737f-4b39-8bdd-d6951120d3fc"
+QC_API_DEFAULT_CLIENT_ID = "a625f758-ee73-4fc0-8a4b-b7467f33d68c"
+_BEARER_RE = re.compile(r"^Bearer\s+(\S+)$")
+_jwks_clients = {}
 
 
 def _panel_user_from_handler(handler: RequestHandler) -> str | None:
@@ -341,7 +363,7 @@ class MetadataLoginHandler(_MetadataApiHandler):
 
         user = _panel_user_from_handler(self)
         if not user:
-            here = f"{self.request.protocol}://{self.request.host}{self.request.uri}"
+            here = self.request.uri
             self.redirect(f"{PANEL_LOGIN_PATH}?{urlencode({'next': here})}")
             return
 
@@ -389,6 +411,255 @@ class MetadataMeHandler(_MetadataApiHandler):
             self.fail(401, "not_authenticated")
             return
         self.write_json({"authenticated": True, "user": user})
+
+
+def _qc_api_config() -> dict:
+    """Read server-only QC API configuration from the deployment environment."""
+    tenant = os.environ.get("QC_API_TENANT_ID", "").strip() or QC_API_DEFAULT_TENANT_ID
+    issuer = os.environ.get("QC_API_ISSUER", "").strip()
+    if not issuer and tenant:
+        issuer = f"https://login.microsoftonline.com/{tenant}/v2.0"
+    origins = tuple(
+        value.strip()
+        for value in os.environ.get("QC_API_ALLOWED_ORIGINS", ",".join(QC_API_DEFAULT_ORIGINS)).split(",")
+        if value.strip()
+    )
+    return {
+        "enabled": os.environ.get("QC_API_ENABLED", "true").lower() in {"1", "true", "yes"},
+        "conditional_writes_enabled": os.environ.get("QC_API_CONDITIONAL_WRITES_ENABLED", "false").lower()
+        in {"1", "true", "yes"},
+        "issuer": issuer,
+        # The browser signs users into the existing Entra app.  Its ID token is
+        # accepted only when it was issued by this tenant for this client.
+        "audience": os.environ.get("QC_API_AUDIENCE", "").strip()
+        or os.environ.get("QC_API_CLIENT_ID", "").strip()
+        or QC_API_DEFAULT_CLIENT_ID,
+        "jwks_url": os.environ.get("QC_API_JWKS_URL", "").strip()
+        or (f"https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys" if tenant else ""),
+        "origins": origins,
+    }
+
+
+def _qc_origin_allowed(origin: str, config: dict) -> bool:
+    """Return True only for an exact configured browser origin."""
+    return bool(origin) and origin in config["origins"]
+
+
+def _verified_qc_actor(token: str, config: dict) -> str:
+    """Validate an Entra ID token and return its server-verified actor.
+
+    Tenant membership is the authorization boundary for the inline editor:
+    there is intentionally no application-specific scope or role check here.
+    Audience and issuer validation still prevent a token issued for another
+    Entra tenant or application from being used for QC writes.
+    """
+    if not config["issuer"] or not config["audience"] or not config["jwks_url"]:
+        raise RuntimeError("QC API JWT configuration is incomplete")
+    try:
+        import jwt
+        from jwt import PyJWKClient
+
+        jwks_client = _jwks_clients.get(config["jwks_url"])
+        if jwks_client is None:
+            jwks_client = PyJWKClient(config["jwks_url"], cache_jwk_set=True, lifespan=3600)
+            _jwks_clients[config["jwks_url"]] = jwks_client
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+        claims = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            audience=config["audience"],
+            issuer=config["issuer"],
+            options={"require": ["exp", "iss", "aud", "sub"]},
+        )
+    except Exception as exc:
+        raise ValueError("Invalid QC identity token") from exc
+
+    stable_identity = claims.get("oid") or claims.get("sub")
+    actor = claims.get("preferred_username") or claims.get("email") or claims.get("upn") or stable_identity
+    if not stable_identity:
+        raise ValueError("QC API token has no usable identity")
+    return str(actor)
+
+
+class QcSubmitHandler(RequestHandler):
+    """POST /api/qc/submit — tenant-authenticated bearer-token QC edit endpoint."""
+
+    def set_default_headers(self):
+        """Set CORS headers for the QC API only."""
+        correlation_id = self.request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+        self._correlation_id = correlation_id[:128]
+        self.set_header("X-Correlation-ID", self._correlation_id)
+        config = _qc_api_config()
+        origin = self.request.headers.get("Origin", "")
+        if _qc_origin_allowed(origin, config):
+            self.set_header("Access-Control-Allow-Origin", origin)
+            self.set_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+            self.set_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+            self.set_header("Access-Control-Max-Age", str(CORS_MAX_AGE_SECONDS))
+        self.set_header("Vary", "Origin")
+        self.set_header("Cache-Control", "no-store")
+
+    def write_error(self, status_code: int, **kwargs):
+        """Emit a small JSON error without Tornado internals."""
+        self.set_status(status_code)
+        self.set_header("Content-Type", "application/json")
+        self.finish({"status": "error", "error": "request_failed"})
+
+    def options(self):
+        """Answer only exact allowed-origin preflights."""
+        if not _qc_origin_allowed(self.request.headers.get("Origin", ""), _qc_api_config()):
+            self.set_status(403)
+            self.finish({"status": "error", "error": "origin_not_allowed"})
+            return
+        self.set_status(204)
+        self.finish()
+
+    def post(self):  # noqa: C901
+        """Authenticate, validate, conditionally mutate, and respond."""
+        config = _qc_api_config()
+        origin = self.request.headers.get("Origin", "")
+        if not config["enabled"]:
+            self._fail(503, "qc_api_disabled")
+            return
+        if not config["conditional_writes_enabled"]:
+            self._fail(503, "conditional_write_disabled")
+            return
+        if not _qc_origin_allowed(origin, config):
+            self._fail(403, "origin_not_allowed")
+            return
+        if len(self.request.body) > QC_API_MAX_BODY_BYTES:
+            self._fail(400, "request_too_large")
+            return
+        if not self.request.headers.get("Content-Type", "").lower().startswith("application/json"):
+            self._fail(400, "content_type_required")
+            return
+
+        match = _BEARER_RE.match(self.request.headers.get("Authorization", ""))
+        if not match:
+            self._fail(401, "unauthenticated")
+            return
+        try:
+            actor = _verified_qc_actor(match.group(1), config)
+        except (ValueError, RuntimeError):
+            self._fail(401, "unauthenticated")
+            return
+
+        try:
+            payload = json.loads(self.request.body)
+        except (TypeError, json.JSONDecodeError):
+            self._fail(400, "malformed_request")
+            return
+        if not isinstance(payload, dict):
+            self._fail(400, "malformed_request")
+            return
+        unknown = set(payload) - {"record_id", "expected_qc_hash", "changes", "notes"}
+        if unknown:
+            self._fail(400, "unsupported_request_field")
+            return
+        record_id = payload.get("record_id")
+        expected_hash = payload.get("expected_qc_hash")
+        changes = payload.get("changes")
+        if not isinstance(record_id, str) or not record_id or len(record_id) > 256:
+            self._fail(400, "record_id_required")
+            return
+        if not is_qc_hash(expected_hash):
+            self._fail(400, "invalid_expected_qc_hash")
+            return
+        if not isinstance(changes, list) or (not changes and "notes" not in payload):
+            self._fail(400, "no_changes")
+            return
+        if "notes" in payload and not isinstance(payload["notes"], str):
+            self._fail(400, "invalid_notes")
+            return
+
+        try:
+            record = _fetch_live_record("v2", record_id)
+        except Exception:
+            _logger.exception(
+                "QC API DocDB read failed",
+                extra={"record_id": record_id, "correlation_id": self._correlation_id},
+            )
+            self._fail(502, "docdb_unavailable")
+            return
+        if record is None:
+            self._fail(404, "record_not_found")
+            return
+        current_qc = record.get("quality_control")
+        if qc_hash(current_qc) != expected_hash:
+            self._fail(409, "stale_record", detail="The QC record changed. Reload and review again.")
+            return
+        try:
+            new_record = apply_qc_changes(
+                record,
+                changes,
+                actor=actor,
+                notes=payload.get("notes", MISSING),
+            )
+        except QcEditError as exc:
+            message = str(exc)
+            status = 422 if "schema validation" in message else 400
+            self._fail(status, "invalid_qc_data" if status == 422 else "malformed_request")
+            return
+
+        if not changes and new_record["quality_control"] == current_qc:
+            self._fail(400, "no_changes")
+            return
+        try:
+            response = conditional_update_qc_record(
+                _docdb_client_for("v2"),
+                record_id,
+                current_qc,
+                new_record["quality_control"],
+            )
+        except QcEditConflict:
+            self._fail(409, "conflicting_edit", detail="The QC record changed during submission.")
+            return
+        except ConditionalWriteUnavailable:
+            _logger.error(
+                "QC API conditional write could not be verified",
+                extra={"record_id": record_id, "correlation_id": self._correlation_id},
+            )
+            self._fail(502, "conditional_write_unavailable")
+            return
+        except Exception:
+            _logger.exception(
+                "QC API DocDB conditional write failed",
+                extra={"record_id": record_id, "correlation_id": self._correlation_id},
+            )
+            self._fail(502, "docdb_unavailable")
+            return
+
+        asset_name = record.get("name", "")
+        _logger.info(
+            "QC API edit applied",
+            extra={
+                "record_id": record_id,
+                "asset_name": asset_name,
+                "actor": actor,
+                "changed_metrics": len(changes),
+                "correlation_id": self._correlation_id,
+                "result": "applied",
+            },
+        )
+        self.set_status(200)
+        self.set_header("Content-Type", "application/json")
+        self.write(
+            {
+                "status": "applied",
+                "record_id": record_id,
+                "asset_name": asset_name,
+                "actor": actor,
+                "changed_metrics": len(changes),
+                "docdb_status": getattr(response, "status_code", 200),
+            }
+        )
+
+    def _fail(self, status_code: int, error: str, **extra):
+        """Write a structured QC API error."""
+        self.set_status(status_code)
+        self.set_header("Content-Type", "application/json")
+        self.finish({"status": "error", "error": error, **extra})
 
 
 def _docdb_client_for(version: str) -> MetadataDbClient:
@@ -764,6 +1035,7 @@ ROUTES = [
     ("/metadata/proposals", MetadataProposalsHandler, {}),
     (r"/metadata/proposals/([^/]+)", MetadataProposalHandler, {}),
     (r"/metadata/proposals/([^/]+)/(approve|reject)", MetadataProposalActionHandler, {}),
+    (r"/api/qc/submit", QcSubmitHandler, {}),
 ]
 
 # Export ROUTES for Panel server to discover
