@@ -20,20 +20,33 @@ from aind_qc_portal.metadata_proposals import (
     new_proposal,
     put_proposal,
 )
-from aind_qc_portal.qc_edit import (
-    MISSING,
-    ConditionalWriteUnavailable,
-    QcEditConflict,
-    QcEditError,
-    apply_qc_changes,
-    conditional_update_qc_record,
-    is_qc_hash,
-    qc_hash,
-)
 from aind_qc_portal.view_contents.data_utils import upload_temporary_metadata
 from aind_qc_portal.view_contents.panels.media.utils import clean_reference_prefix, get_s3_url
 
 _logger = logging.getLogger(__name__)
+
+# The QC submit API (`QcSubmitHandler` below) is isolated from the rest of
+# the app: a failure importing its module — a missing dependency, a bug in
+# qc_edit.py — must not prevent the whole Panel/Tornado app from starting.
+# Every existing route (Panel, /metadata/*, media, etc.) has to keep working
+# even if this import fails, so the failure is caught here and the handler
+# checks `_QC_EDIT_IMPORT_ERROR` before touching any of these names.
+try:
+    from aind_qc_portal.qc_edit import (
+        MISSING,
+        ConditionalWriteUnavailable,
+        QcEditConflict,
+        QcEditError,
+        apply_qc_changes,
+        conditional_update_qc_record,
+        is_qc_hash,
+        qc_hash,
+    )
+
+    _QC_EDIT_IMPORT_ERROR = None
+except Exception as exc:  # pragma: no cover - defensive; see QcSubmitHandler.
+    _logger.exception("QC edit module failed to import; /api/qc/submit will return 503")
+    _QC_EDIT_IMPORT_ERROR = exc
 
 
 def _now_iso() -> str:
@@ -517,6 +530,9 @@ class QcSubmitHandler(RequestHandler):
 
     def post(self):  # noqa: C901
         """Authenticate, validate, conditionally mutate, and respond."""
+        if _QC_EDIT_IMPORT_ERROR is not None:
+            self._fail(503, "qc_api_unavailable")
+            return
         config = _qc_api_config()
         origin = self.request.headers.get("Origin", "")
         if not config["enabled"]:

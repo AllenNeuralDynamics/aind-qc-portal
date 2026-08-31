@@ -26,6 +26,7 @@ dependencies = [
     'boto3',
     's3fs',
     'aind-qcportal-schema>=0.6.3',
+    'pyjwt[crypto]>=2.8.0',
     'httpx',
     'altair',
     'h5py',
