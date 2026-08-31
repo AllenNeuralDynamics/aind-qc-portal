@@ -34,13 +34,11 @@ _logger = logging.getLogger(__name__)
 try:
     from aind_qc_portal.qc_edit import (
         MISSING,
-        ConditionalWriteUnavailable,
-        QcEditConflict,
         QcEditError,
         apply_qc_changes,
-        conditional_update_qc_record,
         is_qc_hash,
         qc_hash,
+        update_qc_record,
     )
 
     _QC_EDIT_IMPORT_ERROR = None
@@ -439,8 +437,6 @@ def _qc_api_config() -> dict:
     )
     return {
         "enabled": os.environ.get("QC_API_ENABLED", "true").lower() in {"1", "true", "yes"},
-        "conditional_writes_enabled": os.environ.get("QC_API_CONDITIONAL_WRITES_ENABLED", "false").lower()
-        in {"1", "true", "yes"},
         "issuer": issuer,
         # The browser signs users into the existing Entra app.  Its ID token is
         # accepted only when it was issued by this tenant for this client.
@@ -538,9 +534,6 @@ class QcSubmitHandler(RequestHandler):
         if not config["enabled"]:
             self._fail(503, "qc_api_disabled")
             return
-        if not config["conditional_writes_enabled"]:
-            self._fail(503, "conditional_write_disabled")
-            return
         if not _qc_origin_allowed(origin, config):
             self._fail(403, "origin_not_allowed")
             return
@@ -622,22 +615,11 @@ class QcSubmitHandler(RequestHandler):
             self._fail(400, "no_changes")
             return
         try:
-            response = conditional_update_qc_record(
+            response = update_qc_record(
                 _docdb_client_for("v2"),
                 record_id,
-                current_qc,
                 new_record["quality_control"],
             )
-        except QcEditConflict:
-            self._fail(409, "conflicting_edit", detail="The QC record changed during submission.")
-            return
-        except ConditionalWriteUnavailable:
-            _logger.error(
-                "QC API conditional write could not be verified",
-                extra={"record_id": record_id, "correlation_id": self._correlation_id},
-            )
-            self._fail(502, "conditional_write_unavailable")
-            return
         except Exception:
             _logger.exception(
                 "QC API DocDB conditional write failed",

@@ -8,14 +8,13 @@ import requests
 
 from aind_qc_portal.qc_edit import (
     MISSING,
-    ConditionalWriteUnavailable,
-    QcEditConflict,
     QcEditError,
+    QcEditWriteError,
     apply_qc_changes,
     canonical_qc_json,
-    conditional_update_qc_record,
     is_qc_hash,
     qc_hash,
+    update_qc_record,
 )
 
 # Mirrors web/src/qc/canonical-fixtures.js verbatim. If this drifts from the
@@ -227,45 +226,43 @@ class TestApplyQcChanges(unittest.TestCase):
         self.assertEqual(record, original)
 
 
-class TestConditionalUpdateQcRecord(unittest.TestCase):
-    """The compare-and-swap primitive: success, conflict, and unavailable paths."""
+class TestUpdateQcRecord(unittest.TestCase):
+    """The write primitive: filters on _id only, sets only quality_control."""
 
     def test_success_returns_response(self):
         response = MagicMock(status_code=200)
         client = MagicMock()
         client._upsert_one_record.return_value = response
-        result = conditional_update_qc_record(client, "abc", {"metrics": []}, {"metrics": [], "notes": "x"})
+        result = update_qc_record(client, "abc", {"metrics": [], "notes": "x"})
         self.assertIs(result, response)
         call = client._upsert_one_record.call_args
-        self.assertEqual(call.kwargs["record_filter"]["_id"], "abc")
-        self.assertEqual(call.kwargs["record_filter"]["quality_control"], {"metrics": []})
         self.assertEqual(call.kwargs["update"], {"$set": {"quality_control": {"metrics": [], "notes": "x"}}})
 
-    def test_conflict_on_client_error(self):
+    def test_filter_is_id_only(self):
         client = MagicMock()
-        error_response = MagicMock(status_code=409)
-        client._upsert_one_record.side_effect = requests.exceptions.HTTPError(response=error_response)
-        with self.assertRaises(QcEditConflict):
-            conditional_update_qc_record(client, "abc", {}, {})
+        client._upsert_one_record.return_value = MagicMock(status_code=200)
+        update_qc_record(client, "abc", {"metrics": []})
+        # A filter on anything else would make upsert:True insert a duplicate
+        # record instead of erroring when it misses.
+        self.assertEqual(client._upsert_one_record.call_args.kwargs["record_filter"], {"_id": "abc"})
 
-    def test_unavailable_on_server_error(self):
+    def test_other_record_fields_are_never_written(self):
         client = MagicMock()
-        error_response = MagicMock(status_code=500)
-        client._upsert_one_record.side_effect = requests.exceptions.HTTPError(response=error_response)
-        with self.assertRaises(ConditionalWriteUnavailable):
-            conditional_update_qc_record(client, "abc", {}, {})
+        client._upsert_one_record.return_value = MagicMock(status_code=200)
+        update_qc_record(client, "abc", {"metrics": []})
+        self.assertEqual(list(client._upsert_one_record.call_args.kwargs["update"]["$set"]), ["quality_control"])
 
-    def test_unavailable_on_unexpected_exception(self):
-        client = MagicMock()
-        client._upsert_one_record.side_effect = RuntimeError("boom")
-        with self.assertRaises(ConditionalWriteUnavailable):
-            conditional_update_qc_record(client, "abc", {}, {})
-
-    def test_unavailable_on_bad_status_code(self):
+    def test_bad_status_code_raises(self):
         client = MagicMock()
         client._upsert_one_record.return_value = MagicMock(status_code=500)
-        with self.assertRaises(ConditionalWriteUnavailable):
-            conditional_update_qc_record(client, "abc", {}, {})
+        with self.assertRaises(QcEditWriteError):
+            update_qc_record(client, "abc", {})
+
+    def test_client_exception_propagates(self):
+        client = MagicMock()
+        client._upsert_one_record.side_effect = requests.exceptions.HTTPError(response=MagicMock(status_code=500))
+        with self.assertRaises(requests.exceptions.HTTPError):
+            update_qc_record(client, "abc", {})
 
 
 if __name__ == "__main__":

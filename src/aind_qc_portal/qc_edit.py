@@ -19,7 +19,6 @@ import json
 import re
 
 from aind_data_schema.core.quality_control import QualityControl, Status
-from requests.exceptions import HTTPError
 
 from aind_qc_portal.view_contents.data_utils import (
     apply_curation_metric_change,
@@ -37,16 +36,8 @@ class QcEditError(Exception):
     """
 
 
-class QcEditConflict(Exception):
-    """Raised when the conditional write loses a race with another writer."""
-
-
-class ConditionalWriteUnavailable(Exception):
-    """Raised when the DocDB write guarantee could not be verified.
-
-    This is distinct from a conflict: it means the write's outcome is
-    unknown, not that it definitely lost a race.
-    """
+class QcEditWriteError(Exception):
+    """Raised when DocDB rejects the QC write."""
 
 
 class _Missing:
@@ -233,37 +224,26 @@ def apply_qc_changes(record: dict, changes: list, *, actor: str, notes=MISSING) 
     return new_record
 
 
-def conditional_update_qc_record(client, record_id: str, expected_quality_control, new_quality_control):
-    """Replace `quality_control` only if it still matches `expected_quality_control`.
+def update_qc_record(client, record_id: str, new_quality_control):
+    """Write `new_quality_control` onto the record with `_id == record_id`.
 
-    Uses the DocDB API's private compound-filter upsert
-    (`MetadataDbClient._upsert_one_record`) as a best-effort compare-and-swap:
-    the filter pins both `_id` and the full current `quality_control` value,
-    so a writer that already changed the record causes the filter to match
-    nothing. That primitive always upserts, so a filter miss on an existing
-    `_id` surfaces as a DocDB-side error (duplicate key) rather than a clean
-    "0 matched" signal — this is treated as a conflict, but the primitive is
-    unverified against the DocDB API's real concurrent-write behavior and
-    does not itself coordinate with the legacy Panel writer. That is why the
-    caller only reaches this function when
-    `QC_API_CONDITIONAL_WRITES_ENABLED` is explicitly set, defaulting to
-    disabled.
+    Filters on `_id` alone. `_upsert_one_record` hardcodes `upsert: True`, so
+    a filter that matches nothing inserts rather than no-ops; `_id` is the
+    only field with a database-enforced unique index, which turns a miss into
+    a duplicate-key error instead of a silently forked duplicate record.
+
+    Only the `quality_control` subtree is `$set`, so a concurrent edit to an
+    unrelated part of the record is preserved. Staleness is enforced by the
+    caller's `expected_qc_hash` check against a freshly-read record; the
+    remaining read-to-write window is not closed, because the DocDB client
+    exposes no conditional-write primitive.
     """
-    canonical_expected = json.loads(json.dumps(expected_quality_control, default=str))
     canonical_new = json.loads(json.dumps(new_quality_control, default=str))
-    try:
-        response = client._upsert_one_record(
-            record_filter={"_id": str(record_id), "quality_control": canonical_expected},
-            update={"$set": {"quality_control": canonical_new}},
-        )
-    except HTTPError as exc:
-        status = exc.response.status_code if exc.response is not None else None
-        if status is not None and 400 <= status < 500:
-            raise QcEditConflict("QC record changed before the write completed") from exc
-        raise ConditionalWriteUnavailable("QC API conditional write could not be verified") from exc
-    except Exception as exc:
-        raise ConditionalWriteUnavailable("QC API conditional write could not be verified") from exc
-
-    if getattr(response, "status_code", 200) not in (200, 201):
-        raise ConditionalWriteUnavailable(f"Unexpected DocDB response status {getattr(response, 'status_code', None)}")
+    response = client._upsert_one_record(
+        record_filter={"_id": str(record_id)},
+        update={"$set": {"quality_control": canonical_new}},
+    )
+    status_code = getattr(response, "status_code", 200)
+    if status_code not in (200, 201):
+        raise QcEditWriteError(f"Unexpected DocDB response status {status_code}")
     return response

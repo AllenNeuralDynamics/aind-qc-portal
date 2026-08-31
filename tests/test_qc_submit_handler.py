@@ -32,7 +32,6 @@ def _make_app() -> Application:
 def _fixed_config(**overrides):
     config = {
         "enabled": True,
-        "conditional_writes_enabled": True,
         "issuer": ISSUER,
         "audience": AUDIENCE,
         "jwks_url": "https://login.microsoftonline.com/test-tenant/discovery/v2.0/keys",
@@ -268,24 +267,17 @@ class TestSuccessfulSubmission(_QcSubmitTestCase):
 
 
 class TestWriteFailureModes(_QcSubmitTestCase):
-    def test_conflicting_edit_is_409(self):
-        # A filter miss (another writer already changed the record) surfaces
-        # from the DocDB API as a client-error HTTP status, not a Python
-        # exception type — see conditional_update_qc_record's docstring.
-        self.docdb_client._upsert_one_record.side_effect = requests.exceptions.HTTPError(
-            response=MagicMock(status_code=409)
-        )
-        response = self._post(self._good_payload())
-        self.assertEqual(response.code, 409)
-        self.assertEqual(json.loads(response.body)["error"], "conflicting_edit")
-        self.assertNotIn(b"409", response.body)  # no upstream/library internals leaked
-
-    def test_conditional_write_unavailable_is_502(self):
+    def test_docdb_write_failure_is_502(self):
         self.docdb_client._upsert_one_record.side_effect = requests.exceptions.HTTPError(
             response=MagicMock(status_code=500)
         )
         response = self._post(self._good_payload())
         self.assertEqual(response.code, 502)
+        self.assertEqual(json.loads(response.body)["error"], "docdb_unavailable")
+
+    def test_write_filters_on_id_only(self):
+        self._post(self._good_payload())
+        self.assertEqual(self.docdb_client._upsert_one_record.call_args.kwargs["record_filter"], {"_id": "record-1"})
 
     def test_docdb_read_failure_is_502(self):
         def _boom(version, rid):
@@ -303,12 +295,6 @@ class TestFeatureFlags(_QcSubmitTestCase):
             response = self._post(self._good_payload())
         self.assertEqual(response.code, 503)
         self.assertEqual(json.loads(response.body)["error"], "qc_api_disabled")
-
-    def test_conditional_writes_disabled_is_503(self):
-        with patch.object(plugin, "_qc_api_config", lambda: _fixed_config(conditional_writes_enabled=False)):
-            response = self._post(self._good_payload())
-        self.assertEqual(response.code, 503)
-        self.assertEqual(json.loads(response.body)["error"], "conditional_write_disabled")
 
 
 class TestImportIsolation(_QcSubmitTestCase):
