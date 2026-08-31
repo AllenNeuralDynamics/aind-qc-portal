@@ -231,6 +231,59 @@ class TestStaleRecord(_QcSubmitTestCase):
         self.assertEqual(json.loads(response.body)["error"], "stale_record")
         self.docdb_client._upsert_one_record.assert_not_called()
 
+    def test_record_changing_between_read_and_write_is_409_without_upsert(self):
+        # First read matches; the pre-write re-read sees a different record.
+        reads = [self.record, _record(metric_value=0.77)]
+        with patch.object(plugin, "_fetch_live_record", lambda version, rid: reads.pop(0)):
+            response = self._post(self._good_payload())
+        self.assertEqual(response.code, 409)
+        self.assertEqual(json.loads(response.body)["error"], "stale_record")
+        self.docdb_client._upsert_one_record.assert_not_called()
+
+    def test_record_vanishing_between_read_and_write_is_409_without_upsert(self):
+        reads = [self.record, None]
+        with patch.object(plugin, "_fetch_live_record", lambda version, rid: reads.pop(0)):
+            response = self._post(self._good_payload())
+        self.assertEqual(response.code, 409)
+        self.docdb_client._upsert_one_record.assert_not_called()
+
+
+class TestWriteTargetGuard(_QcSubmitTestCase):
+    """A record_id that does not match the fetched record must never be written."""
+
+    def test_mismatched_id_is_409_without_upsert(self):
+        wrong = _record()
+        wrong["_id"] = "some-other-record"
+        with patch.object(plugin, "_fetch_live_record", lambda version, rid: wrong):
+            response = self._post(self._good_payload())
+        self.assertEqual(response.code, 409)
+        self.assertEqual(json.loads(response.body)["error"], "record_mismatch")
+        self.docdb_client._upsert_one_record.assert_not_called()
+
+    def test_id_appearing_only_at_the_pre_write_read_is_caught(self):
+        drifted = _record()
+        drifted["_id"] = "some-other-record"
+        reads = [self.record, drifted]
+        with patch.object(plugin, "_fetch_live_record", lambda version, rid: reads.pop(0)):
+            response = self._post(self._good_payload())
+        self.assertEqual(response.code, 409)
+        self.assertEqual(json.loads(response.body)["error"], "record_mismatch")
+        self.docdb_client._upsert_one_record.assert_not_called()
+
+    def test_pre_write_read_failure_is_502_without_upsert(self):
+        calls = {"n": 0}
+
+        def _read(version, rid):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return self.record
+            raise RuntimeError("docdb down")
+
+        with patch.object(plugin, "_fetch_live_record", _read):
+            response = self._post(self._good_payload())
+        self.assertEqual(response.code, 502)
+        self.docdb_client._upsert_one_record.assert_not_called()
+
 
 class TestSuccessfulSubmission(_QcSubmitTestCase):
     def test_value_and_status_change_applied_with_verified_actor(self):

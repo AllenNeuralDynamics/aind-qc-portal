@@ -40,6 +40,14 @@ class QcEditWriteError(Exception):
     """Raised when DocDB rejects the QC write."""
 
 
+class QcEditStale(Exception):
+    """Raised when the record changed between the client's read and the write."""
+
+
+class QcEditTargetMismatch(Exception):
+    """Raised when the record fetched is not the record the request named."""
+
+
 class _Missing:
     """Sentinel distinguishing "notes omitted" from "notes explicitly set"."""
 
@@ -224,6 +232,22 @@ def apply_qc_changes(record: dict, changes: list, *, actor: str, notes=MISSING) 
     return new_record
 
 
+def verify_write_target(record, record_id: str, expected_qc_hash: str) -> None:
+    """Raise unless `record` is the record we intend to write and is unchanged.
+
+    The `_id` check is what keeps `_upsert_one_record`'s hardcoded
+    `upsert: True` from inserting a new document: a filter on an `_id` that
+    is not the one we actually read would miss and insert rather than update.
+    """
+    if record is None:
+        raise QcEditStale("The QC record no longer exists")
+    actual_id = record.get("_id")
+    if actual_id is None or str(actual_id) != str(record_id):
+        raise QcEditTargetMismatch(f"Fetched record _id does not match the requested record_id {record_id!r}")
+    if qc_hash(record.get("quality_control")) != expected_qc_hash:
+        raise QcEditStale("The QC record changed")
+
+
 def update_qc_record(client, record_id: str, new_quality_control):
     """Write `new_quality_control` onto the record with `_id == record_id`.
 
@@ -231,16 +255,17 @@ def update_qc_record(client, record_id: str, new_quality_control):
     a filter that matches nothing inserts rather than no-ops; `_id` is the
     only field with a database-enforced unique index, which turns a miss into
     a duplicate-key error instead of a silently forked duplicate record.
+    Callers must confirm the `_id` came from a record they actually read --
+    see `verify_write_target`.
 
     Only the `quality_control` subtree is `$set`, so a concurrent edit to an
-    unrelated part of the record is preserved. Staleness is enforced by the
-    caller's `expected_qc_hash` check against a freshly-read record; the
-    remaining read-to-write window is not closed, because the DocDB client
-    exposes no conditional-write primitive.
+    unrelated part of the record is preserved.
     """
+    if not isinstance(record_id, str) or not record_id:
+        raise QcEditWriteError("record_id must be a non-empty string")
     canonical_new = json.loads(json.dumps(new_quality_control, default=str))
     response = client._upsert_one_record(
-        record_filter={"_id": str(record_id)},
+        record_filter={"_id": record_id},
         update={"$set": {"quality_control": canonical_new}},
     )
     status_code = getattr(response, "status_code", 200)

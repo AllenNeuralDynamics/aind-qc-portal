@@ -35,10 +35,12 @@ try:
     from aind_qc_portal.qc_edit import (
         MISSING,
         QcEditError,
+        QcEditStale,
+        QcEditTargetMismatch,
         apply_qc_changes,
         is_qc_hash,
-        qc_hash,
         update_qc_record,
+        verify_write_target,
     )
 
     _QC_EDIT_IMPORT_ERROR = None
@@ -595,8 +597,17 @@ class QcSubmitHandler(RequestHandler):
             self._fail(404, "record_not_found")
             return
         current_qc = record.get("quality_control")
-        if qc_hash(current_qc) != expected_hash:
+        try:
+            verify_write_target(record, record_id, expected_hash)
+        except QcEditStale:
             self._fail(409, "stale_record", detail="The QC record changed. Reload and review again.")
+            return
+        except QcEditTargetMismatch:
+            _logger.error(
+                "QC API refused a write whose fetched record _id did not match the request",
+                extra={"record_id": record_id, "correlation_id": self._correlation_id},
+            )
+            self._fail(409, "record_mismatch", detail="The QC record could not be identified. Reload and try again.")
             return
         try:
             new_record = apply_qc_changes(
@@ -614,6 +625,33 @@ class QcSubmitHandler(RequestHandler):
         if not changes and new_record["quality_control"] == current_qc:
             self._fail(400, "no_changes")
             return
+
+        # Re-read and re-check immediately before writing. This cannot make the
+        # write atomic, but it shrinks the window in which another writer can
+        # land from the whole request down to one read plus one write, and it
+        # is the last chance to catch an _id that would make upsert:True insert
+        # a duplicate rather than update.
+        try:
+            fresh = _fetch_live_record("v2", record_id)
+            verify_write_target(fresh, record_id, expected_hash)
+        except QcEditStale:
+            self._fail(409, "stale_record", detail="The QC record changed. Reload and review again.")
+            return
+        except QcEditTargetMismatch:
+            _logger.error(
+                "QC API refused a write whose re-read record _id did not match the request",
+                extra={"record_id": record_id, "correlation_id": self._correlation_id},
+            )
+            self._fail(409, "record_mismatch", detail="The QC record could not be identified. Reload and try again.")
+            return
+        except Exception:
+            _logger.exception(
+                "QC API DocDB pre-write re-read failed",
+                extra={"record_id": record_id, "correlation_id": self._correlation_id},
+            )
+            self._fail(502, "docdb_unavailable")
+            return
+
         try:
             response = update_qc_record(
                 _docdb_client_for("v2"),

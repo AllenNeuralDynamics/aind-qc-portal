@@ -9,12 +9,15 @@ import requests
 from aind_qc_portal.qc_edit import (
     MISSING,
     QcEditError,
+    QcEditStale,
+    QcEditTargetMismatch,
     QcEditWriteError,
     apply_qc_changes,
     canonical_qc_json,
     is_qc_hash,
     qc_hash,
     update_qc_record,
+    verify_write_target,
 )
 
 # Mirrors web/src/qc/canonical-fixtures.js verbatim. If this drifts from the
@@ -224,6 +227,40 @@ class TestApplyQcChanges(unittest.TestCase):
         original = copy.deepcopy(record)
         apply_qc_changes(record, [{"metric_name": "drift", "status": "Pass"}], actor="alice")
         self.assertEqual(record, original)
+
+
+class TestVerifyWriteTarget(unittest.TestCase):
+    """The guard that keeps upsert:True from inserting a duplicate record."""
+
+    def setUp(self):
+        self.record = _record([_metric()])
+        self.hash = qc_hash(self.record["quality_control"])
+
+    def test_matching_record_passes(self):
+        verify_write_target(self.record, "abc", self.hash)
+
+    def test_missing_record_is_stale(self):
+        with self.assertRaises(QcEditStale):
+            verify_write_target(None, "abc", self.hash)
+
+    def test_changed_quality_control_is_stale(self):
+        with self.assertRaises(QcEditStale):
+            verify_write_target(self.record, "abc", "b" * 64)
+
+    def test_mismatched_id_is_rejected(self):
+        with self.assertRaises(QcEditTargetMismatch):
+            verify_write_target(self.record, "a-different-id", self.hash)
+
+    def test_missing_id_is_rejected(self):
+        record = dict(self.record)
+        del record["_id"]
+        with self.assertRaises(QcEditTargetMismatch):
+            verify_write_target(record, "abc", self.hash)
+
+    def test_id_is_compared_as_string(self):
+        record = dict(self.record)
+        record["_id"] = 123
+        verify_write_target(record, "123", qc_hash(record["quality_control"]))
 
 
 class TestUpdateQcRecord(unittest.TestCase):
