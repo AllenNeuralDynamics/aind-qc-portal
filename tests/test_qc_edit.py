@@ -39,6 +39,10 @@ QC_HASH_FIXTURES = [
         },
         "84c0981cf52eaf4bff129b6141eba513c0f023588af112b314d14a4a214eadbc",
     ),
+    (
+        {"metrics": [{"name": "fraction", "value": 0.09898453602764382}]},
+        "66f193cc785d12ede531c60c338d9009fc0fd186fe0f82d8765ee59296150c73",
+    ),
 ]
 
 DEFAULT_GROUPING = ["ECEPHYS"]

@@ -106,7 +106,16 @@ def _canonical_number(value) -> str:  # noqa: C901
         fraction = ""
 
     digits = (whole + fraction).lstrip("0") or "0"
-    decimal_exponent = exponent + len(whole.lstrip("0")) - 1
+    whole_digits = whole.lstrip("0")
+    if whole_digits:
+        decimal_exponent = exponent + len(whole_digits) - 1
+    else:
+        # When Python keeps a value such as 0.098 in fixed notation, the
+        # leading zeroes in the fractional part determine its exponent. The
+        # old calculation only inspected `whole`, turning 0.098 into 0.98
+        # and making hashes disagree with JavaScript's Number::toString.
+        leading_fraction_zeroes = len(fraction) - len(fraction.lstrip("0"))
+        decimal_exponent = exponent - leading_fraction_zeroes - 1
     if digits == "0":
         return "0"
 
