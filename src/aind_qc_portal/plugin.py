@@ -487,7 +487,13 @@ def _verified_qc_actor(token: str, config: dict) -> str:
         raise ValueError("Invalid QC identity token") from exc
 
     stable_identity = claims.get("oid") or claims.get("sub")
-    actor = claims.get("preferred_username") or claims.get("email") or claims.get("upn") or stable_identity
+    actor = (
+        claims.get("name")
+        or claims.get("preferred_username")
+        or claims.get("email")
+        or claims.get("upn")
+        or stable_identity
+    )
     if not stable_identity:
         raise ValueError("QC API token has no usable identity")
     return str(actor)

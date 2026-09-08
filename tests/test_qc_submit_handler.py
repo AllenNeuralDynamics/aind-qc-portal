@@ -404,12 +404,39 @@ class TestVerifiedQcActor(unittest.TestCase):
             actor = plugin._verified_qc_actor(self._token(), self._config())
         self.assertEqual(actor, "alice@allenneuraldynamics.org")
 
+    def test_prefers_display_name_over_other_human_identifiers(self):
+        with self._patched_jwks():
+            actor = plugin._verified_qc_actor(
+                self._token(
+                    name="Alice Example",
+                    preferred_username="alice@allenneuraldynamics.org",
+                    email="alice@example.org",
+                    upn="alice@tenant.example",
+                ),
+                self._config(),
+            )
+        self.assertEqual(actor, "Alice Example")
+
     def test_falls_back_to_email_then_oid(self):
         with self._patched_jwks():
             actor = plugin._verified_qc_actor(
                 self._token(preferred_username=None, email="bob@allenneuraldynamics.org"), self._config()
             )
         self.assertEqual(actor, "bob@allenneuraldynamics.org")
+
+    def test_falls_back_to_display_name_before_opaque_subject(self):
+        with self._patched_jwks():
+            actor = plugin._verified_qc_actor(
+                self._token(
+                    preferred_username=None,
+                    email=None,
+                    upn=None,
+                    oid=None,
+                    name="Alice Example",
+                ),
+                self._config(),
+            )
+        self.assertEqual(actor, "Alice Example")
 
     def test_expired_token_is_rejected(self):
         expired = self._token(exp=datetime.now(timezone.utc) - timedelta(hours=1))
