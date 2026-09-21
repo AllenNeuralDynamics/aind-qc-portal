@@ -1,14 +1,14 @@
 """Mutation and hashing primitives for the tenant-authenticated QC submit API.
 
-See QC-OAUTH-STEP-2-QC-API.md (in the zombie repo) for the contract this
-module implements. It reuses the same mutation helpers as the Panel app's
+This module implements the tenant-authenticated QC submit contract. It reuses
+the same mutation helpers as the Panel app's
 write path (`view_contents/data_utils.py`) so the two writers apply metric
 value/status/curation/notes changes identically.
 
 `canonical_qc_json`/`qc_hash` must stay byte-for-byte in sync with the
-JavaScript implementation in zombie's `web/src/qc/canonical.js` — the browser
-and this module have to hash the exact same bytes for the stale-record check
-to mean anything. Cross-language fixtures live in
+JavaScript implementation in zombie's `web/src/qc/canonical.js` — both sides
+implement JCS-SHA256-v1 and have to hash the exact same bytes for the
+stale-record check to mean anything. Cross-language fixtures live in
 `web/src/qc/canonical-fixtures.js` and are mirrored in
 `tests/test_qc_edit.py`.
 """
@@ -129,12 +129,18 @@ def _canonical_number(value) -> str:  # noqa: C901
     return f"{sign}{coefficient}e{exponent_sign}{abs(decimal_exponent)}"
 
 
+def _utf16_sort_key(value: str) -> bytes:
+    """Return the UTF-16 code-unit sequence used by RFC 8785 property sorting."""
+    return value.encode("utf-16-be", "surrogatepass")
+
+
 def canonical_qc_json(value) -> str:
     """Serialize `value` to the frozen canonical JSON used for QC hashing.
 
-    Keep in sync with `canonicalQcJson` in web/src/qc/canonical.js: recursive
-    key-sorted objects, JSON-string-escaped keys/strings (non-ASCII left
-    literal, matching JS's `JSON.stringify`), and ECMAScript-style numbers.
+    Keep in sync with `canonicalQcJson` in web/src/qc/canonical.js. This is
+    JCS-SHA256-v1: recursive objects sorted by UTF-16 code units,
+    JSON-string-escaped keys/strings (non-ASCII left literal, matching JS's
+    `JSON.stringify`), and ECMAScript-style numbers.
     """
     if value is None:
         return "null"
@@ -147,7 +153,9 @@ def canonical_qc_json(value) -> str:
     if isinstance(value, (list, tuple)):
         return "[" + ",".join(canonical_qc_json(item) for item in value) + "]"
     if isinstance(value, dict):
-        keys = sorted(value.keys())
+        if any(not isinstance(key, str) for key in value):
+            raise TypeError("QC hash object keys must be strings")
+        keys = sorted(value.keys(), key=_utf16_sort_key)
         parts = (f"{json.dumps(key, ensure_ascii=False)}:{canonical_qc_json(value[key])}" for key in keys)
         return "{" + ",".join(parts) + "}"
     raise TypeError(f"Unsupported value in QC hash: {type(value)!r}")

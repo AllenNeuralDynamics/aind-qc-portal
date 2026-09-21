@@ -43,6 +43,10 @@ QC_HASH_FIXTURES = [
         {"metrics": [{"name": "fraction", "value": 0.09898453602764382}]},
         "66f193cc785d12ede531c60c338d9009fc0fd186fe0f82d8765ee59296150c73",
     ),
+    (
+        {"\uE000": 2, "𐀀": 1},
+        "4045c21a23c8ae8f8d9add81f54bd506bee65885099876fb4afb378b1f2c3516",
+    ),
 ]
 
 DEFAULT_GROUPING = ["ECEPHYS"]
@@ -114,6 +118,10 @@ class TestCanonicalHashFixtures(unittest.TestCase):
         a = {"a": 1, "b": 2}
         b = {"b": 2, "a": 1}
         self.assertEqual(qc_hash(a), qc_hash(b))
+
+    def test_object_keys_use_utf16_code_unit_order(self):
+        value = {"\uE000": 2, "𐀀": 1}
+        self.assertEqual(canonical_qc_json(value), '{"𐀀":1,"":2}')
 
 
 class TestApplyQcChanges(unittest.TestCase):
