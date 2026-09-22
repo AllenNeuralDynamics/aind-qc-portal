@@ -1,6 +1,7 @@
 """Unit tests for plugin.py request handlers"""
 
 import json
+import logging
 import unittest
 from unittest.mock import MagicMock, patch
 from urllib.parse import urlencode
@@ -313,6 +314,21 @@ class TestCreateProposal(_ProposalApiTestCase):
         self.assertEqual(proposal["record_name"], "asset-1")
         self.assertIn(proposal["proposal_id"], self.store.items)
 
+    def test_logs_posted_migration_with_context(self):
+        with patch.object(plugin._logger, "log") as emit:
+            response, _ = self._create()
+
+        self.assertEqual(response.code, 201)
+        self.assertEqual(emit.call_args.args[0], logging.INFO)
+        record = json.loads(emit.call_args.args[1])
+        self.assertEqual(record["message"], "Migrate job posted")
+        self.assertEqual(record["processName"], "aind-qc-portal")
+        self.assertEqual(record["user_id"], "alice")
+        self.assertEqual(record["acquisition_name"], "asset-1")
+        self.assertEqual(record["subject_id"], "2")
+        self.assertEqual(record["event_type"], "Create migration")
+        self.assertTrue(record["timestamp"].endswith("Z"))
+
     def test_duplicate_open_proposal_is_rejected(self):
         _, first = self._create()
         response, body = self._create(user="bob")
@@ -449,7 +465,8 @@ class TestApproveProposal(_ProposalApiTestCase):
     def test_second_user_applies_the_change(self):
         _, created = self._create()
         pid = created["proposal"]["proposal_id"]
-        response, body = self._approve(pid)
+        with patch.object(plugin._logger, "log") as emit:
+            response, body = self._approve(pid)
         self.assertEqual(response.code, 200)
         self.assertEqual(body["status"], "applied")
         self.assertEqual(self.upsert_calls, [self.PROPOSED])
@@ -458,6 +475,13 @@ class TestApproveProposal(_ProposalApiTestCase):
         self.assertEqual(stored["reviewer"], "bob")
         self.assertEqual(stored["docdb_status"], 200)
         self.assertIsNotNone(stored["reviewed_at"])
+        record = json.loads(emit.call_args.args[1])
+        self.assertEqual(record["message"], "Migrate job completed successfully")
+        self.assertEqual(record["processName"], "aind-qc-portal")
+        self.assertEqual(record["user_id"], "bob")
+        self.assertEqual(record["acquisition_name"], "asset-1")
+        self.assertEqual(record["subject_id"], "2")
+        self.assertEqual(record["event_type"], "Migration successful")
 
     def test_a_failed_upsert_leaves_the_proposal_open(self):
         _, created = self._create()

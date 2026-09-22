@@ -25,6 +25,49 @@ from aind_qc_portal.view_contents.panels.media.utils import clean_reference_pref
 
 _logger = logging.getLogger(__name__)
 
+AIND_LOG_PROCESS_NAME = "aind-qc-portal"
+
+
+def _log_migration_event(
+    level: int,
+    message: str,
+    *,
+    user_id: str | None = None,
+    acquisition_name: str | None = None,
+    subject_id: str | None = None,
+    event_type: str | None = None,
+) -> None:
+    """Emit a migration event as a JSON log record for CloudWatch."""
+    record = {
+        "timestamp": _now_iso().replace("+00:00", "Z"),
+        "level": logging.getLevelName(level),
+        "message": message,
+        "processName": AIND_LOG_PROCESS_NAME,
+    }
+    for name, value in {
+        "user_id": user_id,
+        "acquisition_name": acquisition_name,
+        "subject_id": subject_id,
+        "event_type": event_type,
+    }.items():
+        if value is not None:
+            record[name] = str(value)
+    _logger.log(level, json.dumps(record, separators=(",", ":")))
+
+
+def _migration_log_context(proposal: dict, user_id: str) -> dict[str, str | None]:
+    """Return the AIND log context shared by migration state changes."""
+    body = proposal.get("body") if isinstance(proposal.get("body"), dict) else {}
+    subject = body.get("subject") if isinstance(body.get("subject"), dict) else {}
+    subject_id = subject.get("subject_id") or body.get("subject_id")
+    acquisition_name = proposal.get("record_name") or body.get("name") or proposal.get("record_id")
+    return {
+        "user_id": user_id,
+        "acquisition_name": str(acquisition_name) if acquisition_name is not None else None,
+        "subject_id": str(subject_id) if subject_id is not None else None,
+    }
+
+
 # The QC submit API (`QcSubmitHandler` below) is isolated from the rest of
 # the app: a failure importing its module — a missing dependency, a bug in
 # qc_edit.py — must not prevent the whole Panel/Tornado app from starting.
@@ -883,6 +926,12 @@ class MetadataProposalsHandler(_QcBearerMetadataApiHandler):
             self.fail(502, "store_unavailable", detail=str(e))
             return
 
+        _log_migration_event(
+            logging.INFO,
+            "Migrate job posted",
+            event_type="Create migration",
+            **_migration_log_context(proposal, user),
+        )
         self.write_json({"proposal": proposal}, status_code=201)
 
     def _resolve_supersedes(self, supersedes):
@@ -995,6 +1044,12 @@ class MetadataProposalHandler(_QcBearerMetadataApiHandler):
         proposal["reviewer"] = user
         proposal["reviewed_at"] = _now_iso()
         put_proposal(proposal)
+        _log_migration_event(
+            logging.INFO,
+            "Migrate job withdrawn",
+            event_type="Review migration",
+            **_migration_log_context(proposal, user),
+        )
         self.write_json({"proposal": proposal})
 
     def _load(self, proposal_id):
@@ -1061,6 +1116,12 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
         proposal["reviewed_at"] = _now_iso()
         proposal["reason"] = payload.get("reason") or ""
         put_proposal(proposal)
+        _log_migration_event(
+            logging.INFO,
+            "Migrate job reviewed and rejected",
+            event_type="Review migration",
+            **_migration_log_context(proposal, user),
+        )
         self.write_json({"proposal": proposal})
 
     def _approve(self, proposal, user, payload):
@@ -1072,6 +1133,12 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
             response = _docdb_client_for(proposal["version"]).upsert_one_docdb_record(proposal["body"])
         except Exception as e:
             _logger.exception("DocDB upsert failed")
+            _log_migration_event(
+                logging.ERROR,
+                "Migrate job failed while updating DocDB",
+                event_type="Migration failed",
+                **_migration_log_context(proposal, user),
+            )
             self.fail(502, "docdb_error", detail=str(e))
             return
 
@@ -1085,6 +1152,12 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
 
         if not 200 <= status_code < 300:
             # Leave the proposal open so it can be retried once DocDB recovers.
+            _log_migration_event(
+                logging.ERROR,
+                f"Migrate job failed: DocDB returned status {status_code}",
+                event_type="Migration failed",
+                **_migration_log_context(proposal, user),
+            )
             self.write_json(
                 {
                     "status": "failed",
@@ -1102,6 +1175,12 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
         proposal["docdb_status"] = status_code
         proposal["docdb_response"] = docdb_response
         put_proposal(proposal)
+        _log_migration_event(
+            logging.INFO,
+            "Migrate job completed successfully",
+            event_type="Migration successful",
+            **_migration_log_context(proposal, user),
+        )
         self.write_json({"status": "applied", "proposal": proposal})
 
     def _approval_allowed(self, proposal, user, payload):
