@@ -456,6 +456,93 @@ def _qc_origin_allowed(origin: str, config: dict) -> bool:
     return bool(origin) and origin in config["origins"]
 
 
+class _QcBearerMetadataApiHandler(RequestHandler):
+    """Bearer-authenticated base for the two-party metadata proposal API.
+
+    The proposal flow is intentionally separate from the legacy session-cookie
+    endpoints above and from the narrow inline QC edit endpoint below. It uses
+    the same Entra identity-token validation and exact-origin CORS policy as
+    ``/api/qc/submit``.
+    """
+
+    def set_default_headers(self):
+        """Apply the QC API CORS policy without enabling cookie credentials."""
+        config = _qc_api_config()
+        origin = self.request.headers.get("Origin", "")
+        if _qc_origin_allowed(origin, config):
+            self.set_header("Access-Control-Allow-Origin", origin)
+            self.set_header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+            self.set_header("Access-Control-Allow-Headers", "Authorization, Content-Type")
+            self.set_header("Access-Control-Max-Age", str(CORS_MAX_AGE_SECONDS))
+        self.set_header("Vary", "Origin")
+        self.set_header("Cache-Control", "no-store")
+
+    def options(self, *args, **kwargs):
+        """Answer preflights only for exact configured browser origins."""
+        if not _qc_origin_allowed(self.request.headers.get("Origin", ""), _qc_api_config()):
+            self.set_status(403)
+            self.finish({"status": "error", "error": "origin_not_allowed"})
+            return
+        self.set_status(204)
+        self.finish()
+
+    def write_error(self, status_code: int, **kwargs):
+        """Emit structured JSON errors instead of Tornado's HTML page."""
+        self.set_status(status_code)
+        self.set_header("Content-Type", "application/json")
+        self.finish({"status": "error", "error": "request_failed"})
+
+    def fail(self, status_code: int, error: str, **extra):
+        """Write a structured JSON error and finish the request."""
+        self.set_status(status_code)
+        self.set_header("Content-Type", "application/json")
+        self.finish({"status": "error", "error": error, **extra})
+
+    def write_json(self, payload: dict, status_code: int = 200):
+        """Write a JSON response with the requested status code."""
+        self.set_status(status_code)
+        self.set_header("Content-Type", "application/json")
+        self.write(payload)
+
+    def require_write_origin(self) -> bool:
+        """Require a configured browser origin for every state-changing call."""
+        if _qc_origin_allowed(self.request.headers.get("Origin", ""), _qc_api_config()):
+            return True
+        self.fail(403, "origin_not_allowed")
+        return False
+
+    def require_user(self) -> str | None:
+        """Validate the Entra bearer token and return its verified actor."""
+        config = _qc_api_config()
+        if not config["enabled"]:
+            self.fail(503, "qc_api_disabled")
+            return None
+        match = _BEARER_RE.match(self.request.headers.get("Authorization", ""))
+        if not match:
+            self.fail(401, "not_authenticated")
+            return None
+        try:
+            return _verified_qc_actor(match.group(1), config)
+        except (ValueError, RuntimeError):
+            self.fail(401, "not_authenticated")
+            return None
+
+    def json_body(self) -> dict | None:
+        """Parse the request body as a JSON object."""
+        if not self.request.body:
+            self.fail(400, "missing_body")
+            return None
+        try:
+            parsed = json.loads(self.request.body)
+        except json.JSONDecodeError:
+            self.fail(400, "invalid_json")
+            return None
+        if not isinstance(parsed, dict):
+            self.fail(400, "invalid_json", detail="Request body must be a JSON object.")
+            return None
+        return parsed
+
+
 def _verified_qc_actor(token: str, config: dict) -> str:
     """Validate an Entra ID token and return its server-verified actor.
 
@@ -718,14 +805,14 @@ def _fetch_live_record(version: str, record_id: str) -> dict | None:
     return records[0] if records else None
 
 
-class MetadataProposalsHandler(_MetadataApiHandler):
+class MetadataProposalsHandler(_QcBearerMetadataApiHandler):
     """`/metadata/proposals`
 
     GET — the review queue. Public: proposed bodies are readable by anyone so a
     change can be inspected before it lands. Query params: `status` (default
     `open`, accepts a comma-separated list or `all`), `version`, `id`.
 
-    POST — create a proposal. Requires a session. Body::
+    POST — create a proposal. Requires an Entra bearer identity token. Body::
 
         {"version": "v1"|"v2", "id": "<_id>", "body": {...},
          "note": "<optional>", "supersedes": "<optional proposal_id>"}
@@ -874,7 +961,7 @@ class MetadataProposalsHandler(_MetadataApiHandler):
         return base
 
 
-class MetadataProposalHandler(_MetadataApiHandler):
+class MetadataProposalHandler(_QcBearerMetadataApiHandler):
     """`/metadata/proposals/<proposal_id>`
 
     GET — one proposal, including its base snapshot. Public.
@@ -924,7 +1011,7 @@ class MetadataProposalHandler(_MetadataApiHandler):
         return proposal
 
 
-class MetadataProposalActionHandler(_MetadataApiHandler):
+class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
     """POST `/metadata/proposals/<proposal_id>/(approve|reject)`
 
     Approve is the whole second-actor flow in one call. The reviewer sends the

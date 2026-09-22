@@ -80,6 +80,11 @@ class _ProposalApiTestCase(AsyncHTTPTestCase):
             patch.object(plugin, "get_proposal", self.store.get),
             patch.object(plugin, "list_proposals", self.store.list),
             patch.object(plugin, "_fetch_live_record", lambda version, rid: self.live_record),
+            # Proposal tests exercise the bearer-token boundary without
+            # depending on network JWKS discovery. Token text is the actor in
+            # this fixture; JWT validation itself is covered by the QC API
+            # tests.
+            patch.object(plugin, "_verified_qc_actor", lambda token, config: token),
             patch.object(
                 plugin,
                 "_docdb_client_for",
@@ -95,7 +100,7 @@ class _ProposalApiTestCase(AsyncHTTPTestCase):
         if origin:
             headers["Origin"] = origin
         if user:
-            headers["Cookie"] = _session_cookie(user)
+            headers["Authorization"] = f"Bearer {user}"
         return self.fetch(
             path,
             method=method,
@@ -244,10 +249,25 @@ class TestMetadataMeHandler(AsyncHTTPTestCase):
 class TestCreateProposal(_ProposalApiTestCase):
     """Tests for POST /metadata/proposals"""
 
-    def test_requires_a_session(self):
+    def test_requires_a_bearer_token(self):
         response, body = self._create(user=None)
         self.assertEqual(response.code, 401)
         self.assertEqual(body["error"], "not_authenticated")
+
+    def test_legacy_session_cookie_does_not_authenticate_a_proposal(self):
+        payload = {"version": "v2", "id": "abc", "body": self.PROPOSED}
+        response = self.fetch(
+            "/metadata/proposals",
+            method="POST",
+            body=json.dumps(payload),
+            headers={
+                "Content-Type": "application/json",
+                "Origin": ALLOWED_ORIGIN,
+                "Cookie": _session_cookie("alice"),
+            },
+        )
+        self.assertEqual(response.code, 401)
+        self.assertEqual(self._json(response)["error"], "not_authenticated")
 
     def test_rejects_disallowed_origin(self):
         response = self._post(
@@ -385,7 +405,7 @@ class TestApproveProposal(_ProposalApiTestCase):
         response = self._post(f"/metadata/proposals/{pid}/approve", payload, user=user)
         return response, self._json(response)
 
-    def test_requires_a_session(self):
+    def test_requires_a_bearer_token(self):
         _, created = self._create()
         pid = created["proposal"]["proposal_id"]
         response, body = self._approve(pid, user=None)
@@ -489,7 +509,7 @@ class TestRejectProposal(_ProposalApiTestCase):
 
 
 class TestCorsHeaders(AsyncHTTPTestCase):
-    """Tests for CORS handling on /metadata/* endpoints."""
+    """Tests for CORS handling on the bearer-backed proposal endpoints."""
 
     def get_app(self) -> Application:
         return _make_app()
@@ -501,7 +521,7 @@ class TestCorsHeaders(AsyncHTTPTestCase):
             headers={
                 "Origin": origin,
                 "Access-Control-Request-Method": "POST",
-                "Access-Control-Request-Headers": "content-type",
+                "Access-Control-Request-Headers": "authorization, content-type",
             },
             allow_nonstandard_methods=True,
         )
@@ -510,9 +530,10 @@ class TestCorsHeaders(AsyncHTTPTestCase):
         response = self._preflight(ALLOWED_ORIGIN)
         self.assertEqual(response.code, 204)
         self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), ALLOWED_ORIGIN)
-        self.assertEqual(response.headers.get("Access-Control-Allow-Credentials"), "true")
+        self.assertIsNone(response.headers.get("Access-Control-Allow-Credentials"))
         self.assertIn("POST", response.headers.get("Access-Control-Allow-Methods", ""))
         self.assertIn("Content-Type", response.headers.get("Access-Control-Allow-Headers", ""))
+        self.assertIn("Authorization", response.headers.get("Access-Control-Allow-Headers", ""))
 
     def test_preflight_on_a_proposal_action(self):
         response = self._preflight(ALLOWED_ORIGIN, "/metadata/proposals/abc/approve")
@@ -523,6 +544,11 @@ class TestCorsHeaders(AsyncHTTPTestCase):
         response = self._preflight("https://data.allenneuraldynamics-test.org")
         self.assertEqual(response.code, 403)
         self.assertNotIn("Access-Control-Allow-Origin", response.headers)
+
+    def test_localhost_origin_is_allowed_for_spa_testing(self):
+        response = self._preflight("http://localhost:5173")
+        self.assertEqual(response.code, 204)
+        self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "http://localhost:5173")
 
     def test_disallowed_origin_no_cors_header(self):
         response = self._preflight("https://evil.example")

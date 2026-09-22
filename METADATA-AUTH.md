@@ -12,20 +12,47 @@ Base URL (prod): `https://qc.allenneuraldynamics.org`
 
 ## Flow
 
-1. The app sends the user to `GET /metadata/login?redirect=<current page>` as a
-   top-level navigation. The portal establishes a cross-subdomain session and
-   sends them straight back.
-2. Every later call is a plain credentialed fetch — no tokens, no cookie
-   reading. `GET /metadata/me` says who is logged in.
+1. The app signs the user in through the shared Entra SPA client with MSAL and
+   acquires an identity token.
+2. Public queue reads use ordinary fetches. Proposal creation, withdrawal,
+   rejection, and approval send `Authorization: Bearer <identity-token>`.
 3. The author `POST`s a proposal to `/metadata/proposals`.
 4. A different user reviews it in the queue (`GET /metadata/proposals`) and
    `POST`s to `/metadata/proposals/{id}/approve` with the `body_hash` they were
-   shown. The portal re-checks the hash, that the reviewer is not the author,
-   and that live DocDB still matches the proposal's `base_hash`, then upserts.
+   shown. The portal validates the token, re-checks the hash, verifies that the
+   reviewer is not the author, and confirms that live DocDB still matches the
+   proposal's `base_hash` before upserting.
 
 ## Authentication
 
-### `GET /metadata/login`
+### SPA bearer authentication
+
+The proposal endpoints use the same tenant, audience, JWKS, and exact-origin
+CORS configuration as `/api/qc/submit`. They accept the Entra identity token
+issued for the configured SPA application. The browser must not send a client
+secret or an evaluator/author name; the portal derives the actor from the
+verified token.
+
+State-changing requests require:
+
+```http
+Authorization: Bearer <Entra identity token>
+Content-Type: application/json
+Origin: https://data.allenneuraldynamics.org
+```
+
+`401` means the bearer token is missing or invalid; `403` means the request
+origin is not configured. Public `GET` requests do not require a token.
+
+### Legacy session endpoints
+
+`GET /metadata/login`, `GET /metadata/me`, and `POST /metadata/logout` remain
+available for compatibility with older clients, but the migration pages no
+longer use them. They establish the legacy cross-subdomain session described
+below and must not be treated as the authentication contract for the proposal
+API.
+
+#### `GET /metadata/login`
 
 Top-level navigation target — not a fetch.
 
@@ -52,12 +79,12 @@ Responses:
 - `400` missing/invalid `redirect`
 - `403` request did not come from an allowed AIND subdomain
 
-### `GET /metadata/me`
+#### `GET /metadata/me`
 
 - `200` `{"authenticated": true, "user": "<user>"}`
 - `401` `{"status":"error","error":"not_authenticated"}`
 
-### `POST /metadata/logout`
+#### `POST /metadata/logout`
 
 Clears the session cookie. Does not touch the QC-portal OAuth session.
 
@@ -82,7 +109,7 @@ change can be inspected before it lands.
 
 ### `POST /metadata/proposals`
 
-Create a proposal. Requires a session.
+Create a proposal. Requires an Entra bearer identity token.
 
 ```json
 {
@@ -101,7 +128,7 @@ than whatever the client happened to have loaded.
 - `201` `{"proposal": <proposal>}`
 - `400` `invalid_version` · `invalid_body` · `missing_id` · `id_mismatch` ·
   `no_changes` (the body is identical to the live record)
-- `401` `not_authenticated`
+- `401` `not_authenticated` (missing or invalid bearer token)
 - `403` `origin_not_allowed`
 - `404` `record_not_found` · `supersedes_not_found`
 - `409` `duplicate_proposal` (an identical open proposal exists; the response
@@ -120,7 +147,7 @@ Withdraw an open proposal. Author only.
 
 ### `POST /metadata/proposals/{proposal_id}/approve`
 
-Body: `{"body_hash": "<the hash you reviewed>"}`. Requires a session.
+Body: `{"body_hash": "<the hash you reviewed>"}`. Requires an Entra bearer identity token.
 
 - `200` `{"status":"applied","proposal": <proposal>}`
 - `400` `missing_body_hash`
@@ -134,7 +161,7 @@ Body: `{"body_hash": "<the hash you reviewed>"}`. Requires a session.
 
 ### `POST /metadata/proposals/{proposal_id}/reject`
 
-Body: `{"reason": "…"}`. Requires a session. `200` `{"proposal": …}`.
+Body: `{"reason": "…"}`. Requires an Entra bearer identity token. `200` `{"proposal": …}`.
 
 ## Proposal shape
 
@@ -175,17 +202,14 @@ users, and applied/rejected proposals remain as an audit trail.
 
 ## CORS
 
-`/metadata/*` emits CORS headers for browser callers. Cross-origin requests are
-accepted **only** when the `Origin` header is an `https://` URL on
-`*.allenneuraldynamics.org`; anything else (including the matching `-test.org`
-domain) gets no `Access-Control-Allow-Origin` header and the browser blocks the
-request. State-changing methods additionally re-check `Origin` on the request
-itself, so a form-style POST that skips the preflight cannot ride the
-`SameSite=None` session cookie.
+`/metadata/proposals*` emits bearer-API CORS headers for browser callers.
+Cross-origin requests are accepted only for the exact origins configured by
+`QC_API_ALLOWED_ORIGINS` (the defaults include the production data portal and
+`http://localhost:5173`). State-changing methods re-check `Origin` on the
+request itself. The proposal API does not enable cookie credentials.
 
 ```
 Access-Control-Allow-Origin:  <echoed Origin, when allowed>
-Access-Control-Allow-Credentials: true
 Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS
 Access-Control-Allow-Headers: Content-Type, Authorization
 Access-Control-Max-Age:       3600
@@ -197,40 +221,34 @@ Vary:                         Origin
 ```js
 const QC = "https://qc.allenneuraldynamics.org";
 
-// 1. Who am I? (null when logged out)
-const me = await fetch(`${QC}/metadata/me`, { credentials: "include" })
-  .then((r) => (r.ok ? r.json() : null));
+const token = await getQcIdentityToken(); // shared MSAL SPA helper
 
-// 2. Log in — a top-level navigation that returns to this page.
-if (!me) {
-  location.assign(
-    `${QC}/metadata/login?redirect=${encodeURIComponent(location.href)}`
-  );
-}
-
-// 3. Propose a change.
+// Propose a change.
 const { proposal } = await fetch(`${QC}/metadata/proposals`, {
   method: "POST",
-  credentials: "include",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  },
   body: JSON.stringify({ version: "v2", id: record._id, body: record, note: "" }),
 }).then((r) => r.json());
 
-// 4. A different user approves it.
+// A different user approves it.
 await fetch(`${QC}/metadata/proposals/${proposal.proposal_id}/approve`, {
   method: "POST",
-  credentials: "include",
-  headers: { "Content-Type": "application/json" },
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  },
   body: JSON.stringify({ body_hash: proposal.body_hash }),
 });
 ```
 
 ## Notes for integrators
 
-- The UI **must be served from `*.allenneuraldynamics.org`**. The session cookie
-  is `Secure; SameSite=None; Domain=.allenneuraldynamics.org`, so
-  `http://localhost` cannot participate; deploy to a
-  `*.allenneuraldynamics.org(-test)` host to test end-to-end.
+- The SPA must use a redirect URI registered for its exact origin. The default
+  local configuration supports `http://localhost:5173`; production uses the
+  registered `https://data.allenneuraldynamics.org/auth/callback` URI.
 - Send the reviewer the `body_hash` you displayed, not one you recomputed from a
   fresh fetch. That is what makes "approved" mean "approved *this*".
 - A `base_drift` 409 is not an error to retry — it means the record changed. Show
