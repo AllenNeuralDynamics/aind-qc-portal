@@ -1,4 +1,4 @@
-"""S3-backed store for proposed DocDB metadata changes.
+"""Store for proposed DocDB metadata changes.
 
 See :mod:`aind_qc_portal.metadata_proposals.store` for the storage layout and
 :mod:`aind_qc_portal.plugin` for the HTTP surface built on top of it.

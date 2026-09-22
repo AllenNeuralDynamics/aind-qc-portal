@@ -1,11 +1,13 @@
-"""S3-backed storage for proposed DocDB metadata changes.
+"""Storage for proposed DocDB metadata changes.
 
 A *proposal* is one user's suggested replacement for a DocDB record. It is
-written to S3 as soon as it is created, so it survives a QC-portal restart —
-unlike the in-memory pending table this replaces — and stays around afterwards
-as an audit trail of who proposed and who approved what.
+stored as soon as it is created and records who proposed and who approved what.
+The temporary in-memory backend is the default while the portal's S3
+permissions are being repaired; set ``METADATA_PROPOSALS_BACKEND=s3`` to use
+the durable S3 backend below.
 
-Object layout (bucket ``aind-scratch-data``, prefix ``metadata-proposals/``)::
+The S3 object layout (bucket ``aind-scratch-data``, prefix
+``metadata-proposals/``) is::
 
     metadata-proposals/{proposal_id}.json
 
@@ -47,6 +49,7 @@ silently overwrite a record that moved underneath it.
 import hashlib
 import json
 import os
+import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -57,6 +60,7 @@ from botocore.exceptions import ClientError
 
 S3_BUCKET = os.environ.get("METADATA_PROPOSALS_BUCKET", "aind-scratch-data")
 S3_PREFIX = os.environ.get("METADATA_PROPOSALS_PREFIX", "metadata-proposals").strip("/")
+METADATA_PROPOSALS_BACKEND = os.environ.get("METADATA_PROPOSALS_BACKEND", "memory").strip().lower()
 
 PROPOSAL_STATUSES = ("open", "applied", "rejected", "withdrawn", "superseded")
 
@@ -64,6 +68,8 @@ PROPOSAL_STATUSES = ("open", "applied", "rejected", "withdrawn", "superseded")
 # lands, so nothing in the envelope is redacted for unauthenticated callers.
 
 _LIST_WORKERS = 8
+_MEMORY_PROPOSALS = {}
+_MEMORY_LOCK = threading.RLock()
 
 
 def _s3():
@@ -122,7 +128,7 @@ def new_proposal(
     }
 
 
-def put_proposal(proposal: dict) -> None:
+def _put_proposal_s3(proposal: dict) -> None:
     """Write *proposal* to S3, overwriting any previous revision of it."""
     _s3().put_object(
         Bucket=S3_BUCKET,
@@ -132,8 +138,29 @@ def put_proposal(proposal: dict) -> None:
     )
 
 
-def get_proposal(proposal_id: str) -> Optional[dict]:
-    """Return the proposal with *proposal_id*, or None if it does not exist."""
+def _put_proposal_memory(proposal: dict) -> None:
+    """Store *proposal* in this portal process, replacing its prior revision."""
+    with _MEMORY_LOCK:
+        _MEMORY_PROPOSALS[str(proposal["proposal_id"])] = _copy_proposal(proposal)
+
+
+def put_proposal(proposal: dict) -> None:
+    """Store *proposal* using the configured backend."""
+    if METADATA_PROPOSALS_BACKEND == "memory":
+        _put_proposal_memory(proposal)
+        return
+    _put_proposal_s3(proposal)
+
+
+def _get_proposal_memory(proposal_id: str) -> Optional[dict]:
+    """Return a copy of a process-local proposal, if present."""
+    with _MEMORY_LOCK:
+        proposal = _MEMORY_PROPOSALS.get(str(proposal_id))
+        return _copy_proposal(proposal) if proposal is not None else None
+
+
+def _get_proposal_s3(proposal_id: str) -> Optional[dict]:
+    """Return the proposal with *proposal_id* from S3, if it exists."""
     try:
         response = _s3().get_object(Bucket=S3_BUCKET, Key=_key(proposal_id))
     except ClientError as exc:
@@ -141,6 +168,13 @@ def get_proposal(proposal_id: str) -> Optional[dict]:
             return None
         raise
     return json.loads(response["Body"].read().decode())
+
+
+def get_proposal(proposal_id: str) -> Optional[dict]:
+    """Return the proposal with *proposal_id*, or None if it does not exist."""
+    if METADATA_PROPOSALS_BACKEND == "memory":
+        return _get_proposal_memory(proposal_id)
+    return _get_proposal_s3(proposal_id)
 
 
 def _list_keys() -> list:
@@ -166,6 +200,41 @@ def _read_key(key: str) -> Optional[dict]:
         return None
 
 
+def _copy_proposal(proposal: Optional[dict]) -> Optional[dict]:
+    """Copy a proposal so callers cannot mutate the stored revision directly."""
+    if proposal is None:
+        return None
+    return json.loads(json.dumps(proposal, default=str))
+
+
+def _list_proposals_memory(
+    status: Optional[str] = None,
+    version: Optional[str] = None,
+    record_id: Optional[str] = None,
+) -> list:
+    """Return process-local proposals matching the requested filters."""
+    with _MEMORY_LOCK:
+        proposals = [_copy_proposal(proposal) for proposal in _MEMORY_PROPOSALS.values()]
+
+    wanted = None
+    if status and status != "all":
+        wanted = {s.strip() for s in status.split(",") if s.strip()}
+
+    def keep(proposal: dict) -> bool:
+        """Return whether a proposal satisfies every requested filter."""
+        if wanted is not None and proposal.get("status") not in wanted:
+            return False
+        if version and proposal.get("version") != version:
+            return False
+        if record_id and str(proposal.get("record_id")) != str(record_id):
+            return False
+        return True
+
+    matches = [proposal for proposal in proposals if keep(proposal)]
+    matches.sort(key=lambda proposal: proposal.get("created_at") or "", reverse=True)
+    return matches
+
+
 def list_proposals(
     status: Optional[str] = None,
     version: Optional[str] = None,
@@ -176,6 +245,9 @@ def list_proposals(
     ``status`` may be a single status or a comma-separated list; ``None`` (or
     the literal ``"all"``) returns every status.
     """
+    if METADATA_PROPOSALS_BACKEND == "memory":
+        return _list_proposals_memory(status=status, version=version, record_id=record_id)
+
     keys = _list_keys()
     if not keys:
         return []

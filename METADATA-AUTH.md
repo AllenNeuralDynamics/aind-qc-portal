@@ -194,11 +194,17 @@ not matter.
 
 ## Storage
 
-Proposals live in S3 (`aind-scratch-data`, prefix `metadata-proposals/`), one
-object per proposal, rewritten in place on each status transition. Override
-with `METADATA_PROPOSALS_BUCKET` / `METADATA_PROPOSALS_PREFIX`. Nothing about a
-proposal is held in process memory, so restarts and redeploys are invisible to
-users, and applied/rejected proposals remain as an audit trail.
+The proposal store currently defaults to process memory while the portal's S3
+permissions are being repaired. Set `METADATA_PROPOSALS_BACKEND=s3` to use the
+durable S3 backend: proposals then live in `aind-scratch-data`, under the
+`metadata-proposals/` prefix, one object per proposal, rewritten in place on
+each status transition. The S3 bucket and prefix can be overridden with
+`METADATA_PROPOSALS_BUCKET` / `METADATA_PROPOSALS_PREFIX`.
+
+Memory-backed proposals are shared by the portal's request threads, but are
+lost when the process restarts and are not shared across multiple ECS tasks.
+This mode is temporary and should not be used for a multi-task deployment or
+as the long-term audit trail.
 
 ## CORS
 
