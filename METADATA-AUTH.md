@@ -99,13 +99,18 @@ never returns an HTML error page.
 The review queue. **Public** — proposed bodies are readable by anyone so a
 change can be inspected before it lands.
 
-| Param     | Default | Notes                                                      |
-| --------- | ------- | ---------------------------------------------------------- |
-| `status`  | `open`  | One status, a comma-separated list, or `all`.               |
-| `version` | —       | `v1` or `v2`.                                               |
-| `id`      | —       | Restrict to one record `_id`.                               |
+| Param     | Default | Notes                                                                    |
+| --------- | ------- | ------------------------------------------------------------------------ |
+| `status`  | `open`  | One status, a comma-separated list, or `all`.                             |
+| `version` | —       | `v1` or `v2`.                                                             |
+| `id`      | —       | Restrict to one record `_id`.                                             |
+| `summary` | `false` | `true` omits full record snapshots and returns compact queue/group fields. |
 
 `200` `{"proposals": [<proposal>, …]}`, newest first.
+
+Review queues should request `summary=true`, then fetch one full proposal by ID
+when its detail panel is opened. Mutation endpoints also accept `summary=true`
+to return a compact proposal in successful responses.
 
 ### `POST /metadata/proposals`
 
@@ -175,6 +180,8 @@ Body: `{"reason": "…"}`. Requires an Entra bearer identity token. `200` `{"pro
   "body_hash":     "<sha256 of canonical body>",
   "base":          { },
   "base_hash":     "<sha256 of canonical base>",
+  "change_key":    "<opaque grouping hash>",
+  "changed_sections": ["subject"],
   "note":          "",
   "author":        "<user>",
   "created_at":    "<ISO-8601 UTC>",
@@ -191,6 +198,11 @@ Body: `{"reason": "…"}`. Requires an Entra bearer identity token. `200` `{"pro
 
 Hashes are `sha256` over key-sorted, whitespace-free JSON, so key ordering does
 not matter.
+
+Compact summaries retain the identity, status, hashes, audit fields,
+`change_key`, and `changed_sections`, but omit `base`, `body`, and
+`docdb_response`. `change_key` groups proposals with the same changed paths and
+replacement values even when their original values differ.
 
 ## Storage
 

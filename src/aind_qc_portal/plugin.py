@@ -1,10 +1,14 @@
 """Plugin file for custom Panel server endpoints"""
 
+import asyncio
 import json
 import logging
 import os
 import re
+import threading
 import uuid
+import weakref
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
@@ -18,6 +22,7 @@ from aind_qc_portal.metadata_proposals import (
     get_proposal,
     list_proposals,
     new_proposal,
+    proposal_summary,
     put_proposal,
 )
 from aind_qc_portal.view_contents.data_utils import upload_temporary_metadata
@@ -547,6 +552,11 @@ class _QcBearerMetadataApiHandler(RequestHandler):
         self.set_header("Content-Type", "application/json")
         self.write(payload)
 
+    def proposal_for_response(self, proposal: dict) -> dict:
+        """Project a proposal when the caller requested a compact response."""
+        wants_summary = self.get_argument("summary", "false").lower() in {"1", "true", "yes"}
+        return proposal_summary(proposal) if wants_summary else proposal
+
     def require_write_origin(self) -> bool:
         """Require a configured browser origin for every state-changing call."""
         if _qc_origin_allowed(self.request.headers.get("Origin", ""), _qc_api_config()):
@@ -848,12 +858,38 @@ def _fetch_live_record(version: str, record_id: str) -> dict | None:
     return records[0] if records else None
 
 
+def _upsert_live_record(version: str, body: dict):
+    """Upsert one DocDB record using a fresh version-specific client."""
+    return _docdb_client_for(version).upsert_one_docdb_record(body)
+
+
+_PROPOSAL_RECORD_LOCKS = weakref.WeakKeyDictionary()
+_PROPOSAL_RECORD_LOCKS_GUARD = threading.Lock()
+_PROPOSAL_DOCDB_EXECUTOR = ThreadPoolExecutor(max_workers=8, thread_name_prefix="metadata-proposal")
+
+
+def _proposal_record_lock(version: str, record_id: str) -> asyncio.Lock:
+    """Return an event-loop-local lock serializing writes to one DocDB record."""
+    loop = asyncio.get_running_loop()
+    key = (str(version), str(record_id))
+    with _PROPOSAL_RECORD_LOCKS_GUARD:
+        locks = _PROPOSAL_RECORD_LOCKS.setdefault(loop, {})
+        return locks.setdefault(key, asyncio.Lock())
+
+
+async def _run_proposal_docdb(operation, *args):
+    """Run blocking proposal DocDB work without blocking or flooding Tornado."""
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(_PROPOSAL_DOCDB_EXECUTOR, operation, *args)
+
+
 class MetadataProposalsHandler(_QcBearerMetadataApiHandler):
     """`/metadata/proposals`
 
     GET — the review queue. Public: proposed bodies are readable by anyone so a
     change can be inspected before it lands. Query params: `status` (default
-    `open`, accepts a comma-separated list or `all`), `version`, `id`.
+    `open`, accepts a comma-separated list or `all`), `version`, `id`, and
+    `summary` (omit the large record snapshots when true).
 
     POST — create a proposal. Requires an Entra bearer identity token. Body::
 
@@ -865,23 +901,30 @@ class MetadataProposalsHandler(_QcBearerMetadataApiHandler):
     starting point rather than whatever the client happened to have loaded.
     """
 
-    def get(self):
+    async def get(self):
         """Return the review queue."""
         status = self.get_argument("status", "open")
         version = self.get_argument("version", None)
         record_id = self.get_argument("id", None)
+        summary = self.get_argument("summary", "false").lower() in {"1", "true", "yes"}
         if version and version not in DOCDB_VERSIONS:
             self.fail(400, "invalid_version")
             return
         try:
-            proposals = list_proposals(status=status, version=version, record_id=record_id)
+            proposals = await asyncio.to_thread(
+                list_proposals,
+                status=status,
+                version=version,
+                record_id=record_id,
+                summary=summary,
+            )
         except Exception as e:  # pragma: no cover - S3 failures
             _logger.exception("Failed to list metadata proposals")
             self.fail(502, "store_unavailable", detail=str(e))
             return
         self.write_json({"proposals": proposals})
 
-    def post(self):
+    async def post(self):
         """Create a proposal from the caller's suggested record."""
         if not self.require_write_origin():
             return
@@ -896,35 +939,36 @@ class MetadataProposalsHandler(_QcBearerMetadataApiHandler):
             return
         version, record_id, body = request
 
-        supersedes = payload.get("supersedes")
-        previous = self._resolve_supersedes(supersedes)
-        if supersedes and previous is None:
-            return
+        async with _proposal_record_lock(version, record_id):
+            supersedes = payload.get("supersedes")
+            previous = await self._resolve_supersedes(supersedes)
+            if supersedes and previous is None:
+                return
 
-        base = self._snapshot_base(version, record_id, body)
-        if base is None:
-            return
+            base = await self._snapshot_base(version, record_id, body)
+            if base is None:
+                return
 
-        proposal = new_proposal(
-            version=version,
-            record_id=record_id,
-            record_name=body.get("name"),
-            body=body,
-            base=base,
-            note=payload.get("note") or "",
-            author=user,
-            supersedes=str(supersedes) if supersedes else None,
-        )
-        try:
-            put_proposal(proposal)
-            if previous is not None:
-                previous["status"] = "superseded"
-                previous["superseded_by"] = proposal["proposal_id"]
-                put_proposal(previous)
-        except Exception as e:  # pragma: no cover - S3 failures
-            _logger.exception("Failed to store metadata proposal")
-            self.fail(502, "store_unavailable", detail=str(e))
-            return
+            proposal = new_proposal(
+                version=version,
+                record_id=record_id,
+                record_name=body.get("name"),
+                body=body,
+                base=base,
+                note=payload.get("note") or "",
+                author=user,
+                supersedes=str(supersedes) if supersedes else None,
+            )
+            try:
+                await asyncio.to_thread(put_proposal, proposal)
+                if previous is not None:
+                    previous["status"] = "superseded"
+                    previous["superseded_by"] = proposal["proposal_id"]
+                    await asyncio.to_thread(put_proposal, previous)
+            except Exception as e:  # pragma: no cover - S3 failures
+                _logger.exception("Failed to store metadata proposal")
+                self.fail(502, "store_unavailable", detail=str(e))
+                return
 
         _log_migration_event(
             logging.INFO,
@@ -932,13 +976,13 @@ class MetadataProposalsHandler(_QcBearerMetadataApiHandler):
             event_type="Create migration",
             **_migration_log_context(proposal, user),
         )
-        self.write_json({"proposal": proposal}, status_code=201)
+        self.write_json({"proposal": self.proposal_for_response(proposal)}, status_code=201)
 
-    def _resolve_supersedes(self, supersedes):
+    async def _resolve_supersedes(self, supersedes):
         """Return the open proposal being rebased, or None (writing an error if it is unusable)."""
         if not supersedes:
             return None
-        previous = get_proposal(str(supersedes))
+        previous = await asyncio.to_thread(get_proposal, str(supersedes))
         if previous is None:
             self.fail(404, "supersedes_not_found")
             return None
@@ -968,33 +1012,22 @@ class MetadataProposalsHandler(_QcBearerMetadataApiHandler):
             return None
         return version, str(record_id), body
 
-    def _snapshot_base(self, version, record_id, body):
+    async def _snapshot_base(self, version, record_id, body):
         """Return the live record to base the proposal on, or write an error and return None.
 
         Also rejects a proposal that changes nothing, and one that duplicates an
         open proposal for the same record.
         """
-        try:
-            base = _fetch_live_record(version, record_id)
-        except Exception as e:
-            _logger.exception("DocDB read failed while creating a proposal")
-            self.fail(502, "docdb_unavailable", detail=str(e))
-            return None
-        if base is None:
-            self.fail(404, "record_not_found", detail=f"No DocDB {version} record with _id {record_id}.")
-            return None
-
         body_hash = canonical_hash(body)
-        if body_hash == canonical_hash(base):
-            self.fail(400, "no_changes", detail="The proposed body is identical to the live record.")
-            return None
-
         try:
-            duplicates = [
-                p
-                for p in list_proposals(status="open", version=version, record_id=record_id)
-                if p.get("body_hash") == body_hash
-            ]
+            open_proposals = await asyncio.to_thread(
+                list_proposals,
+                status="open",
+                version=version,
+                record_id=record_id,
+                summary=True,
+            )
+            duplicates = [proposal for proposal in open_proposals if proposal.get("body_hash") == body_hash]
         except Exception as e:  # pragma: no cover - S3 failures
             _logger.exception("Failed to check for duplicate proposals")
             self.fail(502, "store_unavailable", detail=str(e))
@@ -1007,6 +1040,19 @@ class MetadataProposalsHandler(_QcBearerMetadataApiHandler):
                 detail="An identical proposal is already open for this record.",
             )
             return None
+
+        try:
+            base = await _run_proposal_docdb(_fetch_live_record, version, record_id)
+        except Exception as e:
+            _logger.exception("DocDB read failed while creating a proposal")
+            self.fail(502, "docdb_unavailable", detail=str(e))
+            return None
+        if base is None:
+            self.fail(404, "record_not_found", detail=f"No DocDB {version} record with _id {record_id}.")
+            return None
+        if body_hash == canonical_hash(base):
+            self.fail(400, "no_changes", detail="The proposed body is identical to the live record.")
+            return None
         return base
 
 
@@ -1017,45 +1063,49 @@ class MetadataProposalHandler(_QcBearerMetadataApiHandler):
     DELETE — withdraw an open proposal. Author only.
     """
 
-    def get(self, proposal_id):
+    async def get(self, proposal_id):
         """Return one proposal, including the record it was based on."""
-        proposal = self._load(proposal_id)
+        proposal = await self._load(proposal_id)
         if proposal is None:
             return
-        self.write_json({"proposal": proposal})
+        self.write_json({"proposal": self.proposal_for_response(proposal)})
 
-    def delete(self, proposal_id):
+    async def delete(self, proposal_id):
         """Withdraw the caller's own open proposal."""
         if not self.require_write_origin():
             return
         user = self.require_user()
         if not user:
             return
-        proposal = self._load(proposal_id)
+        proposal = await self._load(proposal_id)
         if proposal is None:
             return
-        if proposal["status"] != "open":
-            self.fail(409, "not_open", proposal_status=proposal["status"])
-            return
-        if proposal["author"] != user:
-            self.fail(403, "not_author", detail="Only the author can withdraw a proposal.")
-            return
-        proposal["status"] = "withdrawn"
-        proposal["reviewer"] = user
-        proposal["reviewed_at"] = _now_iso()
-        put_proposal(proposal)
+        async with _proposal_record_lock(proposal["version"], proposal["record_id"]):
+            proposal = await self._load(proposal_id)
+            if proposal is None:
+                return
+            if proposal["status"] != "open":
+                self.fail(409, "not_open", proposal_status=proposal["status"])
+                return
+            if proposal["author"] != user:
+                self.fail(403, "not_author", detail="Only the author can withdraw a proposal.")
+                return
+            proposal["status"] = "withdrawn"
+            proposal["reviewer"] = user
+            proposal["reviewed_at"] = _now_iso()
+            await asyncio.to_thread(put_proposal, proposal)
         _log_migration_event(
             logging.INFO,
             "Migrate job withdrawn",
             event_type="Review migration",
             **_migration_log_context(proposal, user),
         )
-        self.write_json({"proposal": proposal})
+        self.write_json({"proposal": self.proposal_for_response(proposal)})
 
-    def _load(self, proposal_id):
+    async def _load(self, proposal_id):
         """Return the stored proposal, or write an error and return None."""
         try:
-            proposal = get_proposal(str(proposal_id))
+            proposal = await asyncio.to_thread(get_proposal, str(proposal_id))
         except Exception as e:  # pragma: no cover - S3 failures
             _logger.exception("Failed to read metadata proposal")
             self.fail(502, "store_unavailable", detail=str(e))
@@ -1080,7 +1130,7 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
     approver list.
     """
 
-    def post(self, proposal_id, action):
+    async def post(self, proposal_id, action):
         """Approve or reject the proposal named in the path."""
         if not self.require_write_origin():
             return
@@ -1092,7 +1142,7 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
             return
 
         try:
-            proposal = get_proposal(str(proposal_id))
+            proposal = await asyncio.to_thread(get_proposal, str(proposal_id))
         except Exception as e:  # pragma: no cover - S3 failures
             _logger.exception("Failed to read metadata proposal")
             self.fail(502, "store_unavailable", detail=str(e))
@@ -1100,37 +1150,46 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
         if proposal is None:
             self.fail(404, "proposal_not_found")
             return
-        if proposal["status"] != "open":
-            self.fail(409, "not_open", proposal_status=proposal["status"])
-            return
+        async with _proposal_record_lock(proposal["version"], proposal["record_id"]):
+            proposal = await asyncio.to_thread(get_proposal, str(proposal_id))
+            if proposal is None:
+                self.fail(404, "proposal_not_found")
+                return
+            if proposal["status"] != "open":
+                self.fail(409, "not_open", proposal_status=proposal["status"])
+                return
 
-        if action == "reject":
-            self._reject(proposal, user, payload)
-            return
-        self._approve(proposal, user, payload)
+            if action == "reject":
+                await self._reject(proposal, user, payload)
+                return
+            await self._approve(proposal, user, payload)
 
-    def _reject(self, proposal, user, payload):
+    async def _reject(self, proposal, user, payload):
         """Close the proposal as rejected, recording who rejected it and why."""
         proposal["status"] = "rejected"
         proposal["reviewer"] = user
         proposal["reviewed_at"] = _now_iso()
         proposal["reason"] = payload.get("reason") or ""
-        put_proposal(proposal)
+        await asyncio.to_thread(put_proposal, proposal)
         _log_migration_event(
             logging.INFO,
             "Migrate job reviewed and rejected",
             event_type="Review migration",
             **_migration_log_context(proposal, user),
         )
-        self.write_json({"proposal": proposal})
+        self.write_json({"proposal": self.proposal_for_response(proposal)})
 
-    def _approve(self, proposal, user, payload):
+    async def _approve(self, proposal, user, payload):
         """Apply the proposal to DocDB once every approval check passes."""
-        if not self._approval_allowed(proposal, user, payload):
+        if not await self._approval_allowed(proposal, user, payload):
             return
 
         try:
-            response = _docdb_client_for(proposal["version"]).upsert_one_docdb_record(proposal["body"])
+            response = await _run_proposal_docdb(
+                _upsert_live_record,
+                proposal["version"],
+                proposal["body"],
+            )
         except Exception as e:
             _logger.exception("DocDB upsert failed")
             _log_migration_event(
@@ -1163,7 +1222,7 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
                     "status": "failed",
                     "docdb_status": status_code,
                     "docdb_response": docdb_response,
-                    "proposal": proposal,
+                    "proposal": self.proposal_for_response(proposal),
                 },
                 status_code=502,
             )
@@ -1174,16 +1233,16 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
         proposal["reviewed_at"] = _now_iso()
         proposal["docdb_status"] = status_code
         proposal["docdb_response"] = docdb_response
-        put_proposal(proposal)
+        await asyncio.to_thread(put_proposal, proposal)
         _log_migration_event(
             logging.INFO,
             "Migrate job completed successfully",
             event_type="Migration successful",
             **_migration_log_context(proposal, user),
         )
-        self.write_json({"status": "applied", "proposal": proposal})
+        self.write_json({"status": "applied", "proposal": self.proposal_for_response(proposal)})
 
-    def _approval_allowed(self, proposal, user, payload):
+    async def _approval_allowed(self, proposal, user, payload):
         """Return True if this approval may proceed, else write an error and return False.
 
         Three separate things have to hold: the reviewer is not the author, the
@@ -1212,7 +1271,11 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
             return False
 
         try:
-            live = _fetch_live_record(proposal["version"], proposal["record_id"])
+            live = await _run_proposal_docdb(
+                _fetch_live_record,
+                proposal["version"],
+                proposal["record_id"],
+            )
         except Exception as e:
             _logger.exception("DocDB read failed while approving a proposal")
             self.fail(502, "docdb_unavailable", detail=str(e))

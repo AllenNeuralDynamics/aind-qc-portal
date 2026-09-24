@@ -70,6 +70,39 @@ class TestMetadataProposalStore(unittest.TestCase):
         self.assertEqual(store.list_proposals(status="all", version="v1", record_id="asset-2"), [])
         self.assertEqual([proposal["proposal_id"] for proposal in store.list_proposals(record_id="asset-1")], ["p1"])
 
+    @patch.object(store, "METADATA_PROPOSALS_BACKEND", "memory")
+    def test_memory_filters_before_copying_full_records(self):
+        """Record-specific duplicate checks must not clone the whole queue."""
+        store.put_proposal(self._proposal("p1", record_id="asset-1"))
+        store.put_proposal(self._proposal("p2", record_id="asset-2"))
+
+        original_copy = store._copy_proposal
+        with patch.object(store, "_copy_proposal", wraps=original_copy) as copy_proposal:
+            listed = store.list_proposals(status="open", record_id="asset-1")
+
+        self.assertEqual([proposal["proposal_id"] for proposal in listed], ["p1"])
+        self.assertEqual(copy_proposal.call_count, 1)
+
+    @patch.object(store, "METADATA_PROPOSALS_BACKEND", "memory")
+    def test_summary_omits_large_snapshots_and_groups_same_replacement(self):
+        first = self._proposal("p1", record_id="asset-1")
+        second = self._proposal("p2", record_id="asset-2")
+        second["base"]["value"] = "different-base"
+        second["body"]["value"] = first["body"]["value"]
+        second.pop("change_key", None)
+        second.pop("changed_sections", None)
+        store.put_proposal(first)
+        store.put_proposal(second)
+
+        summaries = store.list_proposals(status="open", summary=True)
+
+        self.assertEqual(len(summaries), 2)
+        self.assertNotIn("base", summaries[0])
+        self.assertNotIn("body", summaries[0])
+        self.assertNotIn("docdb_response", summaries[0])
+        self.assertEqual(summaries[0]["changed_sections"], ["value"])
+        self.assertEqual(summaries[0]["change_key"], summaries[1]["change_key"])
+
     @patch.object(store, "METADATA_PROPOSALS_BACKEND", "s3")
     def test_s3_backend_preserves_put_get_and_list_behavior(self):
         """Route S3 mode through the original object layout and filters."""

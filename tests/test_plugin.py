@@ -1,15 +1,19 @@
 """Unit tests for plugin.py request handlers"""
 
+import asyncio
 import json
 import logging
+import threading
 import unittest
 from unittest.mock import MagicMock, patch
 from urllib.parse import urlencode
 
-from tornado.testing import AsyncHTTPTestCase
+from tornado.httpclient import HTTPRequest
+from tornado.testing import AsyncHTTPTestCase, gen_test
 from tornado.web import Application, create_signed_value
 
 from aind_qc_portal import plugin
+from aind_qc_portal.metadata_proposals import proposal_summary
 
 COOKIE_SECRET = "test-secret"
 ALLOWED_ORIGIN = "https://data.allenneuraldynamics.org"
@@ -38,7 +42,7 @@ class _FakeStore:
         stored = self.items.get(str(proposal_id))
         return json.loads(json.dumps(stored)) if stored else None
 
-    def list(self, status=None, version=None, record_id=None):
+    def list(self, status=None, version=None, record_id=None, summary=False):
         wanted = None
         if status and status != "all":
             wanted = {s.strip() for s in status.split(",") if s.strip()}
@@ -50,7 +54,7 @@ class _FakeStore:
                 continue
             if record_id and str(p["record_id"]) != str(record_id):
                 continue
-            out.append(json.loads(json.dumps(p)))
+            out.append(proposal_summary(p) if summary else json.loads(json.dumps(p)))
         out.sort(key=lambda p: p["created_at"], reverse=True)
         return out
 
@@ -314,6 +318,17 @@ class TestCreateProposal(_ProposalApiTestCase):
         self.assertEqual(proposal["record_name"], "asset-1")
         self.assertIn(proposal["proposal_id"], self.store.items)
 
+    def test_compact_create_response_omits_record_snapshots(self):
+        payload = {"version": "v2", "id": "abc", "body": self.PROPOSED}
+        response = self._post("/metadata/proposals?summary=true", payload, user="alice")
+        proposal = self._json(response)["proposal"]
+
+        self.assertEqual(response.code, 201)
+        self.assertNotIn("base", proposal)
+        self.assertNotIn("body", proposal)
+        self.assertEqual(proposal["changed_sections"], ["subject"])
+        self.assertIn(proposal["proposal_id"], self.store.items)
+
     def test_logs_posted_migration_with_context(self):
         with patch.object(plugin._logger, "log") as emit:
             response, _ = self._create()
@@ -335,6 +350,75 @@ class TestCreateProposal(_ProposalApiTestCase):
         self.assertEqual(response.code, 409)
         self.assertEqual(body["error"], "duplicate_proposal")
         self.assertEqual(body["proposal_id"], first["proposal"]["proposal_id"])
+
+    def test_duplicate_is_rejected_without_another_docdb_read(self):
+        self._create()
+        with patch.object(plugin, "_fetch_live_record", side_effect=AssertionError("unexpected DocDB read")):
+            response, body = self._create(user="bob")
+
+        self.assertEqual(response.code, 409)
+        self.assertEqual(body["error"], "duplicate_proposal")
+
+    @gen_test(timeout=5)
+    async def test_slow_docdb_read_does_not_block_queue_requests(self):
+        read_started = threading.Event()
+        release_read = threading.Event()
+
+        def slow_read(version, record_id):
+            read_started.set()
+            release_read.wait(timeout=3)
+            return self.live_record
+
+        payload = {"version": "v2", "id": "abc", "body": self.PROPOSED}
+        request = HTTPRequest(
+            self.get_url("/metadata/proposals"),
+            method="POST",
+            headers={
+                "Authorization": "Bearer alice",
+                "Content-Type": "application/json",
+                "Origin": ALLOWED_ORIGIN,
+            },
+            body=json.dumps(payload),
+        )
+
+        with patch.object(plugin, "_fetch_live_record", slow_read):
+            create_future = self.http_client.fetch(request, raise_error=False)
+            self.assertTrue(await asyncio.to_thread(read_started.wait, 1))
+            try:
+                queue_response = await self.http_client.fetch(
+                    self.get_url("/metadata/proposals?summary=true"),
+                    raise_error=False,
+                )
+                self.assertEqual(queue_response.code, 200)
+            finally:
+                release_read.set()
+            create_response = await create_future
+
+        self.assertEqual(create_response.code, 201)
+
+    @gen_test(timeout=5)
+    async def test_concurrent_duplicate_creates_are_serialized_per_record(self):
+        payload = json.dumps({"version": "v2", "id": "abc", "body": self.PROPOSED})
+
+        def request(user):
+            return HTTPRequest(
+                self.get_url("/metadata/proposals"),
+                method="POST",
+                headers={
+                    "Authorization": f"Bearer {user}",
+                    "Content-Type": "application/json",
+                    "Origin": ALLOWED_ORIGIN,
+                },
+                body=payload,
+            )
+
+        responses = await asyncio.gather(
+            self.http_client.fetch(request("alice"), raise_error=False),
+            self.http_client.fetch(request("bob"), raise_error=False),
+        )
+
+        self.assertEqual(sorted(response.code for response in responses), [201, 409])
+        self.assertEqual(len(self.store.items), 1)
 
     def test_supersede_closes_the_previous_proposal(self):
         _, first = self._create()
@@ -377,6 +461,18 @@ class TestListProposals(_ProposalApiTestCase):
         response = self.fetch("/metadata/proposals?status=all")
         self.assertEqual(len(self._json(response)["proposals"]), 1)
 
+    def test_summary_omits_record_snapshots_and_includes_grouping_metadata(self):
+        self._create()
+        response = self.fetch("/metadata/proposals?summary=true")
+        proposal = self._json(response)["proposals"][0]
+
+        self.assertNotIn("base", proposal)
+        self.assertNotIn("body", proposal)
+        self.assertNotIn("docdb_response", proposal)
+        self.assertEqual(proposal["changed_sections"], ["subject"])
+        self.assertTrue(proposal["change_key"])
+        self.assertEqual(proposal["body_hash"], plugin.canonical_hash(self.PROPOSED))
+
     def test_invalid_version_filter(self):
         response = self.fetch("/metadata/proposals?version=v9")
         self.assertEqual(response.code, 400)
@@ -395,7 +491,10 @@ class TestProposalDetailAndWithdraw(_ProposalApiTestCase):
         pid = created["proposal"]["proposal_id"]
         response = self.fetch(f"/metadata/proposals/{pid}")
         self.assertEqual(response.code, 200)
-        self.assertEqual(self._json(response)["proposal"]["proposal_id"], pid)
+        proposal = self._json(response)["proposal"]
+        self.assertEqual(proposal["proposal_id"], pid)
+        self.assertEqual(proposal["base"], self.LIVE_RECORD)
+        self.assertEqual(proposal["body"], self.PROPOSED)
 
     def test_only_the_author_may_withdraw(self):
         _, created = self._create()
@@ -482,6 +581,77 @@ class TestApproveProposal(_ProposalApiTestCase):
         self.assertEqual(record["acquisition_name"], "asset-1")
         self.assertEqual(record["subject_id"], "2")
         self.assertEqual(record["event_type"], "Migration successful")
+
+    @gen_test(timeout=5)
+    async def test_concurrent_approvals_for_one_record_cannot_both_apply(self):
+        other_body = {"_id": "abc", "name": "asset-1", "subject": {"subject_id": "3"}}
+        first = plugin.new_proposal(
+            version="v2",
+            record_id="abc",
+            record_name="asset-1",
+            body=self.PROPOSED,
+            base=self.live_record,
+            note="",
+            author="alice",
+        )
+        second = plugin.new_proposal(
+            version="v2",
+            record_id="abc",
+            record_name="asset-1",
+            body=other_body,
+            base=self.live_record,
+            note="",
+            author="alice",
+        )
+        self.store.put(first)
+        self.store.put(second)
+
+        def upsert(version, body):
+            self.upsert_calls.append(body)
+            self.live_record = json.loads(json.dumps(body))
+            return self.upsert_response
+
+        def request(proposal, user):
+            pid = proposal["proposal_id"]
+            return HTTPRequest(
+                self.get_url(f"/metadata/proposals/{pid}/approve"),
+                method="POST",
+                headers={
+                    "Authorization": f"Bearer {user}",
+                    "Content-Type": "application/json",
+                    "Origin": ALLOWED_ORIGIN,
+                },
+                body=json.dumps({"body_hash": proposal["body_hash"]}),
+            )
+
+        with patch.object(plugin, "_upsert_live_record", upsert):
+            responses = await asyncio.gather(
+                self.http_client.fetch(request(first, "bob"), raise_error=False),
+                self.http_client.fetch(request(second, "carol"), raise_error=False),
+            )
+
+        self.assertEqual(sorted(response.code for response in responses), [200, 409])
+        self.assertEqual(len(self.upsert_calls), 1)
+        statuses = {
+            self.store.get(first["proposal_id"])["status"],
+            self.store.get(second["proposal_id"])["status"],
+        }
+        self.assertEqual(statuses, {"applied", "open"})
+
+    def test_compact_approval_response_omits_record_snapshots(self):
+        _, created = self._create()
+        pid = created["proposal"]["proposal_id"]
+        response = self._post(
+            f"/metadata/proposals/{pid}/approve?summary=true",
+            {"body_hash": created["proposal"]["body_hash"]},
+            user="bob",
+        )
+        proposal = self._json(response)["proposal"]
+
+        self.assertEqual(response.code, 200)
+        self.assertNotIn("base", proposal)
+        self.assertNotIn("body", proposal)
+        self.assertEqual(proposal["status"], "applied")
 
     def test_a_failed_upsert_leaves_the_proposal_open(self):
         _, created = self._create()

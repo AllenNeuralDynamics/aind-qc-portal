@@ -10,6 +10,7 @@ from .store import (  # noqa: F401
     get_proposal,
     list_proposals,
     new_proposal,
+    proposal_summary,
     put_proposal,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "get_proposal",
     "list_proposals",
     "new_proposal",
+    "proposal_summary",
     "put_proposal",
 ]
