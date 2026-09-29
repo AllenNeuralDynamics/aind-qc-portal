@@ -58,7 +58,7 @@ class _Missing:
 MISSING = _Missing()
 
 _SUPPORTED_STATUSES = {status.value for status in Status}
-_ALLOWED_CHANGE_FIELDS = {"metric_name", "value", "status"}
+_ALLOWED_CHANGE_FIELDS = {"metric_name", "value", "status", "delete_curation_indices"}
 _HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -176,10 +176,42 @@ def _validate_change(change) -> None:
     name = change.get("metric_name")
     if not isinstance(name, str) or not name:
         raise QcEditError("metric_name is required")
-    if "value" not in change and "status" not in change:
-        raise QcEditError(f"change for {name!r} has no value or status")
+    if "value" not in change and "status" not in change and "delete_curation_indices" not in change:
+        raise QcEditError(f"change for {name!r} has no value, status, or curation deletion")
     if "status" in change and change["status"] not in _SUPPORTED_STATUSES:
         raise QcEditError(f"unsupported status: {change['status']!r}")
+    if "delete_curation_indices" in change:
+        indices = change["delete_curation_indices"]
+        if (
+            not isinstance(indices, list)
+            or not indices
+            or any(not isinstance(index, int) or isinstance(index, bool) or index < 0 for index in indices)
+            or len(set(indices)) != len(indices)
+        ):
+            raise QcEditError("delete_curation_indices must be a non-empty list of unique non-negative integers")
+
+
+def _delete_curation_entries(metric_obj: dict, indices: list) -> None:
+    """Remove selected curation values and their aligned history entries."""
+    values = metric_obj.get("value", [])
+    if isinstance(values, str):
+        try:
+            values = json.loads(values[5:] if values.startswith("json:") else values)
+        except json.JSONDecodeError as exc:
+            raise QcEditError("curation metric value is not valid JSON") from exc
+    if isinstance(values, dict):
+        values = [values]
+    if not isinstance(values, list):
+        raise QcEditError("curation metric value must be a list")
+    if any(index >= len(values) for index in indices):
+        raise QcEditError("delete_curation_indices contains an index outside the curation history")
+
+    deleted = set(indices)
+    metric_obj["value"] = [value for index, value in enumerate(values) if index not in deleted]
+
+    history = metric_obj.get("curation_history")
+    if isinstance(history, list):
+        metric_obj["curation_history"] = [entry for index, entry in enumerate(history) if index not in deleted]
 
 
 def apply_qc_changes(record: dict, changes: list, *, actor: str, notes=MISSING) -> dict:  # noqa: C901
@@ -188,12 +220,12 @@ def apply_qc_changes(record: dict, changes: list, *, actor: str, notes=MISSING) 
     Applies each change using the same primitives as the Panel write path
     (`apply_qc_metric_change`, `apply_curation_metric_change`,
     `apply_status_change`, `apply_notes_change`): a regular metric's value is
-    replaced, a curation metric's value is appended with a curation-history
-    entry, and any status change appends a status-history entry. `actor` is
-    used as both evaluator and curator; it must already be the server-verified
-    identity, never a client-supplied name. Raises `QcEditError` — with
-    "schema validation" in the message for a schema failure, otherwise not —
-    on any invalid input.
+    replaced, a curation metric can have selected history entries removed and
+    new values appended, and any status change appends a status-history entry.
+    `actor` is used as both evaluator and curator; it must already be the
+    server-verified identity, never a client-supplied name. Raises
+    `QcEditError` — with "schema validation" in the message for a schema
+    failure, otherwise not — on any invalid input.
     """
     if not isinstance(changes, list):
         raise QcEditError("changes must be a list")
@@ -224,6 +256,10 @@ def apply_qc_changes(record: dict, changes: list, *, actor: str, notes=MISSING) 
         if metric_obj is None:
             raise QcEditError(f"unknown metric_name: {name}")
 
+        if "delete_curation_indices" in change:
+            if metric_obj.get("object_type") != "Curation metric":
+                raise QcEditError(f"metric {name!r} is not a curation metric")
+            _delete_curation_entries(metric_obj, change["delete_curation_indices"])
         if "value" in change:
             if metric_obj.get("object_type") == "Curation metric":
                 apply_curation_metric_change(metric_obj, change["value"], actor)
