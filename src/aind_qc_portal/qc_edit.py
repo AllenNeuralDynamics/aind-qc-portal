@@ -25,6 +25,7 @@ from aind_qc_portal.view_contents.data_utils import (
     apply_notes_change,
     apply_qc_metric_change,
     apply_status_change,
+    create_status_history_entry,
 )
 
 
@@ -59,6 +60,7 @@ MISSING = _Missing()
 
 _SUPPORTED_STATUSES = {status.value for status in Status}
 _ALLOWED_CHANGE_FIELDS = {"metric_name", "value", "status", "delete_curation_indices"}
+_ALLOWED_NEW_METRIC_FIELDS = {"name", "modality", "stage", "value", "description", "reference", "tags"}
 _HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -191,6 +193,31 @@ def _validate_change(change) -> None:
             raise QcEditError("delete_curation_indices must be a non-empty list of unique non-negative integers")
 
 
+def _build_new_metric(metric, actor: str) -> dict:
+    """Return a plain QC metric whose only status is a Pending entry by `actor`.
+
+    Clients cannot supply status history, curation fields, or object_type, so a
+    new metric can never arrive already evaluated or impersonating another user.
+    """
+    if not isinstance(metric, dict):
+        raise QcEditError("each added metric must be an object")
+    unknown_fields = set(metric) - _ALLOWED_NEW_METRIC_FIELDS
+    if unknown_fields:
+        raise QcEditError(f"unsupported added metric field(s): {sorted(unknown_fields)}")
+    name = metric.get("name")
+    if not isinstance(name, str) or not name:
+        raise QcEditError("added metric name is required")
+    if "value" not in metric:
+        raise QcEditError(f"added metric {name!r} has no value")
+    return {
+        "object_type": "QC metric",
+        **copy.deepcopy(metric),
+        "status_history": [
+            {"object_type": "QC status", **create_status_history_entry(Status.PENDING.value, actor)}
+        ],
+    }
+
+
 def _delete_curation_entries(metric_obj: dict, indices: list) -> None:
     """Remove selected curation values and their aligned history entries."""
     values = metric_obj.get("value", [])
@@ -214,7 +241,9 @@ def _delete_curation_entries(metric_obj: dict, indices: list) -> None:
         metric_obj["curation_history"] = [entry for index, entry in enumerate(history) if index not in deleted]
 
 
-def apply_qc_changes(record: dict, changes: list, *, actor: str, notes=MISSING) -> dict:  # noqa: C901
+def apply_qc_changes(  # noqa: C901
+    record: dict, changes: list, *, actor: str, notes=MISSING, add_metrics=None
+) -> dict:
     """Return a deep-copied, mutated, schema-validated record.
 
     Applies each change using the same primitives as the Panel write path
@@ -222,6 +251,8 @@ def apply_qc_changes(record: dict, changes: list, *, actor: str, notes=MISSING) 
     `apply_status_change`, `apply_notes_change`): a regular metric's value is
     replaced, a curation metric can have selected history entries removed and
     new values appended, and any status change appends a status-history entry.
+    `add_metrics` appends new plain QC metrics (see `_build_new_metric`) before
+    `changes` are applied; a name that already exists is rejected.
     `actor` is used as both evaluator and curator; it must already be the
     server-verified identity, never a client-supplied name. Raises
     `QcEditError` — with "schema validation" in the message for a schema
@@ -243,6 +274,16 @@ def apply_qc_changes(record: dict, changes: list, *, actor: str, notes=MISSING) 
         name = metric.get("name")
         if name is not None and name not in metrics_by_name:
             metrics_by_name[name] = metric
+
+    if add_metrics is not None:
+        if not isinstance(add_metrics, list):
+            raise QcEditError("add_metrics must be a list")
+        for metric in add_metrics:
+            new_metric = _build_new_metric(metric, actor)
+            if new_metric["name"] in metrics_by_name:
+                raise QcEditError(f"metric already exists: {new_metric['name']}")
+            metrics.append(new_metric)
+            metrics_by_name[new_metric["name"]] = new_metric
 
     seen_names = set()
     for change in changes:

@@ -710,7 +710,7 @@ class QcSubmitHandler(RequestHandler):
         if not isinstance(payload, dict):
             self._fail(400, "malformed_request")
             return
-        unknown = set(payload) - {"record_id", "expected_qc_hash", "changes", "notes"}
+        unknown = set(payload) - {"record_id", "expected_qc_hash", "changes", "notes", "add_metrics"}
         if unknown:
             self._fail(400, "unsupported_request_field")
             return
@@ -723,7 +723,7 @@ class QcSubmitHandler(RequestHandler):
         if not is_qc_hash(expected_hash):
             self._fail(400, "invalid_expected_qc_hash")
             return
-        if not isinstance(changes, list) or (not changes and "notes" not in payload):
+        if not isinstance(changes, list) or (not changes and "notes" not in payload and not payload.get("add_metrics")):
             self._fail(400, "no_changes")
             return
         if "notes" in payload and not isinstance(payload["notes"], str):
@@ -761,6 +761,7 @@ class QcSubmitHandler(RequestHandler):
                 changes,
                 actor=actor,
                 notes=payload.get("notes", MISSING),
+                add_metrics=payload.get("add_metrics"),
             )
         except QcEditError as exc:
             message = str(exc)
@@ -820,6 +821,7 @@ class QcSubmitHandler(RequestHandler):
                 "asset_name": asset_name,
                 "actor": actor,
                 "changed_metrics": len(changes),
+                "added_metrics": len(payload.get("add_metrics") or []),
                 "correlation_id": self._correlation_id,
                 "result": "applied",
             },
@@ -833,6 +835,7 @@ class QcSubmitHandler(RequestHandler):
                 "asset_name": asset_name,
                 "actor": actor,
                 "changed_metrics": len(changes),
+                "added_metrics": len(payload.get("add_metrics") or []),
                 "docdb_status": getattr(response, "status_code", 200),
             }
         )

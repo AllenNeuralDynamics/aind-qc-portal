@@ -309,6 +309,22 @@ class TestSuccessfulSubmission(_QcSubmitTestCase):
         new_qc = call.kwargs["update"]["$set"]["quality_control"]
         self.assertEqual(new_qc["notes"], "brand new notes")
 
+    def test_add_metrics_only_is_applied_with_verified_actor(self):
+        added = {
+            "name": "Fiber 0 CCF Location",
+            "modality": {"name": "Selective plane illumination microscopy", "abbreviation": "SPIM"},
+            "stage": "Processing",
+            "value": {"AP": None, "ML": None, "DV": None},
+        }
+        response = self._post(self._good_payload(changes=[], add_metrics=[added]))
+        self.assertEqual(response.code, 200)
+        self.assertEqual(json.loads(response.body)["added_metrics"], 1)
+        call = self.docdb_client._upsert_one_record.call_args
+        new_metric = call.kwargs["update"]["$set"]["quality_control"]["metrics"][-1]
+        self.assertEqual(new_metric["name"], "Fiber 0 CCF Location")
+        self.assertEqual(new_metric["status_history"][-1]["status"], "Pending")
+        self.assertEqual(new_metric["status_history"][-1]["evaluator"], "verified-actor@allenneuraldynamics.org")
+
     def test_client_can_never_set_evaluator_or_curator_fields(self):
         response = self._post(self._good_payload())
         self.assertEqual(response.code, 200)

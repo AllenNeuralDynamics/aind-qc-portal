@@ -194,6 +194,60 @@ class TestApplyQcChanges(unittest.TestCase):
         with self.assertRaises(QcEditError):
             apply_qc_changes(record, [{"metric_name": "drift"}], actor="alice")
 
+    def _new_metric(self, **overrides):
+        metric = {
+            "name": "Fiber 0 CCF Location",
+            "modality": {"name": "Selective plane illumination microscopy", "abbreviation": "SPIM"},
+            "stage": "Processing",
+            "value": {"AP": None, "ML": None, "DV": None},
+            "tags": {"type": "Fiber CCF Location"},
+        }
+        metric.update(overrides)
+        return metric
+
+    def test_add_metric_appends_pending_status_by_actor(self):
+        record = _record([_metric()])
+        new_record = apply_qc_changes(record, [], actor="alice", add_metrics=[self._new_metric()])
+        metrics = new_record["quality_control"]["metrics"]
+        self.assertEqual(len(metrics), 2)
+        added = metrics[1]
+        self.assertEqual(added["object_type"], "QC metric")
+        self.assertEqual(added["value"], {"AP": None, "ML": None, "DV": None})
+        self.assertEqual(len(added["status_history"]), 1)
+        self.assertEqual(added["status_history"][0]["status"], "Pending")
+        self.assertEqual(added["status_history"][0]["evaluator"], "alice")
+        self.assertEqual(len(record["quality_control"]["metrics"]), 1)
+
+    def test_added_metric_can_be_changed_in_same_request(self):
+        record = _record([_metric()])
+        new_record = apply_qc_changes(
+            record,
+            [{"metric_name": "Fiber 0 CCF Location", "status": "Pass"}],
+            actor="alice",
+            add_metrics=[self._new_metric()],
+        )
+        self.assertEqual(new_record["quality_control"]["metrics"][1]["status_history"][-1]["status"], "Pass")
+
+    def test_add_existing_metric_name_rejected(self):
+        record = _record([_metric()])
+        with self.assertRaises(QcEditError):
+            apply_qc_changes(record, [], actor="alice", add_metrics=[self._new_metric(name="drift")])
+
+    def test_add_metric_rejects_client_status_history(self):
+        record = _record([_metric()])
+        with self.assertRaises(QcEditError):
+            apply_qc_changes(
+                record,
+                [],
+                actor="alice",
+                add_metrics=[self._new_metric(status_history=[{"status": "Pass", "evaluator": "eve"}])],
+            )
+
+    def test_add_metric_schema_failure_is_schema_error(self):
+        record = _record([_metric()])
+        with self.assertRaisesRegex(QcEditError, "schema validation"):
+            apply_qc_changes(record, [], actor="alice", add_metrics=[self._new_metric(stage="Not a stage")])
+
     def test_empty_changes_with_no_notes_is_a_noop_but_still_valid(self):
         record = _record([_metric()])
         new_record = apply_qc_changes(record, [], actor="alice")
