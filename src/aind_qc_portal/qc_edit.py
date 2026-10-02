@@ -18,7 +18,7 @@ import hashlib
 import json
 import re
 
-from aind_data_schema.core.quality_control import QualityControl, Status
+from aind_data_schema.core.quality_control import Status
 
 from aind_qc_portal.view_contents.data_utils import (
     apply_curation_metric_change,
@@ -26,6 +26,7 @@ from aind_qc_portal.view_contents.data_utils import (
     apply_qc_metric_change,
     apply_status_change,
     create_status_history_entry,
+    recompute_qc_status,
 )
 
 
@@ -315,7 +316,7 @@ def apply_qc_changes(  # noqa: C901
         apply_notes_change(new_record, notes)
 
     try:
-        QualityControl.model_validate(quality_control)
+        recompute_qc_status(quality_control)
     except Exception as exc:
         raise QcEditError(f"schema validation failed: {exc}") from exc
 

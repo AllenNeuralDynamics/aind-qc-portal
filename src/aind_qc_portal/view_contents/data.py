@@ -4,8 +4,6 @@ import pandas as pd
 import panel as pn
 import param
 from aind_data_access_api.document_db import MetadataDbClient
-from aind_data_schema.core.quality_control import QualityControl
-
 from aind_qc_portal.view_contents.data_utils import (
     apply_curation_metric_change,
     apply_notes_change,
@@ -13,6 +11,7 @@ from aind_qc_portal.view_contents.data_utils import (
     apply_status_change,
     decode_dict_value,
     encode_dict_value,
+    recompute_qc_status,
 )
 
 TIMEOUT_1M = 60
@@ -486,7 +485,7 @@ class ViewData(param.Parameterized):
         try:
             # Step 1: Validate with QualityControl model
             try:
-                QualityControl.model_validate(new_record["quality_control"])
+                recompute_qc_status(new_record["quality_control"])
             except Exception as e:
                 return False, f"Validation failed: {str(e)}"
 

@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 
 import panel as pn
+from aind_data_schema.core.quality_control import QualityControl
 
 
 def encode_dict_value(value):
@@ -107,6 +108,12 @@ def apply_status_change(metric_obj: dict, status_change: str, evaluator: str) ->
         metric_obj["status_history"] = []
 
     metric_obj["status_history"].append(create_status_history_entry(status_change, evaluator))
+
+
+def recompute_qc_status(quality_control: dict) -> None:
+    """Validate QC and copy its recomputed aggregate status into the input dict."""
+    validated_qc = QualityControl.model_validate(quality_control)
+    quality_control["status"] = validated_qc.model_dump(mode="json", include={"status"})["status"]
 
 
 def apply_notes_change(record: dict, notes_value: str) -> None:

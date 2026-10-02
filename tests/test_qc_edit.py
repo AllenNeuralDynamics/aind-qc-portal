@@ -158,6 +158,25 @@ class TestApplyQcChanges(unittest.TestCase):
         self.assertEqual(history[0]["status"], "Pass")
         self.assertEqual(history[0]["evaluator"], "bob")
 
+    def test_status_change_recomputes_only_aggregate_status(self):
+        record = _record([_metric(status_history=[], tags={"type": "example"})])
+        record["quality_control"]["status"] = {
+            "ecephys": "Pending",
+            "Processing": "Pending",
+            "type:example": "Pending",
+            "stale": "Fail",
+        }
+
+        new_record = apply_qc_changes(record, [{"metric_name": "drift", "status": "Pass"}], actor="bob")
+
+        quality_control = new_record["quality_control"]
+        self.assertEqual(
+            quality_control["status"],
+            {"type:example": "Pass", "ecephys": "Pass", "Processing": "Pass"},
+        )
+        self.assertEqual(quality_control["schema_version"], "2.4.0")
+        self.assertEqual(record["quality_control"]["status"]["stale"], "Fail")
+
     def test_value_and_status_in_one_change(self):
         record = _record([_metric(value=0.5, status_history=[])])
         new_record = apply_qc_changes(record, [{"metric_name": "drift", "value": 0.94, "status": "Fail"}], actor="bob")
