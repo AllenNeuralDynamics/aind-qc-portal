@@ -17,6 +17,7 @@ from aind_data_access_api.document_db import MetadataDbClient
 from panel.config import config as panel_config
 from tornado.web import HTTPError, RequestHandler
 
+from aind_qc_portal.api_docs import ApiDocsHandler, OpenApiHandler
 from aind_qc_portal.metadata_proposals import (
     canonical_hash,
     get_proposal,
@@ -1312,6 +1313,8 @@ class MetadataProposalActionHandler(_QcBearerMetadataApiHandler):
 
 
 ROUTES = [
+    (r"/docs/?", ApiDocsHandler, {}),
+    (r"/openapi\.json", OpenApiHandler, {}),
     ("/upload_metadata", UploadMetadataHandler, {}),
     (r"/get-signed-reference/([^/]+)", GetSignedReferenceHandler, {}),
     ("/metadata/login", MetadataLoginHandler, {}),

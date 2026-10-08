@@ -8,6 +8,14 @@ The portal allows users to annotate `PENDING` metrics. Logged in users can modif
 
 [General documentation about the QC metadata](https://aind-data-schema.readthedocs.io/en/latest/quality_control.html).
 
+Interactive HTTP API documentation is available at `/docs`, with the OpenAPI
+specification at `/openapi.json`. Swagger UI loads its pinned assets from
+jsDelivr. Use **Authorize** to supply an Entra ID identity token for QC edits
+and metadata proposal writes. These writes require the docs page's origin to
+be included in `QC_API_ALLOWED_ORIGINS`; documentation does not change the
+server's authentication or origin policy. `/metadata/login` is a browser
+navigation flow for establishing the separate metadata session cookie.
+
 **IMPORTANT:** The QC Portal relies on certain fields in the metadata being set correctly. These include all files in the `data_description` file. You *must* generate valid metadata or the QC portal will mangle displaying your data assets.
 
 ## Metric or Curation?
