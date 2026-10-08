@@ -44,7 +44,7 @@ QC_HASH_FIXTURES = [
         "66f193cc785d12ede531c60c338d9009fc0fd186fe0f82d8765ee59296150c73",
     ),
     (
-        {"\uE000": 2, "𐀀": 1},
+        {"\ue000": 2, "𐀀": 1},
         "4045c21a23c8ae8f8d9add81f54bd506bee65885099876fb4afb378b1f2c3516",
     ),
 ]
@@ -120,7 +120,7 @@ class TestCanonicalHashFixtures(unittest.TestCase):
         self.assertEqual(qc_hash(a), qc_hash(b))
 
     def test_object_keys_use_utf16_code_unit_order(self):
-        value = {"\uE000": 2, "𐀀": 1}
+        value = {"\ue000": 2, "𐀀": 1}
         self.assertEqual(canonical_qc_json(value), '{"𐀀":1,"":2}')
 
 
@@ -271,6 +271,21 @@ class TestApplyQcChanges(unittest.TestCase):
         record = _record([_metric()])
         new_record = apply_qc_changes(record, [], actor="alice")
         self.assertEqual(new_record["quality_control"], record["quality_control"])
+
+    def test_allowed_failures_omitted_or_empty_preserves_existing_values(self):
+        record = _record([_metric()])
+        record["quality_control"]["allow_tag_failures"] = ["existing allowance"]
+        for value in (MISSING, []):
+            with self.subTest(value=value):
+                new_record = apply_qc_changes(record, [], actor="alice", allow_tag_failures=value)
+                self.assertEqual(new_record["quality_control"]["allow_tag_failures"], ["existing allowance"])
+
+    def test_allowed_failures_added_when_field_is_absent(self):
+        record = _record([_metric()])
+        del record["quality_control"]["allow_tag_failures"]
+        new_record = apply_qc_changes(record, [], actor="alice", allow_tag_failures=["channel brightness"])
+        self.assertEqual(new_record["quality_control"]["allow_tag_failures"], ["channel brightness"])
+        self.assertNotIn("allow_tag_failures", record["quality_control"])
 
     def test_notes_omitted_leaves_notes_unchanged(self):
         record = _record([_metric()], notes="original")

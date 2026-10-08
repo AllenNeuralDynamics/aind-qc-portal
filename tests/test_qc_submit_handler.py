@@ -19,6 +19,7 @@ from tornado.web import Application
 
 from aind_qc_portal import plugin
 from aind_qc_portal.qc_edit import qc_hash
+from aind_qc_portal.view_contents.data_utils import recompute_qc_status
 
 ALLOWED_ORIGIN = "https://data.allenneuraldynamics.org"
 ISSUER = "https://login.microsoftonline.com/test-tenant/v2.0"
@@ -213,6 +214,28 @@ class TestRequestValidation(_QcSubmitTestCase):
         self.assertEqual(response.code, 400)
         self.assertEqual(json.loads(response.body)["error"], "invalid_notes")
 
+    def test_invalid_allow_tag_failures_is_400_without_upsert(self):
+        for value in (None, "channel brightness", {}, [123], [True], [""], [" "]):
+            with self.subTest(value=value):
+                response = self._post(self._good_payload(allow_tag_failures=value))
+                self.assertEqual(response.code, 400)
+                self.assertEqual(json.loads(response.body)["error"], "malformed_request")
+                self.docdb_client._upsert_one_record.assert_not_called()
+
+    def test_allow_tag_failures_only_is_accepted(self):
+        response = self._post(self._good_payload(changes=[], allow_tag_failures=["channel brightness"]))
+        self.assertEqual(response.code, 200)
+        new_qc = self.docdb_client._upsert_one_record.call_args.kwargs["update"]["$set"]["quality_control"]
+        self.assertEqual(new_qc["allow_tag_failures"], ["channel brightness"])
+
+    def test_unchanged_allow_tag_failures_is_no_changes(self):
+        self.record["quality_control"]["allow_tag_failures"] = ["channel brightness"]
+        recompute_qc_status(self.record["quality_control"])
+        response = self._post(self._good_payload(changes=[], allow_tag_failures=["channel brightness"]))
+        self.assertEqual(response.code, 400)
+        self.assertEqual(json.loads(response.body)["error"], "no_changes")
+        self.docdb_client._upsert_one_record.assert_not_called()
+
     def test_record_not_found_is_404(self):
         with patch.object(plugin, "_fetch_live_record", lambda version, rid: None):
             response = self._post(self._good_payload())
@@ -333,6 +356,29 @@ class TestSuccessfulSubmission(_QcSubmitTestCase):
         self.assertEqual(
             new_qc["metrics"][0]["status_history"][-1]["evaluator"], "verified-actor@allenneuraldynamics.org"
         )
+
+    def test_smartspim_metric_and_allowed_failures_are_written_together(self):
+        self.record["quality_control"]["allow_tag_failures"] = ["existing allowance"]
+        added = {
+            "name": "Channel 488 brightness",
+            "modality": {"name": "Selective plane illumination microscopy", "abbreviation": "SPIM"},
+            "stage": "Raw data",
+            "value": None,
+            "tags": {"type": "channel brightness", "channel": "488"},
+        }
+        response = self._post(
+            self._good_payload(
+                changes=[{"metric_name": added["name"], "status": "Fail"}],
+                add_metrics=[added],
+                allow_tag_failures=["channel brightness", "channel brightness"],
+            )
+        )
+        self.assertEqual(response.code, 200)
+        new_qc = self.docdb_client._upsert_one_record.call_args.kwargs["update"]["$set"]["quality_control"]
+        self.assertEqual(new_qc["allow_tag_failures"], ["existing allowance", "channel brightness"])
+        self.assertEqual(new_qc["metrics"][-1]["status_history"][-1]["status"], "Fail")
+        self.assertEqual(new_qc["status"]["SPIM"], "Pass")
+        self.assertEqual(self.record["quality_control"]["allow_tag_failures"], ["existing allowance"])
 
 
 class TestWriteFailureModes(_QcSubmitTestCase):

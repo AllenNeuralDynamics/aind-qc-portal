@@ -273,9 +273,7 @@ class GetSignedReferenceHandler(RequestHandler):
         metrics = quality_control.get("metrics", [])
 
         reference_found = any(
-            metric.get("reference") == reference
-            for metric in metrics
-            if metric.get("reference") is not None
+            metric.get("reference") == reference for metric in metrics if metric.get("reference") is not None
         )
 
         if not reference_found:
@@ -710,7 +708,14 @@ class QcSubmitHandler(RequestHandler):
         if not isinstance(payload, dict):
             self._fail(400, "malformed_request")
             return
-        unknown = set(payload) - {"record_id", "expected_qc_hash", "changes", "notes", "add_metrics"}
+        unknown = set(payload) - {
+            "record_id",
+            "expected_qc_hash",
+            "changes",
+            "notes",
+            "add_metrics",
+            "allow_tag_failures",
+        }
         if unknown:
             self._fail(400, "unsupported_request_field")
             return
@@ -723,7 +728,12 @@ class QcSubmitHandler(RequestHandler):
         if not is_qc_hash(expected_hash):
             self._fail(400, "invalid_expected_qc_hash")
             return
-        if not isinstance(changes, list) or (not changes and "notes" not in payload and not payload.get("add_metrics")):
+        if not isinstance(changes, list) or (
+            not changes
+            and "notes" not in payload
+            and not payload.get("add_metrics")
+            and "allow_tag_failures" not in payload
+        ):
             self._fail(400, "no_changes")
             return
         if "notes" in payload and not isinstance(payload["notes"], str):
@@ -762,6 +772,7 @@ class QcSubmitHandler(RequestHandler):
                 actor=actor,
                 notes=payload.get("notes", MISSING),
                 add_metrics=payload.get("add_metrics"),
+                allow_tag_failures=payload.get("allow_tag_failures", MISSING),
             )
         except QcEditError as exc:
             message = str(exc)

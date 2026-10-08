@@ -213,9 +213,7 @@ def _build_new_metric(metric, actor: str) -> dict:
     return {
         "object_type": "QC metric",
         **copy.deepcopy(metric),
-        "status_history": [
-            {"object_type": "QC status", **create_status_history_entry(Status.PENDING.value, actor)}
-        ],
+        "status_history": [{"object_type": "QC status", **create_status_history_entry(Status.PENDING.value, actor)}],
     }
 
 
@@ -243,7 +241,7 @@ def _delete_curation_entries(metric_obj: dict, indices: list) -> None:
 
 
 def apply_qc_changes(  # noqa: C901
-    record: dict, changes: list, *, actor: str, notes=MISSING, add_metrics=None
+    record: dict, changes: list, *, actor: str, notes=MISSING, add_metrics=None, allow_tag_failures=MISSING
 ) -> dict:
     """Return a deep-copied, mutated, schema-validated record.
 
@@ -254,6 +252,7 @@ def apply_qc_changes(  # noqa: C901
     new values appended, and any status change appends a status-history entry.
     `add_metrics` appends new plain QC metrics (see `_build_new_metric`) before
     `changes` are applied; a name that already exists is rejected.
+    `allow_tag_failures` adds tag values without removing existing allowances.
     `actor` is used as both evaluator and curator; it must already be the
     server-verified identity, never a client-supplied name. Raises
     `QcEditError` — with "schema validation" in the message for a schema
@@ -314,6 +313,16 @@ def apply_qc_changes(  # noqa: C901
         if not isinstance(notes, str):
             raise QcEditError("notes must be a string")
         apply_notes_change(new_record, notes)
+
+    if allow_tag_failures is not MISSING:
+        if not isinstance(allow_tag_failures, list) or any(
+            not isinstance(tag, str) or not tag.strip() for tag in allow_tag_failures
+        ):
+            raise QcEditError("allow_tag_failures must be a list of non-empty strings")
+        existing = quality_control.get("allow_tag_failures", [])
+        if not isinstance(existing, list) or any(not isinstance(tag, str) for tag in existing):
+            raise QcEditError("schema validation failed: allow_tag_failures must be a list of strings")
+        quality_control["allow_tag_failures"] = list(dict.fromkeys([*existing, *allow_tag_failures]))
 
     try:
         recompute_qc_status(quality_control)
