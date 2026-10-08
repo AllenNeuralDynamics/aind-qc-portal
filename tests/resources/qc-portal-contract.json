@@ -1,0 +1,869 @@
+{
+  "qc": [
+    {
+      "name": "qc-value-status",
+      "record": {
+        "_id": "record-1",
+        "name": "asset-1",
+        "quality_control": {
+          "object_type": "Quality control",
+          "schema_version": "2.4.0",
+          "metrics": [
+            {
+              "object_type": "QC metric",
+              "name": "drift",
+              "value": 0.5,
+              "modality": {
+                "name": "Extracellular electrophysiology",
+                "abbreviation": "ecephys"
+              },
+              "stage": "Processing",
+              "tags": {},
+              "status_history": [
+                {
+                  "object_type": "QC status",
+                  "status": "Pending",
+                  "evaluator": "system",
+                  "timestamp": "2024-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ],
+          "notes": "original notes",
+          "default_grouping": [
+            "type"
+          ],
+          "allow_tag_failures": [
+            "existing allowance"
+          ]
+        }
+      }
+    },
+    {
+      "name": "qc-value-1",
+      "record": {
+        "_id": "record-1",
+        "name": "asset-1",
+        "quality_control": {
+          "object_type": "Quality control",
+          "schema_version": "2.4.0",
+          "metrics": [
+            {
+              "object_type": "QC metric",
+              "name": "quality",
+              "value": null,
+              "modality": {
+                "name": "Extracellular electrophysiology",
+                "abbreviation": "ecephys"
+              },
+              "stage": "Processing",
+              "tags": {},
+              "status_history": [
+                {
+                  "object_type": "QC status",
+                  "status": "Pending",
+                  "evaluator": "system",
+                  "timestamp": "2024-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ],
+          "notes": "original notes",
+          "default_grouping": [
+            "type"
+          ],
+          "allow_tag_failures": [
+            "existing allowance"
+          ]
+        }
+      }
+    },
+    {
+      "name": "qc-value-2",
+      "record": {
+        "_id": "record-1",
+        "name": "asset-1",
+        "quality_control": {
+          "object_type": "Quality control",
+          "schema_version": "2.4.0",
+          "metrics": [
+            {
+              "object_type": "QC metric",
+              "name": "quality",
+              "value": null,
+              "modality": {
+                "name": "Extracellular electrophysiology",
+                "abbreviation": "ecephys"
+              },
+              "stage": "Processing",
+              "tags": {},
+              "status_history": [
+                {
+                  "object_type": "QC status",
+                  "status": "Pending",
+                  "evaluator": "system",
+                  "timestamp": "2024-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ],
+          "notes": "original notes",
+          "default_grouping": [
+            "type"
+          ],
+          "allow_tag_failures": [
+            "existing allowance"
+          ]
+        }
+      }
+    },
+    {
+      "name": "qc-value-3",
+      "record": {
+        "_id": "record-1",
+        "name": "asset-1",
+        "quality_control": {
+          "object_type": "Quality control",
+          "schema_version": "2.4.0",
+          "metrics": [
+            {
+              "object_type": "QC metric",
+              "name": "quality",
+              "value": null,
+              "modality": {
+                "name": "Extracellular electrophysiology",
+                "abbreviation": "ecephys"
+              },
+              "stage": "Processing",
+              "tags": {},
+              "status_history": [
+                {
+                  "object_type": "QC status",
+                  "status": "Pending",
+                  "evaluator": "system",
+                  "timestamp": "2024-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ],
+          "notes": "original notes",
+          "default_grouping": [
+            "type"
+          ],
+          "allow_tag_failures": [
+            "existing allowance"
+          ]
+        }
+      }
+    },
+    {
+      "name": "qc-value-4",
+      "record": {
+        "_id": "record-1",
+        "name": "asset-1",
+        "quality_control": {
+          "object_type": "Quality control",
+          "schema_version": "2.4.0",
+          "metrics": [
+            {
+              "object_type": "QC metric",
+              "name": "quality",
+              "value": null,
+              "modality": {
+                "name": "Extracellular electrophysiology",
+                "abbreviation": "ecephys"
+              },
+              "stage": "Processing",
+              "tags": {},
+              "status_history": [
+                {
+                  "object_type": "QC status",
+                  "status": "Pending",
+                  "evaluator": "system",
+                  "timestamp": "2024-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ],
+          "notes": "original notes",
+          "default_grouping": [
+            "type"
+          ],
+          "allow_tag_failures": [
+            "existing allowance"
+          ]
+        }
+      }
+    },
+    {
+      "name": "qc-notes",
+      "record": {
+        "_id": "record-1",
+        "name": "asset-1",
+        "quality_control": {
+          "object_type": "Quality control",
+          "schema_version": "2.4.0",
+          "metrics": [
+            {
+              "object_type": "QC metric",
+              "name": "drift",
+              "value": 0.5,
+              "modality": {
+                "name": "Extracellular electrophysiology",
+                "abbreviation": "ecephys"
+              },
+              "stage": "Processing",
+              "tags": {},
+              "status_history": [
+                {
+                  "object_type": "QC status",
+                  "status": "Pending",
+                  "evaluator": "system",
+                  "timestamp": "2024-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ],
+          "notes": "original notes",
+          "default_grouping": [
+            "type"
+          ],
+          "allow_tag_failures": [
+            "existing allowance"
+          ]
+        }
+      }
+    },
+    {
+      "name": "qc-curation",
+      "record": {
+        "_id": "record-1",
+        "name": "asset-1",
+        "quality_control": {
+          "object_type": "Quality control",
+          "schema_version": "2.4.0",
+          "metrics": [
+            {
+              "object_type": "Curation metric",
+              "name": "Sorting Curation",
+              "value": [
+                "old",
+                "keep"
+              ],
+              "modality": {
+                "name": "Extracellular electrophysiology",
+                "abbreviation": "ecephys"
+              },
+              "stage": "Processing",
+              "tags": {},
+              "status_history": [
+                {
+                  "object_type": "QC status",
+                  "status": "Pending",
+                  "evaluator": "system",
+                  "timestamp": "2024-01-01T00:00:00Z"
+                }
+              ],
+              "type": "manual",
+              "curation_history": [
+                {
+                  "object_type": "Curation history",
+                  "curator": "system",
+                  "timestamp": "2024-01-01T00:00:00Z"
+                },
+                {
+                  "object_type": "Curation history",
+                  "curator": "system",
+                  "timestamp": "2024-01-01T00:00:00Z"
+                }
+              ]
+            }
+          ],
+          "notes": "original notes",
+          "default_grouping": [
+            "type"
+          ],
+          "allow_tag_failures": [
+            "existing allowance"
+          ]
+        }
+      }
+    },
+    {
+      "name": "qc-smartspim",
+      "record": {
+        "_id": "record-1",
+        "name": "asset-1",
+        "quality_control": {
+          "object_type": "Quality control",
+          "schema_version": "2.4.0",
+          "metrics": [],
+          "notes": "original notes",
+          "default_grouping": [
+            "type"
+          ],
+          "allow_tag_failures": [
+            "existing allowance"
+          ]
+        },
+        "data_description": {
+          "data_level": "derived"
+        },
+        "instrument": {
+          "instrument_id": "SmartSPIM"
+        },
+        "acquisition": {
+          "channels": [
+            {
+              "channel_name": "Ex_488_Em_525"
+            },
+            {
+              "channel_name": "Ex_561_Em_600"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "qc-fiber",
+      "record": {
+        "_id": "record-1",
+        "name": "asset-1",
+        "quality_control": {
+          "object_type": "Quality control",
+          "schema_version": "2.4.0",
+          "metrics": [],
+          "notes": "original notes",
+          "default_grouping": [
+            "type"
+          ],
+          "allow_tag_failures": [
+            "existing allowance"
+          ]
+        }
+      }
+    }
+  ],
+  "requests": [
+    {
+      "name": "qc-value-status",
+      "path": "/api/qc/submit",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer good-token",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "record_id": "record-1",
+        "expected_qc_hash": "a98ba7378e555af10da30b5ff46966de10727974f6407cb9897eb6a7f7473cc4",
+        "changes": [
+          {
+            "metric_name": "drift",
+            "value": 0.94,
+            "status": "Pass"
+          }
+        ]
+      }
+    },
+    {
+      "name": "qc-value-1",
+      "path": "/api/qc/submit",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer good-token",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "record_id": "record-1",
+        "expected_qc_hash": "c49b5e85cdc5cd328a08b9b345a319ae780708651c19ac3b61f068f3f618d4fa",
+        "changes": [
+          {
+            "metric_name": "quality",
+            "value": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "qc-value-2",
+      "path": "/api/qc/submit",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer good-token",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "record_id": "record-1",
+        "expected_qc_hash": "c49b5e85cdc5cd328a08b9b345a319ae780708651c19ac3b61f068f3f618d4fa",
+        "changes": [
+          {
+            "metric_name": "quality",
+            "value": [
+              "good"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "qc-value-3",
+      "path": "/api/qc/submit",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer good-token",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "record_id": "record-1",
+        "expected_qc_hash": "c49b5e85cdc5cd328a08b9b345a319ae780708651c19ac3b61f068f3f618d4fa",
+        "changes": [
+          {
+            "metric_name": "quality",
+            "value": {
+              "type": "dropdown",
+              "options": [
+                "Good",
+                "Bad"
+              ],
+              "status": [
+                "Pass",
+                "Fail"
+              ],
+              "value": "Good"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "qc-value-4",
+      "path": "/api/qc/submit",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer good-token",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "record_id": "record-1",
+        "expected_qc_hash": "c49b5e85cdc5cd328a08b9b345a319ae780708651c19ac3b61f068f3f618d4fa",
+        "changes": [
+          {
+            "metric_name": "quality",
+            "value": {
+              "AP": 10,
+              "ML": 20,
+              "DV": null
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "qc-notes",
+      "path": "/api/qc/submit",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer good-token",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "record_id": "record-1",
+        "expected_qc_hash": "a98ba7378e555af10da30b5ff46966de10727974f6407cb9897eb6a7f7473cc4",
+        "changes": [],
+        "notes": ""
+      }
+    },
+    {
+      "name": "qc-curation",
+      "path": "/api/qc/submit",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer good-token",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "record_id": "record-1",
+        "expected_qc_hash": "e7038c6138f162d1696b67f989626cf6d9ad0994f9066b1445248f5be37cab2b",
+        "changes": [
+          {
+            "metric_name": "Sorting Curation",
+            "value": {
+              "unit_ids": [
+                1,
+                2
+              ],
+              "labels": {
+                "quality": [
+                  "good"
+                ]
+              }
+            },
+            "status": "Pass",
+            "delete_curation_indices": [
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "qc-smartspim",
+      "path": "/api/qc/submit",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer good-token",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "record_id": "record-1",
+        "expected_qc_hash": "46bb2bd65193bc9a2c06c802d1ad79cd9d4343ab1f9f93c7a4ba08a23c9f9c82",
+        "changes": [],
+        "add_metrics": [
+          {
+            "name": "Image and tissue quality",
+            "stage": "Processing",
+            "description": "Pass when image is of sufficient quality to meet experimental needs; i.e. tissue is well-cleared and image is in focus. Good images will have consistent clearing throughout the brain enabling sharp, crisp images of deep as well as superficial structures. Sufficient images may have clearing inhomogeneities or bubbles obstructing the imaging light path in some portions of the tissue, but remain suitable meeting some or all experimental needs. Bad images will be blurry, either due to poor tissue clearing or poor image focus.",
+            "value": {
+              "value": null,
+              "options": [
+                "Good",
+                "Sufficient",
+                "Bad"
+              ],
+              "status": [
+                "Pass",
+                "Pass",
+                "Fail"
+              ],
+              "type": "dropdown"
+            },
+            "tags": {
+              "type": "image quality"
+            },
+            "modality": {
+              "name": "Selective plane illumination microscopy",
+              "abbreviation": "SPIM"
+            },
+            "reference": null
+          },
+          {
+            "name": "Ex_488_Em_525 brightness",
+            "modality": {
+              "name": "Selective plane illumination microscopy",
+              "abbreviation": "SPIM"
+            },
+            "stage": "Raw data",
+            "description": "Pass when image channel is of sufficient brightness to meet experimental needs; i.e. signal is neither under nor oversaturated. Good channel brightness will have dynamic range for signal throughout the imaged volume. Sufficient channel brightness meets experimental needs but may have some regions of under or oversaturation, e.g. if good dynamic range at the experimental region of interest oversaturates an injection site. Bad channel brightness will be inappropriate for experimental needs, e.g. an autofluorescent channel that is too dim for atlas alignment.",
+            "value": {
+              "value": null,
+              "options": [
+                "Good",
+                "Sufficient",
+                "Bad"
+              ],
+              "status": [
+                "Pass",
+                "Pass",
+                "Fail"
+              ],
+              "type": "dropdown"
+            },
+            "reference": null,
+            "tags": {
+              "type": "channel brightness",
+              "channel": "Ex_488_Em_525"
+            }
+          },
+          {
+            "name": "Ex_561_Em_600 brightness",
+            "modality": {
+              "name": "Selective plane illumination microscopy",
+              "abbreviation": "SPIM"
+            },
+            "stage": "Raw data",
+            "description": "Pass when image channel is of sufficient brightness to meet experimental needs; i.e. signal is neither under nor oversaturated. Good channel brightness will have dynamic range for signal throughout the imaged volume. Sufficient channel brightness meets experimental needs but may have some regions of under or oversaturation, e.g. if good dynamic range at the experimental region of interest oversaturates an injection site. Bad channel brightness will be inappropriate for experimental needs, e.g. an autofluorescent channel that is too dim for atlas alignment.",
+            "value": {
+              "value": null,
+              "options": [
+                "Good",
+                "Sufficient",
+                "Bad"
+              ],
+              "status": [
+                "Pass",
+                "Pass",
+                "Fail"
+              ],
+              "type": "dropdown"
+            },
+            "reference": null,
+            "tags": {
+              "type": "channel brightness",
+              "channel": "Ex_561_Em_600"
+            }
+          },
+          {
+            "name": "Tissue perfusion",
+            "stage": "Raw data",
+            "description": "Pass when tissue is sufficiently well-perfused and extracted to meet experimental needs. Good tissue perfusion will preserve gross anatomical structures without cracks in tissue, and will be free of perfusion-related artifacts. Sufficient tissue perfusion will meet experimental needs, but may have some tissue damage or broad-spectrum autofluorescent artifacts (e.g. bright, visible vasculature). Fail when tissue damage or artifacts render the sample unsuitable for meeting experimental needs.",
+            "value": {
+              "value": null,
+              "options": [
+                "Good",
+                "Sufficient",
+                "Bad"
+              ],
+              "status": [
+                "Pass",
+                "Pass",
+                "Fail"
+              ],
+              "type": "dropdown"
+            },
+            "tags": {
+              "type": "image quality"
+            },
+            "modality": {
+              "name": "Selective plane illumination microscopy",
+              "abbreviation": "SPIM"
+            },
+            "reference": null
+          },
+          {
+            "name": "Flatfield correction",
+            "stage": "Processing",
+            "description": "Pass when image tiles appear evenly illuminated around tile corners. Fail when image tiles are non-uniform or show vignetting.Note: this QC metric is independent of overall illumination issues.",
+            "value": {
+              "value": null,
+              "options": [
+                "Pass",
+                "Fail"
+              ],
+              "status": [
+                "Pass",
+                "Fail"
+              ],
+              "type": "dropdown"
+            },
+            "tags": {
+              "type": "processing"
+            },
+            "modality": {
+              "name": "Selective plane illumination microscopy",
+              "abbreviation": "SPIM"
+            },
+            "reference": null
+          },
+          {
+            "name": "Image destriping",
+            "stage": "Processing",
+            "description": "Pass when image stripes have been sufficiently mitigated to meet experimental needs. Good image destriping will have few to no visible striping artifacts. Sufficient image destriping will meet experimental needs, but may have stripes in some regions. Bad image destriping will have wide-spread striping artifacts that obstruct experimental analyses.",
+            "value": {
+              "value": null,
+              "options": [
+                "Good",
+                "Sufficient",
+                "Bad"
+              ],
+              "status": [
+                "Pass",
+                "Pass",
+                "Fail"
+              ],
+              "type": "dropdown"
+            },
+            "tags": {
+              "type": "processing"
+            },
+            "modality": {
+              "name": "Selective plane illumination microscopy",
+              "abbreviation": "SPIM"
+            },
+            "reference": null
+          },
+          {
+            "name": "Image stitching",
+            "stage": "Processing",
+            "description": "Pass when there are no visible stitching artifacts at tile boundaries. Fail when stitching artifacts are present, e.g. visible misalignments, discontinuities, or doublings of landmarks.",
+            "value": {
+              "value": null,
+              "options": [
+                "Pass",
+                "Fail"
+              ],
+              "status": [
+                "Pass",
+                "Fail"
+              ],
+              "type": "dropdown"
+            },
+            "tags": {
+              "type": "processing"
+            },
+            "modality": {
+              "name": "Selective plane illumination microscopy",
+              "abbreviation": "SPIM"
+            },
+            "reference": null
+          }
+        ],
+        "allow_tag_failures": [
+          "channel brightness"
+        ]
+      }
+    },
+    {
+      "name": "qc-fiber",
+      "path": "/api/qc/submit",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer good-token",
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "record_id": "record-1",
+        "expected_qc_hash": "46bb2bd65193bc9a2c06c802d1ad79cd9d4343ab1f9f93c7a4ba08a23c9f9c82",
+        "changes": [],
+        "add_metrics": [
+          {
+            "name": "Fiber 0 CCF Location",
+            "modality": {
+              "name": "Selective plane illumination microscopy",
+              "abbreviation": "SPIM"
+            },
+            "stage": "Processing",
+            "value": {
+              "AP": null,
+              "ML": null,
+              "DV": null
+            },
+            "description": "Location in the CCF-aligned SmartSPIM volume of the fiber probe tip in 25um index units\nTargeted structure: unknown\nTargeted coordinates: unknown\nAP (x), DV (y), ML (z)",
+            "reference": "https://example.org/neuroglancer",
+            "tags": {
+              "type": "Fiber CCF Location"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "list-default",
+      "path": "/metadata/proposals?status=open&summary=true",
+      "method": "GET",
+      "headers": {}
+    },
+    {
+      "name": "list-filtered",
+      "path": "/metadata/proposals?status=open%2Crejected&version=v2&id=abc&summary=true",
+      "method": "GET",
+      "headers": {}
+    },
+    {
+      "name": "proposal-detail",
+      "path": "/metadata/proposals/p1",
+      "method": "GET",
+      "headers": {}
+    },
+    {
+      "name": "proposal-create",
+      "path": "/metadata/proposals?summary=true",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer good-token"
+      },
+      "body": {
+        "version": "v2",
+        "id": "abc",
+        "body": {
+          "_id": "abc",
+          "name": "asset-1",
+          "subject": {
+            "subject_id": "2"
+          }
+        },
+        "note": ""
+      }
+    },
+    {
+      "name": "proposal-rebase",
+      "path": "/metadata/proposals?summary=true",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer good-token"
+      },
+      "body": {
+        "version": "v1",
+        "id": "abc",
+        "body": {
+          "_id": "abc",
+          "name": "asset-1",
+          "subject": {
+            "subject_id": "2"
+          }
+        },
+        "note": "Rebased",
+        "supersedes": "p1"
+      }
+    },
+    {
+      "name": "proposal-approve",
+      "path": "/metadata/proposals/p1/approve?summary=true",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer good-token"
+      },
+      "body": {
+        "body_hash": "reviewed-hash"
+      }
+    },
+    {
+      "name": "proposal-reject",
+      "path": "/metadata/proposals/p1/reject?summary=true",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer good-token"
+      },
+      "body": {
+        "reason": "Needs correction"
+      }
+    },
+    {
+      "name": "proposal-withdraw",
+      "path": "/metadata/proposals/p1?summary=true",
+      "method": "DELETE",
+      "headers": {
+        "Authorization": "Bearer good-token"
+      }
+    },
+    {
+      "name": "session-me",
+      "path": "/metadata/me",
+      "method": "GET",
+      "headers": {},
+      "credentials": "include"
+    },
+    {
+      "name": "session-logout",
+      "path": "/metadata/logout",
+      "method": "POST",
+      "headers": {},
+      "credentials": "include"
+    },
+    {
+      "name": "media-sign",
+      "path": "/get-signed-reference/asset%20with%20spaces?reference=figures%2FQC%20image.png",
+      "method": "GET",
+      "headers": {}
+    },
+    {
+      "name": "session-login",
+      "path": "/metadata/login?redirect=https%3A%2F%2Fdata.allenneuraldynamics.org%2Fmigrate%2Fsubmit%3Fid%3Dabc%26version%3Dv2",
+      "method": "GET",
+      "headers": {}
+    }
+  ]
+}

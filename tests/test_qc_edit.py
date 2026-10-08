@@ -19,6 +19,7 @@ from aind_qc_portal.qc_edit import (
     update_qc_record,
     verify_write_target,
 )
+from aind_qc_portal.view_contents.data_utils import recompute_qc_status
 
 # Mirrors web/src/qc/canonical-fixtures.js verbatim. If this drifts from the
 # JS fixtures, the browser and server no longer hash the same bytes and the
@@ -269,6 +270,7 @@ class TestApplyQcChanges(unittest.TestCase):
 
     def test_empty_changes_with_no_notes_is_a_noop_but_still_valid(self):
         record = _record([_metric()])
+        recompute_qc_status(record["quality_control"])
         new_record = apply_qc_changes(record, [], actor="alice")
         self.assertEqual(new_record["quality_control"], record["quality_control"])
 

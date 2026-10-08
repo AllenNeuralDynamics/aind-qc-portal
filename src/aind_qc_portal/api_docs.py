@@ -84,7 +84,7 @@ def openapi_spec():
                 "stage": string,
                 "value": {},
                 "description": string,
-                "reference": string,
+                "reference": {"type": "string", "nullable": True},
                 "tags": {"type": "object", "additionalProperties": string},
             },
             ("name", "value"),
