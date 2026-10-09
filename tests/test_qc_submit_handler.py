@@ -181,6 +181,36 @@ class TestAuthentication(_QcSubmitTestCase):
 
 
 class TestRequestValidation(_QcSubmitTestCase):
+    def test_grouping_only_is_saved_and_can_be_cleared(self):
+        for grouping in (["type"], ["stage", ["type", "channel"]], []):
+            with self.subTest(grouping=grouping):
+                response = self._post(self._good_payload(changes=[], default_grouping=grouping))
+                self.assertEqual(response.code, 200, response.body)
+                new_qc = self.docdb_client._upsert_one_record.call_args.kwargs["update"]["$set"]["quality_control"]
+                self.assertEqual(new_qc["default_grouping"], grouping)
+                self.assertEqual(self.record["quality_control"]["default_grouping"], ["ECEPHYS"])
+
+    def test_invalid_grouping_is_rejected_without_upsert(self):
+        for grouping in (None, "type", {}, [1], [True], [""], [" "], [[]], [["type", 1]], [[["type"]]]):
+            with self.subTest(grouping=grouping):
+                response = self._post(self._good_payload(default_grouping=grouping))
+                self.assertEqual(response.code, 400)
+                self.docdb_client._upsert_one_record.assert_not_called()
+
+    def test_unchanged_grouping_is_no_changes(self):
+        recompute_qc_status(self.record["quality_control"])
+        response = self._post(self._good_payload(changes=[], default_grouping=["ECEPHYS"]))
+        self.assertEqual(response.code, 400)
+        self.assertEqual(json.loads(response.body)["error"], "no_changes")
+        self.docdb_client._upsert_one_record.assert_not_called()
+
+    def test_grouping_changes_require_a_current_hash(self):
+        payload = self._good_payload(changes=[], default_grouping=["type"])
+        self.record["quality_control"]["default_grouping"] = ["stage"]
+        response = self._post(payload)
+        self.assertEqual(response.code, 409)
+        self.docdb_client._upsert_one_record.assert_not_called()
+
     def test_unknown_top_level_field_is_400(self):
         response = self._post(self._good_payload(evaluator="someone-else"))
         self.assertEqual(response.code, 400)

@@ -289,6 +289,20 @@ class TestApplyQcChanges(unittest.TestCase):
         self.assertEqual(new_record["quality_control"]["allow_tag_failures"], ["channel brightness"])
         self.assertNotIn("allow_tag_failures", record["quality_control"])
 
+    def test_default_grouping_replaces_levels_without_mutating_input(self):
+        record = _record([_metric()])
+        for grouping in (["type"], ["stage", ["type", "channel"]], []):
+            with self.subTest(grouping=grouping):
+                new_record = apply_qc_changes(record, [], actor="alice", default_grouping=grouping)
+                self.assertEqual(new_record["quality_control"]["default_grouping"], grouping)
+                self.assertEqual(record["quality_control"]["default_grouping"], DEFAULT_GROUPING)
+                self.assertIsNot(new_record["quality_control"]["default_grouping"], grouping)
+
+    def test_omitted_default_grouping_preserves_existing_levels(self):
+        record = _record([_metric()], default_grouping=["stage", "type"])
+        result = apply_qc_changes(record, [{"metric_name": "drift", "value": 0.9}], actor="alice")
+        self.assertEqual(result["quality_control"]["default_grouping"], ["stage", "type"])
+
     def test_notes_omitted_leaves_notes_unchanged(self):
         record = _record([_metric()], notes="original")
         new_record = apply_qc_changes(record, [], actor="alice", notes=MISSING)

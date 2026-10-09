@@ -241,7 +241,14 @@ def _delete_curation_entries(metric_obj: dict, indices: list) -> None:
 
 
 def apply_qc_changes(  # noqa: C901
-    record: dict, changes: list, *, actor: str, notes=MISSING, add_metrics=None, allow_tag_failures=MISSING
+    record: dict,
+    changes: list,
+    *,
+    actor: str,
+    notes=MISSING,
+    add_metrics=None,
+    allow_tag_failures=MISSING,
+    default_grouping=MISSING,
 ) -> dict:
     """Return a deep-copied, mutated, schema-validated record.
 
@@ -253,6 +260,7 @@ def apply_qc_changes(  # noqa: C901
     `add_metrics` appends new plain QC metrics (see `_build_new_metric`) before
     `changes` are applied; a name that already exists is rejected.
     `allow_tag_failures` adds tag values without removing existing allowances.
+    `default_grouping` replaces the ordered grouping levels when provided.
     `actor` is used as both evaluator and curator; it must already be the
     server-verified identity, never a client-supplied name. Raises
     `QcEditError` — with "schema validation" in the message for a schema
@@ -323,6 +331,19 @@ def apply_qc_changes(  # noqa: C901
         if not isinstance(existing, list) or any(not isinstance(tag, str) for tag in existing):
             raise QcEditError("schema validation failed: allow_tag_failures must be a list of strings")
         quality_control["allow_tag_failures"] = list(dict.fromkeys([*existing, *allow_tag_failures]))
+
+    if default_grouping is not MISSING:
+
+        def valid_key(key):
+            """Grouping keys must contain visible text."""
+            return isinstance(key, str) and bool(key.strip())
+
+        if not isinstance(default_grouping, list) or any(
+            not valid_key(level) and not (isinstance(level, list) and level and all(valid_key(key) for key in level))
+            for level in default_grouping
+        ):
+            raise QcEditError("default_grouping must be a list of non-empty keys or key lists")
+        quality_control["default_grouping"] = copy.deepcopy(default_grouping)
 
     try:
         recompute_qc_status(quality_control)

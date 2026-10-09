@@ -716,6 +716,7 @@ class QcSubmitHandler(RequestHandler):
             "notes",
             "add_metrics",
             "allow_tag_failures",
+            "default_grouping",
         }
         if unknown:
             self._fail(400, "unsupported_request_field")
@@ -734,6 +735,7 @@ class QcSubmitHandler(RequestHandler):
             and "notes" not in payload
             and not payload.get("add_metrics")
             and "allow_tag_failures" not in payload
+            and "default_grouping" not in payload
         ):
             self._fail(400, "no_changes")
             return
@@ -774,6 +776,7 @@ class QcSubmitHandler(RequestHandler):
                 notes=payload.get("notes", MISSING),
                 add_metrics=payload.get("add_metrics"),
                 allow_tag_failures=payload.get("allow_tag_failures", MISSING),
+                default_grouping=payload.get("default_grouping", MISSING),
             )
         except QcEditError as exc:
             message = str(exc)

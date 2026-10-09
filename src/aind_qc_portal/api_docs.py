@@ -102,6 +102,20 @@ def openapi_spec():
                 "changes": {"type": "array", "items": _ref("MetricChange")},
                 "notes": string,
                 "add_metrics": {"type": "array", "items": _ref("NewMetric")},
+                "default_grouping": {
+                    "type": "array",
+                    "items": {
+                        "anyOf": [
+                            {"type": "string", "minLength": 1, "pattern": r"\S"},
+                            {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": {"type": "string", "minLength": 1, "pattern": r"\S"},
+                            },
+                        ]
+                    },
+                    "description": "Replace the ordered grouping levels; an empty list clears grouping.",
+                },
                 "allow_tag_failures": {
                     "type": "array",
                     "items": {"type": "string", "minLength": 1, "pattern": r"\S"},

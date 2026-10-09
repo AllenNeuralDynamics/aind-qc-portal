@@ -299,9 +299,7 @@
           "schema_version": "2.4.0",
           "metrics": [],
           "notes": "original notes",
-          "default_grouping": [
-            "type"
-          ],
+          "default_grouping": [],
           "allow_tag_failures": [
             "existing allowance"
           ]
@@ -516,7 +514,7 @@
       },
       "body": {
         "record_id": "record-1",
-        "expected_qc_hash": "46bb2bd65193bc9a2c06c802d1ad79cd9d4343ab1f9f93c7a4ba08a23c9f9c82",
+        "expected_qc_hash": "730cd9c810352be2f62232a0edc9c84732aff63ee2ddfa5637e606870e811c07",
         "changes": [],
         "add_metrics": [
           {
@@ -709,6 +707,9 @@
         ],
         "allow_tag_failures": [
           "channel brightness"
+        ],
+        "default_grouping": [
+          "type"
         ]
       }
     },

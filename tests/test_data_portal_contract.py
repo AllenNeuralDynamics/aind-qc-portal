@@ -115,6 +115,10 @@ class TestDataPortalQcContract(_QcSubmitTestCase):
                 if "notes" in request["body"]:
                     self.assertEqual(qc["notes"], request["body"]["notes"])
                 self.assertEqual(
+                    qc["default_grouping"],
+                    request["body"].get("default_grouping", original["quality_control"]["default_grouping"]),
+                )
+                self.assertEqual(
                     qc["allow_tag_failures"], ["existing allowance"] + request["body"].get("allow_tag_failures", [])
                 )
                 self.assertEqual(self.record, original)
