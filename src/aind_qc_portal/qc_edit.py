@@ -61,7 +61,17 @@ MISSING = _Missing()
 
 _SUPPORTED_STATUSES = {status.value for status in Status}
 _ALLOWED_CHANGE_FIELDS = {"metric_name", "value", "status", "delete_curation_indices"}
-_ALLOWED_NEW_METRIC_FIELDS = {"name", "type", "object_type", "modality", "stage", "value", "description", "reference", "tags"}
+_ALLOWED_NEW_METRIC_FIELDS = {
+    "name",
+    "type",
+    "object_type",
+    "modality",
+    "stage",
+    "value",
+    "description",
+    "reference",
+    "tags",
+}
 _ALLOWED_NEW_METRIC_TYPES = {"QC metric", "Curation metric"}
 _HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 

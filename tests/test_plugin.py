@@ -835,14 +835,10 @@ class TestPanelUserFromHandler(unittest.TestCase):
         self.assertIsNone(plugin._panel_user_from_handler(self._handler(b"")))
 
     def test_valid_user(self):
-        self.assertEqual(
-            plugin._panel_user_from_handler(self._handler(b"alice")), "alice"
-        )
+        self.assertEqual(plugin._panel_user_from_handler(self._handler(b"alice")), "alice")
 
     def test_non_utf8_returns_none(self):
-        self.assertIsNone(
-            plugin._panel_user_from_handler(self._handler(b"\xff\xfe\xff"))
-        )
+        self.assertIsNone(plugin._panel_user_from_handler(self._handler(b"\xff\xfe\xff")))
 
 
 if __name__ == "__main__":

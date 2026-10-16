@@ -8,7 +8,6 @@ import param
 
 # Setup Panel and Altair
 from aind_qc_portal.layout import OUTER_STYLE
-from aind_qc_portal.utils import format_css_background
 from aind_qc_portal.view_contents.data import ViewData
 from aind_qc_portal.view_contents.panel import QCPanel
 

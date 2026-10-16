@@ -4,6 +4,7 @@ import pandas as pd
 import panel as pn
 import param
 from aind_data_access_api.document_db import MetadataDbClient
+
 from aind_qc_portal.view_contents.data_utils import (
     apply_curation_metric_change,
     apply_notes_change,
