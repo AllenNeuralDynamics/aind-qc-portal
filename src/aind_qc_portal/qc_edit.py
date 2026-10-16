@@ -61,7 +61,8 @@ MISSING = _Missing()
 
 _SUPPORTED_STATUSES = {status.value for status in Status}
 _ALLOWED_CHANGE_FIELDS = {"metric_name", "value", "status", "delete_curation_indices"}
-_ALLOWED_NEW_METRIC_FIELDS = {"name", "modality", "stage", "value", "description", "reference", "tags"}
+_ALLOWED_NEW_METRIC_FIELDS = {"name", "type", "object_type", "modality", "stage", "value", "description", "reference", "tags"}
+_ALLOWED_NEW_METRIC_TYPES = {"QC metric", "Curation metric"}
 _HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -195,10 +196,12 @@ def _validate_change(change) -> None:
 
 
 def _build_new_metric(metric, actor: str) -> dict:
-    """Return a plain QC metric whose only status is a Pending entry by `actor`.
+    """Return a new metric whose only status is a Pending entry by `actor`.
 
-    Clients cannot supply status history, curation fields, or object_type, so a
-    new metric can never arrive already evaluated or impersonating another user.
+    Clients may set `object_type` ("QC metric" by default, or "Curation
+    metric") and may pass `type` through unchanged. They cannot supply status
+    history or curation fields, so a new metric can never arrive already
+    evaluated or impersonating another user.
     """
     if not isinstance(metric, dict):
         raise QcEditError("each added metric must be an object")
@@ -210,9 +213,12 @@ def _build_new_metric(metric, actor: str) -> dict:
         raise QcEditError("added metric name is required")
     if "value" not in metric:
         raise QcEditError(f"added metric {name!r} has no value")
+    object_type = metric.get("object_type", "QC metric")
+    if object_type not in _ALLOWED_NEW_METRIC_TYPES:
+        raise QcEditError(f"unsupported added metric object_type: {object_type!r}")
     return {
-        "object_type": "QC metric",
         **copy.deepcopy(metric),
+        "object_type": object_type,
         "status_history": [{"object_type": "QC status", **create_status_history_entry(Status.PENDING.value, actor)}],
     }
 

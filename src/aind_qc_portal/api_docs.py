@@ -80,6 +80,8 @@ def openapi_spec():
         "NewMetric": _object(
             {
                 "name": {"type": "string", "minLength": 1},
+                "type": {"type": "string", "description": "Passed through to the stored metric unchanged."},
+                "object_type": {"type": "string", "enum": ["QC metric", "Curation metric"], "default": "QC metric"},
                 "modality": arbitrary,
                 "stage": string,
                 "value": {},

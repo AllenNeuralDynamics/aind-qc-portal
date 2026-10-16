@@ -238,6 +238,23 @@ class TestApplyQcChanges(unittest.TestCase):
         self.assertEqual(added["status_history"][0]["evaluator"], "alice")
         self.assertEqual(len(record["quality_control"]["metrics"]), 1)
 
+    def test_add_metric_type_sets_object_type(self):
+        record = _record([_metric()])
+        new_record = apply_qc_changes(
+            record,
+            [],
+            actor="alice",
+            add_metrics=[self._new_metric(object_type="Curation metric", type="Fiber CCF Location", value=[])],
+        )
+        added = new_record["quality_control"]["metrics"][1]
+        self.assertEqual(added["object_type"], "Curation metric")
+        self.assertEqual(added["type"], "Fiber CCF Location")
+
+    def test_add_metric_unsupported_object_type_rejected(self):
+        record = _record([_metric()])
+        with self.assertRaises(QcEditError):
+            apply_qc_changes(record, [], actor="alice", add_metrics=[self._new_metric(object_type="Other")])
+
     def test_added_metric_can_be_changed_in_same_request(self):
         record = _record([_metric()])
         new_record = apply_qc_changes(
