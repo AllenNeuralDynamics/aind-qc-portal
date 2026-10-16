@@ -378,6 +378,31 @@ class TestSuccessfulSubmission(_QcSubmitTestCase):
         self.assertEqual(new_metric["status_history"][-1]["status"], "Pending")
         self.assertEqual(new_metric["status_history"][-1]["evaluator"], "verified-actor@allenneuraldynamics.org")
 
+    def test_add_curation_metric_with_type_and_object_type(self):
+        added = {
+            "object_type": "Curation metric",
+            "name": "Unit curation",
+            "type": "manual",
+            "modality": {"name": "Extracellular electrophysiology", "abbreviation": "ecephys"},
+            "stage": "Processing",
+            "value": [],
+        }
+        response = self._post(self._good_payload(changes=[], add_metrics=[added]))
+        self.assertEqual(response.code, 200)
+        self.assertEqual(json.loads(response.body)["added_metrics"], 1)
+        call = self.docdb_client._upsert_one_record.call_args
+        new_metric = call.kwargs["update"]["$set"]["quality_control"]["metrics"][-1]
+        self.assertEqual(new_metric["object_type"], "Curation metric")
+        self.assertEqual(new_metric["type"], "manual")
+        self.assertEqual(new_metric["status_history"][-1]["status"], "Pending")
+        self.assertEqual(new_metric["status_history"][-1]["evaluator"], "verified-actor@allenneuraldynamics.org")
+
+    def test_add_metric_with_unsupported_object_type_is_400(self):
+        added = {"object_type": "Other", "name": "Bad", "value": 1}
+        response = self._post(self._good_payload(changes=[], add_metrics=[added]))
+        self.assertEqual(response.code, 400)
+        self.docdb_client._upsert_one_record.assert_not_called()
+
     def test_client_can_never_set_evaluator_or_curator_fields(self):
         response = self._post(self._good_payload())
         self.assertEqual(response.code, 200)
