@@ -132,10 +132,10 @@ You can upload *test* metadata to the `/upload_metadata` endpoint and then view 
 import json
 import requests
 
-with open('metadata.json', 'r') as f:
+with open("metadata.json", "r") as f:
     metadata = json.load(f)
 
-response = requests.post('https://qc.allenneuraldynamics.org/upload_metadata', json=metadata)
+response = requests.post("https://qc.allenneuraldynamics.org/upload_metadata", json=metadata)
 print(f"Status: {response.status_code}")
 ```
 
