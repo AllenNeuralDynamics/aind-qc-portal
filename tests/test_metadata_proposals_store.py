@@ -85,6 +85,7 @@ class TestMetadataProposalStore(unittest.TestCase):
 
     @patch.object(store, "METADATA_PROPOSALS_BACKEND", "memory")
     def test_summary_omits_large_snapshots_and_groups_same_replacement(self):
+        """Summaries drop large snapshots and group proposals with the same replacement"""
         first = self._proposal("p1", record_id="asset-1")
         second = self._proposal("p2", record_id="asset-2")
         second["base"]["value"] = "different-base"

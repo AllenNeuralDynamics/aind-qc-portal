@@ -11,11 +11,13 @@ class NotesPanel(PyComponent):
     """Panel for displaying and editing QC notes"""
 
     def __init__(self, data: ViewData):
+        """Create the panel for the given view data"""
         super().__init__()
         self._data = data
         self._init_panel_objects()
 
     def _init_panel_objects(self):
+        """Build the notes input, read-only for guests"""
         is_guest = not hasattr(pn.state, "user") or pn.state.user == "guest"
         self.notes_input = pn.widgets.TextAreaInput(
             name="Notes",
@@ -29,9 +31,11 @@ class NotesPanel(PyComponent):
             self.notes_input.param.watch(self._on_notes_change, "value")
 
     def _on_notes_change(self, event):
+        """Submit edited notes"""
         self._data.submit_notes_change(event.new)
 
     def __panel__(self):
+        """Return the panel layout"""
         return pn.Column(
             self.notes_input,
             styles=OUTER_STYLE,

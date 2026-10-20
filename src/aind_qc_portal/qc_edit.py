@@ -54,6 +54,7 @@ class _Missing:
     """Sentinel distinguishing "notes omitted" from "notes explicitly set"."""
 
     def __repr__(self):
+        """Return the sentinel name"""
         return "MISSING"
 
 
@@ -182,6 +183,7 @@ def qc_hash(value) -> str:
 
 
 def _validate_change(change) -> None:
+    """Validate the shape of a single change object"""
     if not isinstance(change, dict):
         raise QcEditError("each change must be an object")
     unknown_fields = set(change) - _ALLOWED_CHANGE_FIELDS
